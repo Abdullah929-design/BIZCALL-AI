@@ -1,0 +1,30 @@
+# Gemma-2B Banking & Sales Assistant
+# Fine-tuned on banking and sales conversation data
+
+FROM D:/intent-detector-banking/ollama_models/gemma-2b-banking-q4_k_m.gguf
+
+# Generation parameters (matching training configuration)
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 2048
+PARAMETER num_predict 150
+
+# Stop sequences
+PARAMETER stop "### Instruction:"
+PARAMETER stop "<|end|>"
+PARAMETER stop "</s>"
+
+# System prompt
+SYSTEM """You are a professional banking and sales assistant. You provide accurate, 
+helpful responses about banking products, account inquiries, loan applications, 
+and sales-related questions. You were fine-tuned on real banking and sales 
+conversation data to understand customer needs and provide appropriate solutions.
+Keep your responses focussed."""
+
+# Prompt template (CRITICAL - must match training format)
+TEMPLATE """### Instruction:
+{{ .Prompt }}
+
+### Response:
+"""
