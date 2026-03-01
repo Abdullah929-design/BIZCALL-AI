@@ -1,10 +1,25 @@
+# Virtual environment
 venv/
 
-# Large model and index artifacts
-ollama_models/gemma-2b-banking-f16.gguf
-ollama_models/gemma-2b-banking-q4_k_m.gguf
-ollama_marketing_models_new/finance-chat-Q4_K_M.gguf
-intent_detection_model/model.safetensors
-llm_complex_path/gemma_banking_model/adapter_model.safetensors
-llm_complex_path/gemma_banking_model/tokenizer.json
-faq_engine/faiss.index
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+*.ipynb
+
+# Large ML files
+*.safetensors
+*.gguf
+*.index
+*.pkl
+
+# Ollama & model folders
+ollama_models/
+ollama_marketing_models_new/
+intent_detection_model/
+llm_complex_path/gemma_banking_model/
+
+# OS
+.DS_Store
+Thumbs.db
