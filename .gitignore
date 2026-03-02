@@ -21,3 +21,35 @@ llm_complex_path/gemma_banking_model/
 # OS
 .DS_Store
 Thumbs.db
+
+INTEGRATION_SUMMARY.md
+
+frontend/README.md
+
+# React / Node
+node_modules/
+dist/
+build/
+
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

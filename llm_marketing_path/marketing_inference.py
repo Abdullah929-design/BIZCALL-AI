@@ -8,15 +8,15 @@ from urllib.request import Request, urlopen
 
 OLLAMA_MARKETING_BASE_URL = os.getenv("OLLAMA_MARKETING_BASE_URL", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
 OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "finance-chat:latest").strip()
-OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", os.getenv("OLLAMA_TIMEOUT_SECONDS", "180")))
-OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))))
-OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", os.getenv("OLLAMA_KEEP_ALIVE", "30m"))
-OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT", "320")
+OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "30"))
+OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "45"))
+OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", "5m")
+OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT", "128")
 
 _cpu_count = os.cpu_count() or 4
 DEFAULT_MARKETING_NUM_THREAD = max(2, min(4, _cpu_count))
-DEFAULT_MARKETING_NUM_CTX = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_CTX", "768"))
-DEFAULT_MARKETING_NUM_PREDICT = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_PREDICT", "256"))
+DEFAULT_MARKETING_NUM_CTX = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_CTX", "512"))
+DEFAULT_MARKETING_NUM_PREDICT = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_PREDICT", "128"))
 
 
 LOW_QUALITY_OUTPUT_MARKERS = (
@@ -39,13 +39,14 @@ PROMPT_ARTIFACT_MARKERS = (
 )
 
 MARKETING_CHAT_SYSTEM_PROMPT = (
-    "You are an expert outbound calling marketing agent. "
-    "Your job is to generate persuasive spoken sales pitches and handle follow-up customer questions or objections naturally. "
-    "Keep continuity with prior turns, reuse earlier business facts, and never contradict previous accepted facts. "
-    "If the user asks for a speech, provide a ready-to-speak pitch with: hook, value, offer-fit, and clear CTA. "
-    "If the user asks a question or raises an objection, answer directly in a conversational call-center style and then guide toward next step. "
-    "Do not invent missing facts, numbers, offers, audiences, or channels. "
-    "No placeholders, no HTML, no meta commentary."
+    "You are a proactive outbound marketing agent making calls. "
+    "Be direct, confident, and persuasive. "
+    "Focus on selling, not asking questions. "
+    "Handle objections briefly and pivot back to your pitch. "
+    "Keep responses short (2-3 sentences max). "
+    "Never ask 'what specifically' or 'which type'. "
+    "Assume customer interest and push for next step. "
+    "No counter-questions, just solutions and pitches."
 )
 
 
@@ -348,29 +349,12 @@ def _format_messages_for_prompt(messages: list[dict]) -> str:
 def build_marketing_chat_prompt(messages: list[dict], business_context: str = "", strict: bool = False) -> str:
     context_text = _sanitize_prompt_text((business_context or "").strip())
     conversation = _format_messages_for_prompt(messages)
-    extracted = _extract_key_details(context_text)
-    key_details_text = ", ".join(extracted) if extracted else "all provided business details"
-
-    strict_rules = ""
-    if strict:
-        strict_rules = (
-            "\nStrict rewrite rules:\n"
-            f"- Include these details verbatim where relevant: {key_details_text}.\n"
-            "- Keep the response specific and actionable for a live outbound call.\n"
-        )
-
+    
     return (
         f"{MARKETING_CHAT_SYSTEM_PROMPT}\n\n"
-        "Operating style:\n"
-        "- Spoken, human, and concise unless user asks for long form.\n"
-        "- Handle objections with empathy + factual response + transition to CTA.\n"
-        "- Use only facts from business context and chat history.\n"
-        f"{strict_rules}\n"
-        "Business context:\n"
-        f"{context_text if context_text else 'No business context provided yet.'}\n\n"
-        "Conversation so far:\n"
-        f"{conversation if conversation else 'Customer has not spoken yet.'}\n\n"
-        "Now respond as Agent."
+        f"Business: {context_text if context_text else 'Community bank'}\n\n"
+        f"Chat:\n{conversation if conversation else 'Start call'}\n\n"
+        "Respond as Agent (2-3 sentences max, direct pitch, no questions):"
     )
 
 
@@ -473,14 +457,6 @@ def generate_marketing_response_stream(marketing_details: str, temperature: Opti
 def generate_marketing_chat_response(messages: list[dict], business_context: str = "", temperature: Optional[float] = 0.7) -> str:
     prompt = build_marketing_chat_prompt(messages, business_context=business_context, strict=False)
     text, selected_model = _generate_once(prompt, temperature=temperature)
-
-    if _is_low_quality_marketing_output(text):
-        retry_temperature = 0.4 if temperature is None else min(temperature, 0.5)
-        retry_prompt = build_marketing_chat_prompt(messages, business_context=business_context, strict=True)
-        retry_text, _ = _generate_once(retry_prompt, temperature=retry_temperature, model_name=selected_model)
-        if retry_text.strip() and not _is_low_quality_marketing_output(retry_text):
-            text = retry_text
-
     return text
 
 
@@ -489,7 +465,5 @@ def generate_marketing_chat_response_stream(messages: list[dict], business_conte
     selected_model = OLLAMA_MARKETING_MODEL
     
     # Stream and clean chunks in real-time
-    accumulated_text = ""
     for chunk_text in _stream_with_model(prompt, temperature=temperature, model_name=selected_model):
-        accumulated_text += chunk_text
         yield chunk_text
