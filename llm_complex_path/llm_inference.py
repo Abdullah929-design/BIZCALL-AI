@@ -6,10 +6,10 @@ from urllib.request import Request, urlopen
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma-banking")
-OLLAMA_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "60"))
-OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "5m")
-OLLAMA_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_TRUNCATION_NUM_PREDICT")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "banking-model")
+OLLAMA_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "25"))
+OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "3m")
+OLLAMA_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_TRUNCATION_NUM_PREDICT", "200")
 
 
 def _get_env_float(name: str) -> Optional[float]:
@@ -35,18 +35,30 @@ def _build_options(temperature: Optional[float] = None) -> dict[str, Any]:
     top_p = _get_env_float("OLLAMA_TOP_P")
     if top_p is not None:
         options["top_p"] = top_p
+    else:
+        options["top_p"] = 0.8  # Default for faster responses
 
     repeat_penalty = _get_env_float("OLLAMA_REPEAT_PENALTY")
     if repeat_penalty is not None:
         options["repeat_penalty"] = repeat_penalty
+    else:
+        options["repeat_penalty"] = 1.05  # Reduced for faster flow
 
     num_predict = _get_env_int("OLLAMA_NUM_PREDICT")
     if num_predict is not None:
         options["num_predict"] = num_predict
+    else:
+        options["num_predict"] = 400  # Increased for complete banking responses
 
     num_ctx = _get_env_int("OLLAMA_NUM_CTX")
     if num_ctx is not None:
         options["num_ctx"] = num_ctx
+    else:
+        options["num_ctx"] = 512  # Reduced from 2048 for i5 7th gen
+
+    # i5 7th gen optimizations
+    options["num_thread"] = 4  # Match your CPU cores
+    options["num_batch"] = 512  # Optimize for 16GB RAM
 
     return options
 
@@ -94,14 +106,15 @@ def _post_json_stream(path: str, payload: dict[str, Any]):
 
 
 def build_prompt(user_text: str) -> str:
+    # Optimized prompt for i5 7th gen - shorter, more direct
     return (
-        "### Instruction:\n"
-        f"{user_text}\n\n"
-        "### Response:"
+        f"Q: {user_text}\n"
+        "A:"
     )
 
 
 def build_chat_prompt(messages: list[dict]) -> str:
+    # Optimized chat prompt for i5 7th gen - shorter format
     system_text = ""
     user_texts = []
 
@@ -115,15 +128,14 @@ def build_chat_prompt(messages: list[dict]) -> str:
         elif role == "user":
             user_texts.append(content)
 
-    user_text = "\n\n".join(user_texts).strip()
-    if system_text and user_text:
-        instruction = f"{system_text}\n\n{user_text}"
-    elif system_text:
-        instruction = system_text
+    # Use only last 3 messages to reduce context for i5
+    recent_messages = user_texts[-3:] if len(user_texts) > 3 else user_texts
+    user_text = "\n".join([f"Q: {msg}" for msg in recent_messages])
+    
+    if system_text:
+        return f"System: {system_text}\n{user_text}\nA:"
     else:
-        instruction = user_text
-
-    return f"### Instruction:\n{instruction}\n\n### Response:"
+        return f"{user_text}\nA:"
 
 
 def _maybe_retry_on_truncation(path: str, payload: dict[str, Any], response: dict[str, Any]) -> dict[str, Any]:
@@ -156,8 +168,9 @@ def generate_llm_response(user_text: str) -> str:
     response = _post_json("/api/generate", payload)
     response = _maybe_retry_on_truncation("/api/generate", payload, response)
     text = (response.get("response") or "").strip()
-    if "### Response:" in text:
-        return text.split("### Response:", 1)[1].strip()
+    # Optimized extraction for new Q: A: format
+    if "A:" in text:
+        return text.split("A:", 1)[1].strip()
     return text
 
 
@@ -211,8 +224,9 @@ def generate_llm_response_chat(messages: list[dict], temperature: Optional[float
     fallback_response = _post_json("/api/generate", fallback_payload)
     fallback_response = _maybe_retry_on_truncation("/api/generate", fallback_payload, fallback_response)
     fallback_text = (fallback_response.get("response") or "").strip()
-    if "### Response:" in fallback_text:
-        return fallback_text.split("### Response:", 1)[1].strip()
+    # Optimized extraction for new Q: A: format
+    if "A:" in fallback_text:
+        return fallback_text.split("A:", 1)[1].strip()
     return fallback_text
 
 

@@ -7,16 +7,16 @@ from urllib.request import Request, urlopen
 
 
 OLLAMA_MARKETING_BASE_URL = os.getenv("OLLAMA_MARKETING_BASE_URL", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "finance-chat:latest").strip()
-OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "30"))
-OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "45"))
-OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", "5m")
-OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT", "128")
+OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "finance-chat-marketing:latest").strip()
+OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "60"))
+OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "90"))
+OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", "3m")
+OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT", "200")
 
 _cpu_count = os.cpu_count() or 4
 DEFAULT_MARKETING_NUM_THREAD = max(2, min(4, _cpu_count))
-DEFAULT_MARKETING_NUM_CTX = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_CTX", "512"))
-DEFAULT_MARKETING_NUM_PREDICT = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_PREDICT", "128"))
+DEFAULT_MARKETING_NUM_CTX = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_CTX", "1024"))
+DEFAULT_MARKETING_NUM_PREDICT = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_PREDICT", "800"))
 
 
 LOW_QUALITY_OUTPUT_MARKERS = (
@@ -38,16 +38,18 @@ PROMPT_ARTIFACT_MARKERS = (
     "<</SYS>>",
 )
 
-MARKETING_CHAT_SYSTEM_PROMPT = (
-    "You are a proactive outbound marketing agent making calls. "
-    "Be direct, confident, and persuasive. "
-    "Focus on selling, not asking questions. "
-    "Handle objections briefly and pivot back to your pitch. "
-    "Keep responses short (2-3 sentences max). "
-    "Never ask 'what specifically' or 'which type'. "
-    "Assume customer interest and push for next step. "
-    "No counter-questions, just solutions and pitches."
-)
+# MARKETING_CHAT_SYSTEM_PROMPT is now handled by Modelfile
+# No longer needed to avoid conflicts
+# MARKETING_CHAT_SYSTEM_PROMPT = (
+#     "You are an OUTBOUND MARKETING CALL AGENT making SALES CALLS. "
+#     "NEVER write formal letters or business correspondence. "
+#     "ALWAYS speak in conversational, persuasive sales tone. "
+#     "When asked for marketing speech, deliver a DIRECT SALES PITCH. "
+#     "Format: Hook + Value + Offer + Call-to-Action (4-5 sentences). "
+#     "Use business details to personalize the pitch. "
+#     "NO formal language, NO 'Dear Sir/Madam', NO letter format. "
+#     "Speak like a salesperson on a phone call."
+# )
 
 
 def _get_env_float(name: str) -> Optional[float]:
@@ -67,16 +69,23 @@ def _get_env_int(name: str) -> Optional[int]:
 def _build_marketing_options(temperature: Optional[float] = None) -> dict[str, Any]:
     options: dict[str, Any] = {}
 
+    # Fixed temperature for consistent responses
     if temperature is not None:
         options["temperature"] = temperature
+    else:
+        options["temperature"] = 0.6  # Fixed for faster, focused responses
 
     top_p = _get_env_float("OLLAMA_MARKETING_TOP_P")
     if top_p is not None:
         options["top_p"] = top_p
+    else:
+        options["top_p"] = 0.8  # Faster decisions
 
     repeat_penalty = _get_env_float("OLLAMA_MARKETING_REPEAT_PENALTY")
     if repeat_penalty is not None:
         options["repeat_penalty"] = repeat_penalty
+    else:
+        options["repeat_penalty"] = 1.05  # Better flow
 
     num_predict = _get_env_int("OLLAMA_MARKETING_NUM_PREDICT")
     options["num_predict"] = num_predict if num_predict is not None else DEFAULT_MARKETING_NUM_PREDICT
@@ -86,6 +95,9 @@ def _build_marketing_options(temperature: Optional[float] = None) -> dict[str, A
 
     num_thread = _get_env_int("OLLAMA_MARKETING_NUM_THREAD")
     options["num_thread"] = num_thread if num_thread is not None else DEFAULT_MARKETING_NUM_THREAD
+
+    # i5 7th gen optimizations (matching banking LLM)
+    options["num_batch"] = 512  # Optimized for 16GB RAM
 
     return options
 
@@ -227,44 +239,15 @@ def _post_json_stream(path: str, payload: dict[str, Any]):
 
 def build_marketing_prompt(marketing_details: str, strict: bool = False) -> str:
     normalized_details = _sanitize_prompt_text(marketing_details)
-    key_details = _extract_key_details(normalized_details)
-    key_details_text = ", ".join(key_details) if key_details else "all provided business details"
-
-    base_instruction = (
-        "Create a compelling marketing speech using only the business details provided in instruction. "
-        "Use exact facts, numbers, audience, channels, and goals from the instruction. "
-        "Do not invent missing details."
-        "Directly start the response by a speech like a sales agent"
+    
+    # Use finance-chat format: ### Instruction: [prompt] ### Response:
+    instruction = (
+        f"Behave like a sales agent for my business and generate a marketing speech for my business using details: {normalized_details.strip()}. "
+        "Create a direct outbound marketing pitch with hook, value proposition, and call-to-action. "
+        "Use only the business details provided - do not invent new offers or discounts."
     )
-
-    output_format = (
-        "Output format:\n"
-        "1) Hook (1 sentence)\n"
-        "2) Core Value Proposition (2-3 sentences)\n"
-        "3) Audience + Offer + Channel Fit (2-3 sentences)\n"
-        "4) Clear Call-To-Action (1 sentence)\n"
-    )
-
-    quality_rules = (
-        "Quality rules:\n"
-        "- No placeholders, no lorem ipsum, no HTML tags.\n"
-        "- No meta commentary such as 'Here is the pitch'.\n"
-        f"- Include these key details verbatim where relevant: {key_details_text}.\n"
-        "- Keep it natural, persuasive, and ready to speak aloud in 45-90 seconds.\n"
-    )
-
-    if strict:
-        quality_rules += (
-            "- Rewrite with precise business details and stronger specificity.\n"
-            "- If any detail is missing, mention only one short assumption line at the end prefixed with 'Assumption:'.\n"
-        )
-
-    return (
-        f"{base_instruction}\n\n"
-        f"{output_format}\n"
-        f"{quality_rules}\n"
-        f"Business details:\n{normalized_details.strip()}"
-    )
+    
+    return f"### Instruction:\n{instruction}\n\n### Response:"
 
 
 def _is_low_quality_marketing_output(text: str) -> bool:
@@ -328,7 +311,8 @@ def _build_retry_prompt(marketing_details: str, missing_details: list[str]) -> s
 
 def _format_messages_for_prompt(messages: list[dict]) -> str:
     lines: list[str] = []
-    trimmed = messages[-10:]
+    # Only use last 3 messages for faster processing
+    trimmed = messages[-3:] if len(messages) > 3 else messages
 
     for message in trimmed:
         role = (message.get("role") or "").strip().lower()
@@ -348,14 +332,46 @@ def _format_messages_for_prompt(messages: list[dict]) -> str:
 
 def build_marketing_chat_prompt(messages: list[dict], business_context: str = "", strict: bool = False) -> str:
     context_text = _sanitize_prompt_text((business_context or "").strip())
-    conversation = _format_messages_for_prompt(messages)
+    # Only use last 3 messages for faster processing
+    recent_messages = messages[-3:] if len(messages) > 3 else messages
+    conversation = _format_messages_for_prompt(recent_messages)
     
-    return (
-        f"{MARKETING_CHAT_SYSTEM_PROMPT}\n\n"
-        f"Business: {context_text if context_text else 'Community bank'}\n\n"
-        f"Chat:\n{conversation if conversation else 'Start call'}\n\n"
-        "Respond as Agent (2-3 sentences max, direct pitch, no questions):"
-    )
+    # Check if user is asking for a marketing speech
+    last_user_message = ""
+    for msg in reversed(recent_messages):
+        if msg.get("role") == "user":
+            last_user_message = _sanitize_prompt_text(msg.get("content", ""))
+            break
+    
+    # If no user message found, create a default instruction
+    if not last_user_message:
+        last_user_message = "generate a marketing speech"
+    
+    speech_keywords = [
+        "marketing speech", "outbound speech", "create a speech", "generate a speech", 
+        "marketing content", "speech for my business", "create marketing", 
+        "outbound call", "sales pitch", "marketing pitch"
+    ]
+    is_speech_request = any(keyword in last_user_message.lower() for keyword in speech_keywords)
+    
+    if is_speech_request:
+        # For initial speech request, use business context as instruction
+        instruction = (
+            f"Behave like a sales agent for my business and generate a marketing speech for my business using details: {context_text.strip()}. "
+            "Create a direct outbound marketing pitch with hook, value proposition, and call-to-action. "
+            "Use only the business details provided - do not invent new offers or discounts. "
+            f"Request: {last_user_message}."
+        )
+        return f"### Instruction:\n{instruction}\n\n### Response:"
+    else:
+        # For follow-up questions, use conversation context
+        instruction = (
+            f"Continue as the same sales agent for the business with these details: {context_text.strip()}. "
+            "Use only the business details that were originally provided. "
+            f"Customer question: {last_user_message}. "
+            "Respond with empathy and factual information from the business details."
+        )
+        return f"### Instruction:\n{instruction}\n\n### Response:"
 
 
 def _generate_once_with_model(prompt: str, temperature: Optional[float], model_name: str) -> str:
@@ -434,14 +450,6 @@ def _stream_with_model(prompt: str, temperature: Optional[float], model_name: st
 def generate_marketing_response(marketing_details: str, temperature: Optional[float] = 0.7) -> str:
     prompt = build_marketing_prompt(marketing_details, strict=False)
     text, selected_model = _generate_once(prompt, temperature=temperature)
-
-    if _is_low_quality_marketing_output(text):
-        retry_prompt = build_marketing_prompt(marketing_details, strict=True)
-        retry_temperature = 0.4 if temperature is None else min(temperature, 0.5)
-        retry_text, _ = _generate_once(retry_prompt, temperature=retry_temperature, model_name=selected_model)
-        if retry_text.strip() and not _is_low_quality_marketing_output(retry_text):
-            text = retry_text
-
     return text
 
 
@@ -461,9 +469,28 @@ def generate_marketing_chat_response(messages: list[dict], business_context: str
 
 
 def generate_marketing_chat_response_stream(messages: list[dict], business_context: str = "", temperature: Optional[float] = 0.7):
-    prompt = build_marketing_chat_prompt(messages, business_context=business_context, strict=False)
-    selected_model = OLLAMA_MARKETING_MODEL
-    
-    # Stream and clean chunks in real-time
-    for chunk_text in _stream_with_model(prompt, temperature=temperature, model_name=selected_model):
-        yield chunk_text
+    try:
+        prompt = build_marketing_chat_prompt(messages, business_context=business_context, strict=False)
+        selected_model = OLLAMA_MARKETING_MODEL
+        
+        # Validate prompt before sending
+        if not prompt or len(prompt.strip()) < 10:
+            yield "Error: Invalid prompt generated. Please check your business context and try again."
+            return
+        
+        # Stream and clean chunks in real-time
+        chunk_count = 0
+        for chunk_text in _stream_with_model(prompt, temperature=temperature, model_name=selected_model):
+            if chunk_text and chunk_text.strip():
+                chunk_count += 1
+                yield chunk_text
+                # Safety limit to prevent infinite loops (increased for longer speeches)
+                if chunk_count > 300:
+                    break
+        
+        # If no chunks were generated, provide a fallback response
+        if chunk_count == 0:
+            yield "I apologize, but I couldn't generate a response. Please try again with a clearer request."
+            
+    except Exception as e:
+        yield f"Error generating response: {str(e)}"

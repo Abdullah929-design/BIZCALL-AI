@@ -103,6 +103,21 @@ class SessionManager:
     def get_session_count(self) -> int:
         """Get total number of active sessions"""
         return len(self.sessions)
+    
+    def set_business_context(self, session_id: str, business_context: str) -> bool:
+        """Store business context for a session"""
+        if session_id not in self.session_metadata:
+            return False
+        
+        self.session_metadata[session_id]["business_context"] = business_context
+        return True
+    
+    def get_business_context(self, session_id: str) -> Optional[str]:
+        """Get business context for a session"""
+        if session_id not in self.session_metadata:
+            return None
+        
+        return self.session_metadata[session_id].get("business_context", "")
 
 # Global session manager instance
 session_manager = SessionManager()

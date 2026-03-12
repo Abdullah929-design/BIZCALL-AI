@@ -166,11 +166,14 @@ async def marketing_stream(session_id: str, temperature: Optional[float] = 0.7):
         # Get messages in LLM format
         messages = session_manager.get_messages_for_llm(session_id)
         
+        # Get business context from session (if available)
+        business_context = session_manager.get_business_context(session_id) or ""
+        
         async def sse():
             try:
                 full_response = ""
-                # Stream marketing response with session context
-                for chunk in generate_marketing_chat_response_stream(messages, "", temperature):
+                # Stream marketing response with session context and business context
+                for chunk in generate_marketing_chat_response_stream(messages, business_context, temperature):
                     full_response += chunk
                     # SSE format: "data: {json}\n\n"
                     chunk_data = StreamingChunk(
@@ -215,11 +218,16 @@ async def handle_marketing_query(req: QueryRequest, temperature: Optional[float]
     try:
         start_time = time.time()
         text = req.text or ""
+        business_context = req.business_context or ""
         
         # Get or create session
         session_id = req.session_id
         if not session_id:
             session_id = session_manager.create_session("outbound")
+        
+        # Store business context if provided
+        if business_context:
+            session_manager.set_business_context(session_id, business_context)
         
         # Add user message to session
         session_manager.add_message(session_id, "user", text)

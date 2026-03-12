@@ -81,25 +81,21 @@ export const marketingAPI = {
   },
 
   // Generate marketing response
-  generateResponse: async (text, sessionId = null, businessContext = '', temperature = 0.7) => {
+  generateResponse: async (text, sessionId = null, businessContext = '') => {
     const response = await api.post('/api/marketing/generate', {
       text,
       session_id: sessionId,
       business_context: businessContext,
-    }, {
-      params: { temperature }
     });
     return response.data;
   },
 
   // Generate with chat context
-  generateChatResponse: async (text, sessionId = null, businessContext = '', temperature = 0.7) => {
+  generateChatResponse: async (text, sessionId = null, businessContext = '') => {
     const response = await api.post('/api/marketing/generate/chat', {
       text,
       session_id: sessionId,
       business_context: businessContext,
-    }, {
-      params: { temperature }
     });
     return response.data;
   },
