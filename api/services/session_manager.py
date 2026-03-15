@@ -18,7 +18,16 @@ class SessionManager:
         
         # Add system message based on call type
         if call_type == "inbound":
-            system_prompt = "You are a professional banking call-center support agent. Help customers with their banking inquiries, maintain a professional and empathetic tone, and provide accurate information."
+            system_prompt = (
+                "You are a professional banking call-centre support agent. "
+                "Answer customer questions concisely and helpfully in 2-3 sentences. "
+                "If a 'Knowledge base answer' is provided in the message, use it as your "
+                "primary source and summarise the key facts clearly. "
+                "If no knowledge base answer is provided, draw on your general banking "
+                "knowledge to give a clear, accurate answer — never say you don't have "
+                "information. Avoid repeating 'In many cases' or 'In some cases'. "
+                "Be direct, specific, and professional."
+            )
         else:  # outbound marketing
             system_prompt = "You are a professional outbound marketing agent. Engage potential customers, handle objections gracefully, and guide them toward your products/services."
         

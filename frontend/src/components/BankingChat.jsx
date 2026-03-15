@@ -3,38 +3,275 @@ import { useChatSession } from '../hooks/useChatSession.jsx';
 import { useStreamingResponse } from '../hooks/useStreamingResponse.jsx';
 import { bankingAPI } from '../services/api.jsx';
 
+/* ─────────────────────────────────────────
+   Inline styles live in a <style> tag so
+   BankingChat is fully self-contained.
+───────────────────────────────────────── */
+const CSS = `
+  .bc { display:flex; flex-direction:column; height:100%; min-height:0; background:transparent; }
+
+  /* ── Top bar ── */
+  .bc-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    flex-shrink:0;
+    gap:12px;
+  }
+  .bc-bar-left { display:flex; align-items:center; gap:14px; min-width:0; }
+  .bc-bar-avatar {
+    width:36px; height:36px; border-radius:10px; flex-shrink:0;
+    background:linear-gradient(135deg,#c9a84c,#8a6820);
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+    box-shadow:0 2px 12px rgba(201,168,76,0.2);
+  }
+  .bc-bar-title { font-size:0.88rem; font-weight:500; color:#edeae2; }
+  .bc-bar-sub   { font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(201,168,76,0.55); margin-top:1px; }
+  .bc-bar-right { display:flex; gap:8px; flex-shrink:0; }
+
+  .bc-action {
+    padding:7px 15px; border-radius:8px; cursor:pointer; font-size:0.75rem;
+    font-weight:500; letter-spacing:0.06em; text-transform:uppercase;
+    border:1px solid rgba(255,255,255,0.1); background:transparent;
+    color:rgba(237,234,226,0.5); transition:all 0.18s ease;
+    font-family:inherit;
+  }
+  .bc-action:hover { background:rgba(255,255,255,0.05); color:rgba(237,234,226,0.85); border-color:rgba(255,255,255,0.18); }
+
+  .bc-session-pill {
+    padding:4px 11px; border-radius:20px; font-size:0.66rem;
+    font-family:'DM Mono',monospace; letter-spacing:0.05em;
+    border:1px solid rgba(201,168,76,0.15); background:rgba(201,168,76,0.06);
+    color:rgba(201,168,76,0.45);
+  }
+
+  /* ── Body ── */
+  .bc-body { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+
+  /* ── Messages ── */
+  .bc-messages {
+    flex:1; overflow-y:auto; padding:28px 28px 16px;
+    display:flex; flex-direction:column; gap:20px;
+    min-height:0;
+  }
+  .bc-messages::-webkit-scrollbar{width:3px;}
+  .bc-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px;}
+
+  .bc-empty {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:16px; color:rgba(201,168,76,0.2);
+  }
+  .bc-empty-ring {
+    width:72px; height:72px; border-radius:50%;
+    border:1px solid rgba(201,168,76,0.12);
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; opacity:0.6;
+  }
+  .bc-empty-text { font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-style:italic; letter-spacing:0.04em; }
+  .bc-empty-hint { font-size:0.71rem; letter-spacing:0.08em; text-transform:uppercase; opacity:0.7; }
+
+  .bc-msg { display:flex; flex-direction:column; gap:5px; animation:msgIn 0.25s ease; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .bc-msg-user      { align-items:flex-end; }
+  .bc-msg-assistant { align-items:flex-start; }
+
+  .bc-msg-meta {
+    display:flex; align-items:center; gap:7px;
+    font-size:0.65rem; letter-spacing:0.09em; text-transform:uppercase;
+    color:rgba(237,234,226,0.28);
+  }
+  .bc-msg-meta-dot {
+    width:16px; height:16px; border-radius:5px; display:flex;
+    align-items:center; justify-content:center; font-size:8px;
+  }
+  .bc-msg-user      .bc-msg-meta-dot { background:rgba(201,168,76,0.15); }
+  .bc-msg-assistant .bc-msg-meta-dot { background:rgba(255,255,255,0.06); }
+
+  .bc-bubble {
+    max-width:68%; padding:13px 17px; border-radius:14px;
+    font-size:0.875rem; line-height:1.7; font-weight:300;
+  }
+  .bc-msg-user .bc-bubble {
+    background:linear-gradient(135deg,rgba(201,168,76,0.16),rgba(201,168,76,0.08));
+    border:1px solid rgba(201,168,76,0.22);
+    border-bottom-right-radius:4px;
+    color:#f0ece4;
+  }
+  .bc-msg-assistant .bc-bubble {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.07);
+    border-bottom-left-radius:4px;
+    color:#ccc9c1;
+  }
+
+  .bc-cursor {
+    display:inline-block; width:2px; height:13px;
+    background:#c9a84c; margin-left:3px; vertical-align:middle;
+    border-radius:1px; animation:cur 0.9s step-end infinite;
+  }
+  @keyframes cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── Info panels ── */
+  .bc-panels { display:flex; flex-direction:column; gap:0; flex-shrink:0; }
+
+  .bc-panel {
+    margin:0 20px 10px;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.07);
+    background:rgba(255,255,255,0.025);
+  }
+
+  .bc-panel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 14px;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    background:rgba(255,255,255,0.02);
+    cursor:pointer;
+  }
+  .bc-panel-title {
+    font-size:0.68rem; font-weight:600; letter-spacing:0.12em;
+    text-transform:uppercase;
+  }
+  .bc-panel.intent  .bc-panel-title { color:rgba(99,179,237,0.8); }
+  .bc-panel.rag     .bc-panel-title { color:rgba(167,139,250,0.85); }
+  .bc-panel.waiting .bc-panel-title { color:rgba(251,191,36,0.7); }
+
+  .bc-panel-caret { font-size:0.6rem; color:rgba(255,255,255,0.25); }
+
+  .bc-panel-body { padding:10px 14px 12px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+  .bc-panel-body.hidden { display:none; }
+
+  .bc-chip {
+    padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:400;
+    letter-spacing:0.03em;
+  }
+  .bc-panel.intent .bc-chip { background:rgba(99,179,237,0.08); border:1px solid rgba(99,179,237,0.18); color:#7ec8e3; }
+  .bc-panel.rag    .bc-chip { background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);  color:#c4b5fd; }
+
+  .bc-seg {
+    width:100%; margin-top:6px; padding:8px 12px;
+    background:rgba(0,0,0,0.18); border-radius:7px;
+    border-left:2px solid rgba(99,179,237,0.25);
+    font-size:0.78rem;
+  }
+  .bc-panel.rag .bc-seg { border-color:rgba(167,139,250,0.25); }
+
+  .bc-seg-q { color:rgba(237,234,226,0.6); font-style:italic; margin-bottom:5px; }
+  .bc-seg-pills { display:flex; flex-wrap:wrap; gap:5px; }
+  .bc-seg-pill {
+    font-size:0.68rem; padding:1px 7px; border-radius:4px;
+    background:rgba(99,179,237,0.06); color:#7aaecc;
+  }
+
+  .bc-rag-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .bc-rag-stats {
+    width:100%; margin-top:8px; padding:8px 12px;
+    background:rgba(167,139,250,0.04); border-radius:7px;
+    border:1px solid rgba(167,139,250,0.1);
+    font-size:0.74rem; color:rgba(196,181,253,0.7);
+    display:flex; gap:16px; flex-wrap:wrap;
+  }
+  .bc-rag-stat strong { color:#c4b5fd; font-weight:500; }
+
+  /* ── Alert ── */
+  .bc-alert {
+    margin:10px 20px 0;
+    padding:10px 16px;
+    border-radius:8px;
+    background:rgba(248,113,113,0.08);
+    border:1px solid rgba(248,113,113,0.2);
+    color:#fca5a5; font-size:0.8rem;
+    flex-shrink:0;
+  }
+
+  /* ── Input ── */
+  .bc-input-area {
+    padding:16px 20px 20px;
+    border-top:1px solid rgba(255,255,255,0.06);
+    background:rgba(0,0,0,0.15);
+    flex-shrink:0;
+  }
+  .bc-input-row { display:flex; gap:10px; align-items:flex-end; }
+
+  .bc-textarea {
+    flex:1; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:11px; padding:12px 16px;
+    color:#edeae2; font-family:inherit; font-size:0.88rem;
+    font-weight:300; resize:none; line-height:1.5;
+    transition:border-color 0.18s;
+    min-height:46px; max-height:140px;
+  }
+  .bc-textarea::placeholder { color:rgba(237,234,226,0.2); }
+  .bc-textarea:focus { outline:none; border-color:rgba(201,168,76,0.3); }
+  .bc-textarea:disabled { opacity:0.35; cursor:not-allowed; }
+
+  .bc-send {
+    padding:12px 22px; border-radius:11px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#c9a84c,#a8882e);
+    color:#080c12; font-family:inherit; font-size:0.78rem;
+    font-weight:600; letter-spacing:0.07em; text-transform:uppercase;
+    transition:all 0.18s ease; white-space:nowrap; align-self:flex-end;
+  }
+  .bc-send:hover:not(:disabled) {
+    background:linear-gradient(135deg,#ddb95e,#baa040);
+    transform:translateY(-1px); box-shadow:0 4px 14px rgba(201,168,76,0.28);
+  }
+  .bc-send:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+
+  .bc-input-footer {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:8px; padding:0 2px;
+  }
+  .bc-hint { font-size:0.65rem; color:rgba(237,234,226,0.18); letter-spacing:0.04em; }
+  .bc-mode-tag {
+    font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(201,168,76,0.4);
+  }
+  .bc-mode-tag b { color:rgba(201,168,76,0.7); font-weight:500; }
+
+  .bc-spinner {
+    display:inline-block; width:5px; height:5px; border-radius:50%;
+    background:#c9a84c; margin-right:5px;
+    animation:spin 1.1s ease infinite;
+  }
+  @keyframes spin { 0%,100%{opacity:0.25;transform:scale(0.7)} 50%{opacity:1;transform:scale(1.2)} }
+`;
+
+/* ──────────────────────────────────── */
+
 const BankingChat = () => {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText]       = useState('');
   const [intentResults, setIntentResults] = useState(null);
   const [responseMode, setResponseMode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  const chatSession = useChatSession('banking');
-  const streamingResponse = useStreamingResponse();
-  const messagesEndRef = useRef(null);
+  const [ragInfo, setRagInfo]           = useState(null);
+  const [intentOpen, setIntentOpen]     = useState(true);
+  const [ragOpen, setRagOpen]           = useState(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const chatSession     = useChatSession('banking');
+  const streamingResponse = useStreamingResponse();
+  const messagesEndRef  = useRef(null);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatSession.messages, streamingResponse.streamedText]);
 
-  const handleSendMessage = async () => {
+  const handleSend = async () => {
     if (!inputText.trim() || isProcessing) return;
-
     const text = inputText.trim();
     setInputText('');
     setIsProcessing(true);
     setIntentResults(null);
     setResponseMode('');
+    setRagInfo(null);
 
     try {
       let sessionId = chatSession.sessionId;
-      if (!sessionId) {
-        sessionId = await chatSession.createSession();
-      }
+      if (!sessionId) sessionId = await chatSession.createSession();
 
       chatSession.addMessage('user', text);
 
@@ -45,523 +282,219 @@ const BankingChat = () => {
       setResponseMode(queryResult.mode);
 
       if (queryResult.mode === 'faq') {
-        chatSession.addMessage('assistant', `FAQ Answer: ${queryResult.faq.answer}`);
+        chatSession.addMessage('assistant', `FAQ: ${queryResult.faq.answer}`);
       } else if (queryResult.mode === 'llm') {
         streamingResponse.startStreaming(
           bankingAPI.getStreamUrl(sessionId),
-          (chunk) => {},
-          (fullResponse) => {
-            chatSession.addMessage('assistant', fullResponse);
-            setIsProcessing(false);
+          (_chunk, fullData) => {
+            if (fullData.rag_context_used != null) {
+              setRagInfo({
+                used:       fullData.rag_context_used,
+                confidence: fullData.rag_confidence || 0,
+                intent:     fullData.rag_intent || null,
+              });
+            }
           },
-          (error) => {
-            console.error('Streaming error:', error);
-            setIsProcessing(false);
-          }
+          (full) => { chatSession.addMessage('assistant', full); setIsProcessing(false); },
+          ()    => { setIsProcessing(false); }
         );
         setIsProcessing(false);
         return;
       }
-    } catch (error) {
-      console.error('Error processing message:', error);
-      chatSession.addMessage('assistant', `Error: ${error.message || 'Failed to process message'}`);
+    } catch (err) {
+      chatSession.addMessage('assistant', `Error: ${err.message || 'Failed to process'}`);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleNewSession = async () => {
-    streamingResponse.reset();
-    await chatSession.reset();
-    await chatSession.createSession();
-  };
-
-  const handleClearSession = async () => {
-    streamingResponse.reset();
-    await chatSession.clearSession();
+  const handleKey = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   const isBusy = isProcessing || streamingResponse.isStreaming;
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap');
+      <style>{CSS}</style>
+      <div className="bc">
 
-        .bc-root * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .bc-root {
-          font-family: 'DM Sans', sans-serif;
-          background: #0a0d14;
-          min-height: 100vh;
-          color: #e8e4dc;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .bc-header {
-          padding: 28px 40px;
-          border-bottom: 1px solid rgba(212, 175, 90, 0.15);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: linear-gradient(180deg, rgba(212,175,90,0.04) 0%, transparent 100%);
-        }
-
-        .bc-title-group {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .bc-icon-wrap {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #d4af5a 0%, #f0d080 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          flex-shrink: 0;
-        }
-
-        .bc-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 1.75rem;
-          font-weight: 600;
-          color: #f0e6c8;
-          letter-spacing: 0.02em;
-        }
-
-        .bc-subtitle {
-          font-size: 0.72rem;
-          color: rgba(212,175,90,0.7);
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          margin-top: 2px;
-        }
-
-        .bc-controls {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .bc-btn {
-          padding: 8px 18px;
-          background: transparent;
-          border: 1px solid rgba(212,175,90,0.3);
-          border-radius: 6px;
-          color: rgba(212,175,90,0.85);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.78rem;
-          font-weight: 500;
-          letter-spacing: 0.06em;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-transform: uppercase;
-        }
-
-        .bc-btn:hover {
-          background: rgba(212,175,90,0.08);
-          border-color: rgba(212,175,90,0.6);
-          color: #d4af5a;
-        }
-
-        .bc-session-badge {
-          padding: 5px 12px;
-          background: rgba(212,175,90,0.07);
-          border: 1px solid rgba(212,175,90,0.15);
-          border-radius: 20px;
-          font-size: 0.7rem;
-          color: rgba(212,175,90,0.5);
-          font-family: 'DM Mono', monospace;
-          letter-spacing: 0.05em;
-        }
-
-        .bc-alert {
-          margin: 16px 40px 0;
-          padding: 12px 18px;
-          background: rgba(220, 53, 69, 0.1);
-          border: 1px solid rgba(220, 53, 69, 0.25);
-          border-radius: 8px;
-          color: #f08080;
-          font-size: 0.82rem;
-        }
-
-        .bc-messages {
-          flex: 1;
-          overflow-y: auto;
-          padding: 32px 40px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          min-height: 380px;
-          max-height: 460px;
-        }
-
-        .bc-messages::-webkit-scrollbar { width: 4px; }
-        .bc-messages::-webkit-scrollbar-track { background: transparent; }
-        .bc-messages::-webkit-scrollbar-thumb { background: rgba(212,175,90,0.2); border-radius: 2px; }
-
-        .bc-msg {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          animation: msgFade 0.3s ease;
-        }
-
-        @keyframes msgFade {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .bc-msg-user { align-items: flex-end; }
-        .bc-msg-assistant { align-items: flex-start; }
-
-        .bc-msg-label {
-          font-size: 0.68rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: rgba(212,175,90,0.5);
-          font-weight: 500;
-        }
-
-        .bc-msg-bubble {
-          max-width: 72%;
-          padding: 14px 18px;
-          border-radius: 16px;
-          font-size: 0.875rem;
-          line-height: 1.65;
-          font-weight: 300;
-        }
-
-        .bc-msg-user .bc-msg-bubble {
-          background: linear-gradient(135deg, rgba(212,175,90,0.18) 0%, rgba(212,175,90,0.1) 100%);
-          border: 1px solid rgba(212,175,90,0.25);
-          border-bottom-right-radius: 4px;
-          color: #f0e6c8;
-        }
-
-        .bc-msg-assistant .bc-msg-bubble {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-bottom-left-radius: 4px;
-          color: #c8c4bc;
-        }
-
-        .bc-cursor {
-          display: inline-block;
-          width: 2px;
-          height: 14px;
-          background: #d4af5a;
-          margin-left: 3px;
-          vertical-align: middle;
-          animation: blink 1s step-end infinite;
-          border-radius: 1px;
-        }
-
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-
-        .bc-empty {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          color: rgba(212,175,90,0.2);
-          padding: 40px;
-        }
-
-        .bc-empty-icon { font-size: 2.5rem; opacity: 0.4; }
-        .bc-empty-text {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 1.1rem;
-          letter-spacing: 0.05em;
-          font-style: italic;
-        }
-
-        .bc-intents {
-          margin: 0 40px;
-          padding: 18px 24px;
-          background: rgba(99,179,237,0.06);
-          border: 1px solid rgba(99,179,237,0.15);
-          border-radius: 12px;
-          font-size: 0.8rem;
-          color: #8ab8d4;
-        }
-
-        .bc-intents-title {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: rgba(99,179,237,0.6);
-          margin-bottom: 10px;
-          font-weight: 500;
-        }
-
-        .bc-intents-row {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 8px;
-          flex-wrap: wrap;
-        }
-
-        .bc-intents-chip {
-          padding: 3px 10px;
-          background: rgba(99,179,237,0.1);
-          border: 1px solid rgba(99,179,237,0.2);
-          border-radius: 20px;
-          font-size: 0.72rem;
-          color: #7aaecc;
-        }
-
-        .bc-segment {
-          margin-top: 8px;
-          padding: 8px 12px;
-          background: rgba(0,0,0,0.2);
-          border-radius: 6px;
-          border-left: 2px solid rgba(99,179,237,0.3);
-        }
-
-        .bc-segment-text {
-          color: #a0c4d8;
-          margin-bottom: 4px;
-          font-style: italic;
-        }
-
-        .bc-intent-list {
-          list-style: none;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 4px;
-        }
-
-        .bc-intent-list li {
-          font-size: 0.7rem;
-          color: #7aaecc;
-          background: rgba(99,179,237,0.07);
-          padding: 2px 8px;
-          border-radius: 4px;
-        }
-
-        .bc-input-area {
-          padding: 24px 40px 32px;
-          border-top: 1px solid rgba(255,255,255,0.05);
-          background: rgba(0,0,0,0.2);
-        }
-
-        .bc-input-wrap {
-          display: flex;
-          gap: 12px;
-          align-items: flex-end;
-        }
-
-        .bc-textarea {
-          flex: 1;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          padding: 14px 18px;
-          color: #e8e4dc;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.875rem;
-          font-weight: 300;
-          resize: none;
-          transition: border-color 0.2s;
-          line-height: 1.5;
-        }
-
-        .bc-textarea::placeholder { color: rgba(232,228,220,0.25); }
-        .bc-textarea:focus { outline: none; border-color: rgba(212,175,90,0.35); }
-        .bc-textarea:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .bc-send-btn {
-          padding: 14px 28px;
-          background: linear-gradient(135deg, #d4af5a 0%, #c09a42 100%);
-          border: none;
-          border-radius: 12px;
-          color: #0a0d14;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 600;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          white-space: nowrap;
-          align-self: flex-end;
-        }
-
-        .bc-send-btn:hover:not(:disabled) {
-          background: linear-gradient(135deg, #e0bc66 0%, #ccaa4e 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(212,175,90,0.3);
-        }
-
-        .bc-send-btn:disabled {
-          opacity: 0.35;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .bc-footer-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 10px;
-        }
-
-        .bc-hint {
-          font-size: 0.68rem;
-          color: rgba(232,228,220,0.2);
-          letter-spacing: 0.04em;
-        }
-
-        .bc-mode {
-          font-size: 0.7rem;
-          color: rgba(212,175,90,0.45);
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-
-        .bc-mode span { color: rgba(212,175,90,0.75); font-weight: 500; }
-
-        .bc-processing-dot {
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #d4af5a;
-          margin-right: 4px;
-          animation: pulse 1.2s ease infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.2); }
-        }
-      `}</style>
-
-      <div className="bc-root">
-        <div className="bc-header">
-          <div className="bc-title-group">
-            <div className="bc-icon-wrap">🏦</div>
+        {/* ── Top bar ── */}
+        <div className="bc-bar">
+          <div className="bc-bar-left">
+            <div className="bc-bar-avatar">🏦</div>
             <div>
-              <div className="bc-title">Banking Assistant</div>
-              <div className="bc-subtitle">Intelligent Financial Concierge</div>
+              <div className="bc-bar-title">Banking Assistant</div>
+              <div className="bc-bar-sub">Intelligent Inbound Support</div>
             </div>
           </div>
-          <div className="bc-controls">
-            <button onClick={handleNewSession} className="bc-btn">New Session</button>
-            <button onClick={handleClearSession} className="bc-btn">Clear</button>
+          <div className="bc-bar-right">
             {chatSession.sessionId && (
-              <span className="bc-session-badge">
-                {chatSession.sessionId.slice(0, 8)}…
-              </span>
+              <span className="bc-session-pill">{chatSession.sessionId.slice(0,8)}…</span>
             )}
+            <button className="bc-action" onClick={async () => {
+              streamingResponse.reset();
+              await chatSession.reset();
+              await chatSession.createSession();
+              setRagInfo(null); setIntentResults(null); setResponseMode('');
+            }}>New</button>
+            <button className="bc-action" onClick={async () => {
+              streamingResponse.reset(); await chatSession.clearSession();
+            }}>Clear</button>
           </div>
         </div>
 
-        {chatSession.error && (
-          <div className="bc-alert">⚠ {chatSession.error}</div>
-        )}
-        {streamingResponse.error && (
-          <div className="bc-alert">⚠ Streaming: {streamingResponse.error}</div>
-        )}
+        {/* ── Body ── */}
+        <div className="bc-body">
 
-        <div className="bc-messages">
-          {chatSession.messages.length === 0 && !streamingResponse.isStreaming && (
-            <div className="bc-empty">
-              <div className="bc-empty-icon">◈</div>
-              <div className="bc-empty-text">How may I assist you today?</div>
-            </div>
-          )}
+          {/* Errors */}
+          {chatSession.error && <div className="bc-alert">⚠ {chatSession.error}</div>}
+          {streamingResponse.error && <div className="bc-alert">⚠ Stream: {streamingResponse.error}</div>}
 
-          {chatSession.messages.map((message, index) => (
-            <div key={index} className={`bc-msg bc-msg-${message.role}`}>
-              <div className="bc-msg-label">
-                {message.role === 'user' ? 'You' : 'Assistant'}
+          {/* Messages */}
+          <div className="bc-messages">
+            {chatSession.messages.length === 0 && !streamingResponse.isStreaming && (
+              <div className="bc-empty">
+                <div className="bc-empty-ring">◈</div>
+                <div className="bc-empty-text">How may I assist you today?</div>
+                <div className="bc-empty-hint">Ask a banking question to begin</div>
               </div>
-              <div className="bc-msg-bubble">{message.content}</div>
-            </div>
-          ))}
+            )}
 
-          {streamingResponse.isStreaming && (
-            <div className="bc-msg bc-msg-assistant">
-              <div className="bc-msg-label">Assistant</div>
-              <div className="bc-msg-bubble">
-                {streamingResponse.streamedText}
-                <span className="bc-cursor" />
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {intentResults && (
-          <div className="bc-intents">
-            <div className="bc-intents-title">🎯 Intent Analysis</div>
-            <div className="bc-intents-row">
-              <span className="bc-intents-chip">Complexity: {intentResults.complexity}</span>
-              {intentResults.detected_intents.map((intent, i) => (
-                <span key={i} className="bc-intents-chip">{intent}</span>
-              ))}
-            </div>
-            {intentResults.segments.map((segment, idx) => (
-              <div key={idx} className="bc-segment">
-                <div className="bc-segment-text">"{segment.text}"</div>
-                <ul className="bc-intent-list">
-                  {segment.intents.map((intent, i) => (
-                    <li key={i}>{intent.intent} — {(intent.confidence * 100).toFixed(1)}%</li>
-                  ))}
-                </ul>
+            {chatSession.messages.map((msg, i) => (
+              <div key={i} className={`bc-msg bc-msg-${msg.role}`}>
+                <div className="bc-msg-meta">
+                  <span className="bc-msg-meta-dot">{msg.role === 'user' ? '👤' : '🤖'}</span>
+                  {msg.role === 'user' ? 'You' : 'Assistant'}
+                </div>
+                <div className="bc-bubble">{msg.content}</div>
               </div>
             ))}
-          </div>
-        )}
 
-        <div className="bc-input-area">
-          <div className="bc-input-wrap">
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your banking query here…"
-              className="bc-textarea"
-              disabled={isBusy}
-              rows={3}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={isBusy || !inputText.trim()}
-              className="bc-send-btn"
-            >
-              {isBusy ? (
-                <><span className="bc-processing-dot" />Processing</>
-              ) : 'Send'}
-            </button>
+            {streamingResponse.isStreaming && (
+              <div className="bc-msg bc-msg-assistant">
+                <div className="bc-msg-meta">
+                  <span className="bc-msg-meta-dot">🤖</span>
+                  Assistant
+                </div>
+                <div className="bc-bubble">
+                  {streamingResponse.streamedText}
+                  <span className="bc-cursor" />
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
-          <div className="bc-footer-row">
-            <span className="bc-hint">Press Enter to send · Shift+Enter for new line</span>
-            {responseMode && (
-              <span className="bc-mode">Mode: <span>{responseMode}</span></span>
+
+          {/* ── Info panels ── */}
+          <div className="bc-panels">
+
+            {/* Intent panel */}
+            {intentResults && (
+              <div className="bc-panel intent">
+                <div className="bc-panel-header" onClick={() => setIntentOpen(o => !o)}>
+                  <span className="bc-panel-title">🎯 Intent Analysis</span>
+                  <span className="bc-panel-caret">{intentOpen ? '▲' : '▼'}</span>
+                </div>
+                <div className={`bc-panel-body ${intentOpen ? '' : 'hidden'}`}>
+                  <span className="bc-chip">Complexity: {intentResults.complexity}</span>
+                  {intentResults.detected_intents.map((d, i) => (
+                    <span key={i} className="bc-chip">{d}</span>
+                  ))}
+                  {intentResults.segments.map((seg, i) => (
+                    <div key={i} className="bc-seg" style={{width:'100%'}}>
+                      <div className="bc-seg-q">"{seg.text}"</div>
+                      <div className="bc-seg-pills">
+                        {seg.intents.map((it, j) => (
+                          <span key={j} className="bc-seg-pill">
+                            {it.intent} — {(it.confidence * 100).toFixed(1)}%
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* RAG waiting */}
+            {responseMode === 'llm' && !ragInfo && (
+              <div className="bc-panel rag waiting">
+                <div className="bc-panel-header">
+                  <span className="bc-panel-title">🔍 RAG Analysis</span>
+                </div>
+                <div className="bc-panel-body">
+                  <span className="bc-chip" style={{background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',color:'#fbbf24'}}>
+                    ⏳ Awaiting context data…
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* RAG result */}
+            {ragInfo && (
+              <div className="bc-panel rag">
+                <div className="bc-panel-header" onClick={() => setRagOpen(o => !o)}>
+                  <span className="bc-panel-title">🔍 RAG Context</span>
+                  <span className="bc-panel-caret">{ragOpen ? '▲' : '▼'}</span>
+                </div>
+                <div className={`bc-panel-body ${ragOpen ? '' : 'hidden'}`}>
+                  <div className="bc-rag-row">
+                    <span className="bc-chip">
+                      {ragInfo.used ? '✅ Context injected' : '❌ No match found'}
+                    </span>
+                    {ragInfo.used && ragInfo.confidence > 0 && (
+                      <>
+                        <span className="bc-chip">
+                          {(ragInfo.confidence * 100).toFixed(1)}% similarity
+                        </span>
+                        <span className="bc-chip">{ragInfo.intent}</span>
+                      </>
+                    )}
+                    {!ragInfo.used && ragInfo.confidence > 0 && (
+                      <span className="bc-chip" style={{color:'rgba(251,191,36,0.8)',borderColor:'rgba(251,191,36,0.2)'}}>
+                        Best: {(ragInfo.confidence * 100).toFixed(1)}% (below threshold)
+                      </span>
+                    )}
+                  </div>
+                  {ragInfo.used && (
+                    <div className="bc-rag-stats">
+                      <span><strong>Source:</strong> FAQ knowledge base</span>
+                      <span><strong>Score:</strong> {(ragInfo.confidence * 100).toFixed(1)}%</span>
+                      <span><strong>Intent:</strong> {ragInfo.intent}</span>
+                      <span><strong>Mode:</strong> Enhanced LLM</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
+
+          {/* ── Input ── */}
+          <div className="bc-input-area">
+            <div className="bc-input-row">
+              <textarea
+                className="bc-textarea"
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                onKeyPress={handleKey}
+                placeholder="Type your banking query…"
+                disabled={isBusy}
+                rows={2}
+              />
+              <button className="bc-send" onClick={handleSend} disabled={isBusy || !inputText.trim()}>
+                {isBusy ? <><span className="bc-spinner"/>Processing</> : 'Send →'}
+              </button>
+            </div>
+            <div className="bc-input-footer">
+              <span className="bc-hint">Enter to send · Shift+Enter for newline</span>
+              {responseMode && (
+                <span className="bc-mode-tag">Mode: <b>{responseMode.toUpperCase()}</b></span>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </>

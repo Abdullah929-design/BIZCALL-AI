@@ -57,6 +57,9 @@ class StreamingResponse(BaseModel):
     chunk: str
     session_id: Optional[str] = None
     finished: bool = False
+    rag_confidence: Optional[float] = None
+    rag_intent: Optional[str] = None
+    rag_context_used: Optional[bool] = None
 
 class ErrorResponse(BaseModel):
     error: str

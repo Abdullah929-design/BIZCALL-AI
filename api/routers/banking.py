@@ -150,10 +150,58 @@ async def banking_stream(session_id: str):
         # Get messages in LLM format
         messages = session_manager.get_messages_for_llm(session_id)
         
+        # Enhanced RAG for complex queries - Phase 1
+        rag_context_added = False
+        rag_confidence = 0.0
+        rag_intent = None
+        if messages:
+            # Get the last user message for RAG search
+            last_user_message = ""
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    last_user_message = msg.get("content", "")
+                    break
+            
+            if last_user_message:
+                # Search FAQ for relevant context
+                faq = search_faq(last_user_message)
+                if faq and faq['confidence'] >= 0.10:
+                    # 450 chars — enough for 2-3 specific factual points
+                    MAX_FAQ_CHARS = 450
+                    faq_text = faq['answer']
+                    if len(faq_text) > MAX_FAQ_CHARS:
+                        faq_text = faq_text[:MAX_FAQ_CHARS].rsplit(' ', 1)[0] + "\u2026"
+
+                    # Plain labelled format — NO bracket tags.
+                    # Bracket/markdown tags leak into output on small models;
+                    # plain labels are treated as context, not as text to continue.
+                    grounded_content = (
+                        f"Knowledge base answer: {faq_text}\n\n"
+                        f"Customer question: {last_user_message}"
+                    )
+                    for i in reversed(range(len(messages))):
+                        if messages[i].get("role") == "user":
+                            messages[i] = {"role": "user", "content": grounded_content}
+                            break
+                    rag_context_added = True
+                    rag_confidence = faq['confidence']
+                    rag_intent = faq['intent']
+        
         async def sse():
             try:
                 full_response = ""
-                # Stream LLM response with session context
+                # Send initial chunk with RAG info
+                rag_info_chunk = StreamingChunk(
+                    chunk="",
+                    session_id=session_id,
+                    finished=False,
+                    rag_confidence=rag_confidence if rag_context_added else None,
+                    rag_intent=rag_intent if rag_context_added else None,
+                    rag_context_used=rag_context_added
+                )
+                yield f"data: {rag_info_chunk.json()}\n\n"
+                
+                # Stream LLM response with session context and RAG
                 for chunk in generate_llm_response_chat_stream(messages, temperature=0.25):
                     full_response += chunk
                     # SSE format: "data: {json}\n\n"
@@ -229,8 +277,26 @@ async def handle_query_sync(req: QueryRequest):
                                 response_time=response_time
                             )
         
-        # Generate LLM response
+        # Generate LLM response with enhanced RAG
         messages = session_manager.get_messages_for_llm(session_id)
+        
+        # Enhanced RAG for complex queries - Phase 1 (same as stream)
+        if messages:
+            # Get the last user message for RAG search
+            last_user_message = ""
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    last_user_message = msg.get("content", "")
+                    break
+            
+            if last_user_message:
+                # Search FAQ for relevant context
+                faq = search_faq(last_user_message)
+                if faq and faq['confidence'] >= 0.10:  # Reduced threshold to 10% for testing
+                    # Add FAQ context to messages for better LLM response
+                    rag_context = f"Relevant banking information: {faq['answer']}"
+                    messages.insert(0, {"role": "system", "content": rag_context})
+        
         response = generate_llm_response_chat(messages, temperature=0.25)
         
         # Add response to session

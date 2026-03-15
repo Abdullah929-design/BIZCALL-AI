@@ -34,11 +34,12 @@ export const useStreamingResponse = () => {
           return;
         }
 
+        // Always forward metadata (e.g. rag_context_used) even for empty chunks
         if (data.chunk) {
           accumulatedTextRef.current += data.chunk;
           setStreamedText(accumulatedTextRef.current);
-          onChunk?.(data.chunk, data);
         }
+        onChunk?.(data.chunk, data);
       } catch (err) {
         console.error('Error parsing stream data:', err);
         setError('Failed to parse stream data');

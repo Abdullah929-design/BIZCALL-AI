@@ -10,7 +10,18 @@ export default defineConfig({
         target: 'http://localhost:8002',
         changeOrigin: true,
         secure: false,
+        // Required for Server-Sent Events: disable response buffering
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            // Signal to the upstream that we want a streaming response
+            if (req.url?.includes('/stream')) {
+              proxyReq.setHeader('Accept', 'text/event-stream');
+              proxyReq.setHeader('Cache-Control', 'no-cache');
+            }
+          });
+        },
       }
     }
   }
 })
+

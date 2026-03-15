@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 
 OLLAMA_MARKETING_BASE_URL = os.getenv("OLLAMA_MARKETING_BASE_URL", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "finance-chat-marketing:latest").strip()
+OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "gemma-sales-agent:latest").strip()
 OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "60"))
 OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "90"))
 OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", "3m")
@@ -157,7 +157,7 @@ def _extract_response_text(text: str) -> str:
 
 
 def _clean_streaming_chunk(chunk: str, accumulated_text: str = "") -> str:
-    """Clean streaming chunks while preserving flow"""
+    """Clean streaming chunks while preserving flow and preventing hallucinations"""
     if not chunk:
         return ""
     
@@ -168,6 +168,51 @@ def _clean_streaming_chunk(chunk: str, accumulated_text: str = "") -> str:
     chunk_cleaned = re.sub(r'</s>', '', chunk_cleaned)
     chunk_cleaned = re.sub(r'Customer:', '', chunk_cleaned, flags=re.IGNORECASE)
     chunk_cleaned = re.sub(r'Agent:', '', chunk_cleaned, flags=re.IGNORECASE)
+    
+    # Remove Gemma 2 template tokens that might appear in responses
+    chunk_cleaned = re.sub(r'<start_of_turn>', '', chunk_cleaned)
+    chunk_cleaned = re.sub(r'<end_of_turn>', '', chunk_cleaned)
+    chunk_cleaned = re.sub(r'user', '', chunk_cleaned, flags=re.IGNORECASE)
+    chunk_cleaned = re.sub(r'model', '', chunk_cleaned, flags=re.IGNORECASE)
+    
+    # Remove common hallucination patterns (more selective)
+    hallucination_patterns = [
+        r'takes into account.*nonverbal cues',
+        r'continuously improve.*through data analysis',
+        r'feedback from.*like you',
+        r'advanced.*algorithms.*specifically',
+        r'proprietary.*methodology.*patented',
+        r'machine learning.*models.*trained',
+        r'neural.*networks.*deep',
+        r'natural language.*processing.*advanced',
+        r'sentiment.*analysis.*real',
+        r'real.*time.*processing.*milliseconds',
+        r'cloud.*based.*infrastructure.*enterprise',
+        r'enterprise.*grade.*security.*compliant',
+        r'compliance.*with.*regulations.*specific',
+        r'GDPR.*compliant.*certified',
+        r'SOC.*2.*certified.*audited',
+        r'99\.9.*%.*uptime.*guaranteed',
+        r'\d+.*%.*accuracy.*proven'
+    ]
+    
+    # Remove unprofessional conversational fillers (more selective)
+    unprofessional_patterns = [
+        r'I am sorry.*did not see.*request',
+        r'it is my job to respond.*here it is',
+        r'let me be clear.*honestly',
+        r'frankly speaking.*to be honest',
+        r'I think.*you.*agree.*right',
+        r'if you know what I mean.*like',
+        r'you know.*like I said.*basically',
+        r'to be fair.*honestly.*actually'
+    ]
+    
+    for pattern in hallucination_patterns:
+        chunk_cleaned = re.sub(pattern, '', chunk_cleaned, flags=re.IGNORECASE)
+    
+    for pattern in unprofessional_patterns:
+        chunk_cleaned = re.sub(pattern, '', chunk_cleaned, flags=re.IGNORECASE)
     
     # Remove repeated phrases that commonly appear
     chunk_cleaned = re.sub(r'Come check us out today!\s*Come check us out today!', 'Come check us out today!', chunk_cleaned)
@@ -240,14 +285,14 @@ def _post_json_stream(path: str, payload: dict[str, Any]):
 def build_marketing_prompt(marketing_details: str, strict: bool = False) -> str:
     normalized_details = _sanitize_prompt_text(marketing_details)
     
-    # Use finance-chat format: ### Instruction: [prompt] ### Response:
+    # Use Gemma 2 format: <start_of_turn>user\n[prompt]<end_of_turn>\n<start_of_turn>model\n
     instruction = (
         f"Behave like a sales agent for my business and generate a marketing speech for my business using details: {normalized_details.strip()}. "
         "Create a direct outbound marketing pitch with hook, value proposition, and call-to-action. "
         "Use only the business details provided - do not invent new offers or discounts."
     )
     
-    return f"### Instruction:\n{instruction}\n\n### Response:"
+    return f"<start_of_turn>user\n{instruction}<end_of_turn>\n<start_of_turn>model\n"
 
 
 def _is_low_quality_marketing_output(text: str) -> bool:
@@ -332,6 +377,7 @@ def _format_messages_for_prompt(messages: list[dict]) -> str:
 
 def build_marketing_chat_prompt(messages: list[dict], business_context: str = "", strict: bool = False) -> str:
     context_text = _sanitize_prompt_text((business_context or "").strip())
+    
     # Only use last 3 messages for faster processing
     recent_messages = messages[-3:] if len(messages) > 3 else messages
     conversation = _format_messages_for_prompt(recent_messages)
@@ -350,28 +396,48 @@ def build_marketing_chat_prompt(messages: list[dict], business_context: str = ""
     speech_keywords = [
         "marketing speech", "outbound speech", "create a speech", "generate a speech", 
         "marketing content", "speech for my business", "create marketing", 
-        "outbound call", "sales pitch", "marketing pitch"
+        "outbound call", "sales pitch", "marketing pitch", "generate a", "create a", 
+        "marketing pitch explaining", "short marketing pitch", "explain why", "saves time"
     ]
     is_speech_request = any(keyword in last_user_message.lower() for keyword in speech_keywords)
     
     if is_speech_request:
         # For initial speech request, use business context as instruction
-        instruction = (
-            f"Behave like a sales agent for my business and generate a marketing speech for my business using details: {context_text.strip()}. "
-            "Create a direct outbound marketing pitch with hook, value proposition, and call-to-action. "
-            "Use only the business details provided - do not invent new offers or discounts. "
-            f"Request: {last_user_message}."
-        )
-        return f"### Instruction:\n{instruction}\n\n### Response:"
+        if context_text:
+            instruction = (
+                f"You are a creative marketing expert. Business Details: {context_text.strip()}. "
+                f"Task: {last_user_message}. "
+                "Create an engaging, detailed marketing pitch that: 1) Opens with a compelling hook about the customer's pain points, "
+                "2) Weaves in specific details from the business facts above, 3) Uses vivid language and storytelling, "
+                "4) Paints a clear picture of the benefits, 5) Ends with a strong call-to-action. "
+                "Be creative and elaborate, but ONLY use information from the business details provided. "
+                "Expand on how the features solve real problems - do not invent new features."
+            )
+        else:
+            # Fallback when no business context is provided
+            instruction = (
+                f"Generate a marketing response for the following request: {last_user_message}. "
+                "Note: No specific business details were provided, so create a general marketing response."
+            )
+        return f"<start_of_turn>user\n{instruction}<end_of_turn>\n<start_of_turn>model\n"
     else:
         # For follow-up questions, use conversation context
-        instruction = (
-            f"Continue as the same sales agent for the business with these details: {context_text.strip()}. "
-            "Use only the business details that were originally provided. "
-            f"Customer question: {last_user_message}. "
-            "Respond with empathy and factual information from the business details."
-        )
-        return f"### Instruction:\n{instruction}\n\n### Response:"
+        if context_text:
+            instruction = (
+                f"You are a helpful sales agent. Business Details: {context_text.strip()}. "
+                f"Customer question: {last_user_message}. "
+                "Provide a detailed, helpful response using ONLY the business facts above. "
+                "Be conversational and elaborate on the benefits. If asked about features not mentioned, "
+                "say 'I don't have specific information about that, but I can tell you about...' and redirect to known features. "
+                "Use creative language to explain the value proposition."
+            )
+        else:
+            # Fallback when no business context is provided
+            instruction = (
+                f"Respond to the following customer question: {last_user_message}. "
+                "Note: No specific business details were provided."
+            )
+        return f"<start_of_turn>user\n{instruction}<end_of_turn>\n<start_of_turn>model\n"
 
 
 def _generate_once_with_model(prompt: str, temperature: Optional[float], model_name: str) -> str:

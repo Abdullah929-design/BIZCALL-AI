@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-SIMILARITY_THRESHOLD = 0.75
+SIMILARITY_THRESHOLD = 0.10
 
 model = SentenceTransformer(MODEL_NAME)
 

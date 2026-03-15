@@ -6,8 +6,8 @@ from urllib.request import Request, urlopen
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "banking-model")
-OLLAMA_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "25"))
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "banking-model:latest")
+OLLAMA_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "60"))
 OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "3m")
 OLLAMA_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_TRUNCATION_NUM_PREDICT", "200")
 
@@ -48,17 +48,21 @@ def _build_options(temperature: Optional[float] = None) -> dict[str, Any]:
     if num_predict is not None:
         options["num_predict"] = num_predict
     else:
-        options["num_predict"] = 400  # Increased for complete banking responses
+        # Voice agent: 220 tokens ≈ 3-4 concise sentences with specific facts.
+        # Still ~45% fewer tokens than the original 400, saving ~2-3s on CPU.
+        options["num_predict"] = 220
 
     num_ctx = _get_env_int("OLLAMA_NUM_CTX")
     if num_ctx is not None:
         options["num_ctx"] = num_ctx
     else:
-        options["num_ctx"] = 512  # Reduced from 2048 for i5 7th gen
+        # 768 = sweet spot: fits system prompt + 2-turn history + 300-char RAG snippet.
+        # 1024 added ~4s prefill on this CPU; 512 was too tight for RAG. 768 is the balance.
+        options["num_ctx"] = 768
 
     # i5 7th gen optimizations
-    options["num_thread"] = 4  # Match your CPU cores
-    options["num_batch"] = 512  # Optimize for 16GB RAM
+    options["num_thread"] = 4   # Match physical CPU cores
+    options["num_batch"] = 256  # Halved from 512 — reduces RAM bandwidth per step
 
     return options
 

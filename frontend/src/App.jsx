@@ -8,7 +8,7 @@ import './App.css';
 function App() {
   const [activeTab, setActiveTab] = useState('banking');
   const [apiStatus, setApiStatus] = useState('checking');
-  const [apiInfo, setApiInfo] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     checkAPIHealth();
@@ -16,101 +16,77 @@ function App() {
 
   const checkAPIHealth = async () => {
     try {
-      const health = await healthAPI.check();
+      await healthAPI.check();
       setApiStatus('healthy');
-      console.log('API Health:', health);
-    } catch (error) {
-      console.error('API Health check failed:', error);
+    } catch {
       setApiStatus('unhealthy');
     }
-
-    try {
-      const info = await healthAPI.getRoot();
-      setApiInfo(info);
-    } catch (error) {
-      console.error('API Info check failed:', error);
-    }
   };
 
-  const getStatusColor = () => {
-    switch (apiStatus) {
-      case 'healthy':
-        return '#28a745';
-      case 'unhealthy':
-        return '#dc3545';
-      default:
-        return '#ffc107';
-    }
-  };
+  const navItems = [
+    { id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
+    { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Outbound calls' },
+    { id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
+  ];
 
-  const getStatusText = () => {
-    switch (apiStatus) {
-      case 'healthy':
-        return '🟢 API Connected';
-      case 'unhealthy':
-        return '🔴 API Disconnected';
-      default:
-        return '🟡 Checking...';
-    }
-  };
+  const activeNav = navItems.find(n => n.id === activeTab);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>🏦 Banking & Marketing Call Center</h1>
-        <div className="api-status" style={{ color: getStatusColor() }}>
-          {getStatusText()}
+    <div className="app-shell">
+      {/* Mobile toggle */}
+      <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle menu">
+        ☰
+      </button>
+
+      {/* Sidebar */}
+      <aside className={`app-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">🏦</div>
+          <div className="sidebar-logo-name">BIZ CALL AI</div>
+          <div className="sidebar-logo-sub">Call Centre Intelligence</div>
         </div>
-        {apiInfo && (
-          <div className="api-info">
-            <small>
-              Version: {apiInfo.version} | 
-              Docs: <a href={apiInfo.docs} target="_blank" rel="noopener noreferrer">
-                {apiInfo.docs}
-              </a>
-            </small>
+
+        <nav className="sidebar-nav">
+          <div className="sidebar-nav-label">Workspaces</div>
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
+            >
+              <span className="nav-item-icon">{item.icon}</span>
+              <div>
+                <div>{item.label}</div>
+              </div>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="api-badge">
+            <span className={`api-dot ${apiStatus === 'healthy' ? '' : apiStatus === 'unhealthy' ? 'offline' : 'checking'}`} />
+            {apiStatus === 'healthy' ? 'API connected' : apiStatus === 'unhealthy' ? 'API offline' : 'Connecting…'}
           </div>
-        )}
-      </header>
+        </div>
+      </aside>
 
-      <div className="tab-container">
-        <div className="tab-buttons">
-          <button
-            className={`tab-button ${activeTab === 'banking' ? 'active' : ''}`}
-            onClick={() => setActiveTab('banking')}
-          >
-            🏦 Banking (Inbound)
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'marketing' ? 'active' : ''}`}
-            onClick={() => setActiveTab('marketing')}
-          >
-            📢 Marketing (Outbound)
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'test' ? 'active' : ''}`}
-            onClick={() => setActiveTab('test')}
-          >
-            🧪 API Test
-          </button>
+      {/* Main */}
+      <main className="app-main">
+        <div className="app-topbar">
+          <div className="topbar-breadcrumb">
+            <span style={{ color: 'var(--text-muted)' }}>FinanceAI</span>
+            <span style={{ color: 'var(--text-muted)' }}>›</span>
+            <span>{activeNav?.label}</span>
+          </div>
+          <span className="topbar-version">v1.0</span>
         </div>
 
-        <div className="tab-content">
+        <div className="app-content">
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}
           {activeTab === 'test' && <TestAPI />}
         </div>
-      </div>
-
-      <footer className="App-footer">
-        <p>
-          <small>
-            Powered by FastAPI + React | 
-            Banking handles inbound customer calls | 
-            Marketing handles outbound calls
-          </small>
-        </p>
-      </footer>
+      </main>
     </div>
   );
 }
