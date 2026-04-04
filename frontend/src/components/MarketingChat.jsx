@@ -39,13 +39,14 @@ const MarketingChat = () => {
 
       chatSession.addMessage('user', text);
 
+      let queryResult;
       if (!hasInitialResponse) {
         const instruction = `behave like a sales agent for my business and generate a marketing speech for my business using details: ${businessContext}. ${text}`;
         
-        const queryResult = await marketingAPI.processQuery(instruction, sessionId);
-        setResponseMode(queryResult.mode);
+        queryResult = await marketingAPI.processQuery(instruction, sessionId);
+        if (queryResult) setResponseMode(queryResult.mode);
         
-        if (queryResult.mode === 'marketing') {
+        if (queryResult && queryResult.mode === 'marketing') {
           setSessionBusinessContext(businessContext);
           setHasInitialResponse(true);
           
@@ -65,10 +66,10 @@ const MarketingChat = () => {
           return;
         }
       } else {
-        const queryResult = await marketingAPI.processQuery(text, sessionId, sessionBusinessContext);
-        setResponseMode(queryResult.mode);
+        queryResult = await marketingAPI.processQuery(text, sessionId, sessionBusinessContext);
+        if (queryResult) setResponseMode(queryResult.mode);
         
-        if (queryResult.mode === 'marketing') {
+        if (queryResult && queryResult.mode === 'marketing') {
           streamingResponse.startStreaming(
             marketingAPI.getStreamUrl(sessionId),
             (chunk) => {},
@@ -86,7 +87,7 @@ const MarketingChat = () => {
         }
       }
 
-      if (queryResult.mode === 'faq') {
+      if (queryResult && queryResult.mode === 'faq') {
         chatSession.addMessage('assistant', queryResult.text);
         setIsProcessing(false);
       }
@@ -141,8 +142,10 @@ const MarketingChat = () => {
         businessContext
       );
       
-      setResponseMode(response.mode);
-      chatSession.addMessage('assistant', response.text);
+      if (response) {
+        setResponseMode(response.mode);
+        chatSession.addMessage('assistant', response.text);
+      }
     } catch (error) {
       console.error('Error generating response:', error);
       chatSession.addMessage('assistant', `Error: ${error.message || 'Failed to generate response'}`);
@@ -168,6 +171,7 @@ const MarketingChat = () => {
           color: #e8e4dc;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
         }
 
         .mc-header {
@@ -329,20 +333,30 @@ const MarketingChat = () => {
           letter-spacing: 0.06em;
         }
 
+        /* Scrollable body — phase panel + messages scroll together */
+        .mc-body {
+          flex: 1;
+          overflow-y: auto;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .mc-body::-webkit-scrollbar { width: 4px; }
+        .mc-body::-webkit-scrollbar-track { background: transparent; }
+        .mc-body::-webkit-scrollbar-thumb { background: rgba(180,120,220,0.2); border-radius: 2px; }
+
         /* Messages */
         .mc-messages {
           flex: 1;
-          overflow-y: auto;
           padding: 28px 40px;
           display: flex;
           flex-direction: column;
           gap: 24px;
-          min-height: 200px;
+          min-height: 0;
         }
 
-        .mc-messages::-webkit-scrollbar { width: 4px; }
-        .mc-messages::-webkit-scrollbar-track { background: transparent; }
-        .mc-messages::-webkit-scrollbar-thumb { background: rgba(180,120,220,0.2); border-radius: 2px; }
+        .mc-messages::-webkit-scrollbar { display: none; }
 
         .mc-msg {
           display: flex;
@@ -557,6 +571,9 @@ const MarketingChat = () => {
         {chatSession.error && <div className="mc-alert">⚠ {chatSession.error}</div>}
         {streamingResponse.error && <div className="mc-alert">⚠ Streaming: {streamingResponse.error}</div>}
 
+        {/* scrollable body: phase panel + messages as one region */}
+        <div className="mc-body">
+
         <div className="mc-phase-panel">
           {!hasInitialResponse ? (
             <>
@@ -616,7 +633,9 @@ const MarketingChat = () => {
           )}
 
           <div ref={messagesEndRef} />
-        </div>
+        </div>{/* end mc-messages */}
+
+        </div>{/* end mc-body */}
 
         <div className="mc-input-area">
           <textarea

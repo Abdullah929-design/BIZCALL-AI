@@ -20,7 +20,7 @@ class SessionManager:
         if call_type == "inbound":
             system_prompt = (
                 "You are a professional banking call-centre support agent. "
-                "Answer customer questions concisely and helpfully in 2-3 sentences. "
+                "Answer customer questions thoroughly and helpfully. "
                 "If a 'Knowledge base answer' is provided in the message, use it as your "
                 "primary source and summarise the key facts clearly. "
                 "If no knowledge base answer is provided, draw on your general banking "
@@ -130,3 +130,4 @@ class SessionManager:
 
 # Global session manager instance
 session_manager = SessionManager()
+

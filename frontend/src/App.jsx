@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BankingChat from './components/BankingChat.jsx';
 import MarketingChat from './components/MarketingChat.jsx';
+import TwilioCallDemo from './components/TwilioCallDemo.jsx';
 import TestAPI from './components/TestAPI.jsx';
 import { healthAPI } from './services/api.jsx';
 import './App.css';
@@ -25,7 +26,8 @@ function App() {
 
   const navItems = [
     { id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
-    { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Outbound calls' },
+    { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
+    { id: 'voice', icon: '📞', label: 'AI Voice Simulator', sub: 'Inbound & Outbound' },
     { id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
   ];
 
@@ -84,6 +86,7 @@ function App() {
         <div className="app-content">
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}
+          {activeTab === 'voice' && <TwilioCallDemo />}
           {activeTab === 'test' && <TestAPI />}
         </div>
       </main>

@@ -8,8 +8,8 @@ from urllib.request import Request, urlopen
 
 OLLAMA_MARKETING_BASE_URL = os.getenv("OLLAMA_MARKETING_BASE_URL", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
 OLLAMA_MARKETING_MODEL = os.getenv("OLLAMA_MARKETING_MODEL", "gemma-sales-agent:latest").strip()
-OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "60"))
-OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "90"))
+OLLAMA_MARKETING_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_TIMEOUT_SECONDS", "180"))
+OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS", "180"))
 OLLAMA_MARKETING_KEEP_ALIVE = os.getenv("OLLAMA_MARKETING_KEEP_ALIVE", "3m")
 OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT = os.getenv("OLLAMA_MARKETING_TRUNCATION_NUM_PREDICT", "200")
 
@@ -17,6 +17,20 @@ _cpu_count = os.cpu_count() or 4
 DEFAULT_MARKETING_NUM_THREAD = max(2, min(4, _cpu_count))
 DEFAULT_MARKETING_NUM_CTX = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_CTX", "1024"))
 DEFAULT_MARKETING_NUM_PREDICT = int(os.getenv("OLLAMA_MARKETING_DEFAULT_NUM_PREDICT", "800"))
+
+
+def _is_remote_marketing_ollama() -> bool:
+    """Detect if OLLAMA_MARKETING_BASE_URL points to a remote server (e.g. Colab via ngrok)."""
+    url = OLLAMA_MARKETING_BASE_URL.lower()
+    return not ("localhost" in url or "127.0.0.1" in url)
+
+
+def _build_marketing_headers() -> dict[str, str]:
+    """Build HTTP headers, adding ngrok-skip-browser-warning for remote URLs."""
+    headers = {"Content-Type": "application/json"}
+    if _is_remote_marketing_ollama():
+        headers["ngrok-skip-browser-warning"] = "true"
+    return headers
 
 
 LOW_QUALITY_OUTPUT_MARKERS = (
@@ -68,36 +82,53 @@ def _get_env_int(name: str) -> Optional[int]:
 
 def _build_marketing_options(temperature: Optional[float] = None) -> dict[str, Any]:
     options: dict[str, Any] = {}
+    remote = _is_remote_marketing_ollama()
 
-    # Fixed temperature for consistent responses
     if temperature is not None:
         options["temperature"] = temperature
     else:
-        options["temperature"] = 0.6  # Fixed for faster, focused responses
+        options["temperature"] = 0.6
 
     top_p = _get_env_float("OLLAMA_MARKETING_TOP_P")
     if top_p is not None:
         options["top_p"] = top_p
     else:
-        options["top_p"] = 0.8  # Faster decisions
+        options["top_p"] = 0.9 if remote else 0.8
 
     repeat_penalty = _get_env_float("OLLAMA_MARKETING_REPEAT_PENALTY")
     if repeat_penalty is not None:
         options["repeat_penalty"] = repeat_penalty
     else:
-        options["repeat_penalty"] = 1.05  # Better flow
+        options["repeat_penalty"] = 1.1 if remote else 1.05
 
     num_predict = _get_env_int("OLLAMA_MARKETING_NUM_PREDICT")
-    options["num_predict"] = num_predict if num_predict is not None else DEFAULT_MARKETING_NUM_PREDICT
+    if num_predict is not None:
+        options["num_predict"] = num_predict
+    elif remote:
+        # T4 GPU: 500 tokens for a complete, persuasive marketing pitch
+        # (Original Modelfile had 800 which was often too verbose for voice calls)
+        options["num_predict"] = 500
+    else:
+        options["num_predict"] = DEFAULT_MARKETING_NUM_PREDICT
 
     num_ctx = _get_env_int("OLLAMA_MARKETING_NUM_CTX")
-    options["num_ctx"] = num_ctx if num_ctx is not None else DEFAULT_MARKETING_NUM_CTX
+    if num_ctx is not None:
+        options["num_ctx"] = num_ctx
+    else:
+        if remote:
+            # 4096 supports full multi-turn outbound sales conversations
+            options["num_ctx"] = 4096
+        else:
+            options["num_ctx"] = DEFAULT_MARKETING_NUM_CTX
 
-    num_thread = _get_env_int("OLLAMA_MARKETING_NUM_THREAD")
-    options["num_thread"] = num_thread if num_thread is not None else DEFAULT_MARKETING_NUM_THREAD
-
-    # i5 7th gen optimizations (matching banking LLM)
-    options["num_batch"] = 512  # Optimized for 16GB RAM
+    if remote:
+        # T4 GPU: force ALL layers onto GPU + maximum batch size
+        options["num_gpu"] = 99
+        options["num_batch"] = 1024
+    else:
+        num_thread = _get_env_int("OLLAMA_MARKETING_NUM_THREAD")
+        options["num_thread"] = num_thread if num_thread is not None else DEFAULT_MARKETING_NUM_THREAD
+        options["num_batch"] = 512
 
     return options
 
@@ -243,7 +274,7 @@ def _maybe_retry_on_truncation(path: str, payload: dict[str, Any], response: dic
 def _post_json(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{OLLAMA_MARKETING_BASE_URL.rstrip('/')}{path}"
     body = json.dumps(payload).encode("utf-8")
-    request = Request(url, data=body, headers={"Content-Type": "application/json"})
+    request = Request(url, data=body, headers=_build_marketing_headers())
 
     try:
         with urlopen(request, timeout=OLLAMA_MARKETING_TIMEOUT_SECONDS) as response:
@@ -263,7 +294,7 @@ def _post_json(path: str, payload: dict[str, Any]) -> dict[str, Any]:
 def _post_json_stream(path: str, payload: dict[str, Any]):
     url = f"{OLLAMA_MARKETING_BASE_URL.rstrip('/')}{path}"
     body = json.dumps(payload).encode("utf-8")
-    request = Request(url, data=body, headers={"Content-Type": "application/json"})
+    request = Request(url, data=body, headers=_build_marketing_headers())
 
     try:
         with urlopen(request, timeout=OLLAMA_MARKETING_STREAM_TIMEOUT_SECONDS) as response:
@@ -356,8 +387,10 @@ def _build_retry_prompt(marketing_details: str, missing_details: list[str]) -> s
 
 def _format_messages_for_prompt(messages: list[dict]) -> str:
     lines: list[str] = []
-    # Only use last 3 messages for faster processing
-    trimmed = messages[-3:] if len(messages) > 3 else messages
+    # Keep system message and last 5 assistant/user messages
+    system_msgs = [m for m in messages if m.get("role") == "system"]
+    other_msgs = [m for m in messages if m.get("role") != "system"]
+    trimmed = system_msgs + other_msgs[-5:]
 
     for message in trimmed:
         role = (message.get("role") or "").strip().lower()
@@ -378,8 +411,10 @@ def _format_messages_for_prompt(messages: list[dict]) -> str:
 def build_marketing_chat_prompt(messages: list[dict], business_context: str = "", strict: bool = False) -> str:
     context_text = _sanitize_prompt_text((business_context or "").strip())
     
-    # Only use last 3 messages for faster processing
-    recent_messages = messages[-3:] if len(messages) > 3 else messages
+    # Keep system message and last 5 assistant/user messages
+    system_msgs = [m for m in messages if m.get("role") == "system"]
+    other_msgs = [m for m in messages if m.get("role") != "system"]
+    recent_messages = system_msgs + other_msgs[-5:]
     conversation = _format_messages_for_prompt(recent_messages)
     
     # Check if user is asking for a marketing speech

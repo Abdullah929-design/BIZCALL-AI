@@ -1,0 +1,159 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## intent_detector.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### WHY THIS FILE EXISTS
+This file is the "Receptionist" of our banking system. It solves the **Semantic Ambiguity Problem**. A user doesn't speak in clean categories; they might say "My card isn't working" when they actually mean "I lost my card." If this file didn't exist, we couldn't route the user to the correct FAQ or give the LLM the right context. We would be guessing blindly.
+
+### CORE CONCEPT: Softmax and Temperature Scaling
+Before we look at the code, we must understand how the AI "decides."
+
+1.  **Softmax**: The DistilBERT model outputs "logits" (raw numbers). These might be `[5.0, 1.0, 0.5]`. To a human, these represent 5.0 for "Lost Card", 1.0 for "Balance", and 0.5 for "ATM". Softmax takes these and calculates: $e^{x_i} / \sum e^{x_j}$. This converts them to probabilities like `[0.97, 0.02, 0.01]`. Now we know the model is 97% sure it's a lost card.
+2.  **Temperature ($T$)**: We modify the input to the softmax as $(x_i / T)$. 
+    -   If $T$ is **small** (0.1), the "gap" between 5.0 and 1.0 becomes massive (50 vs 10). The softmax will output 99.99% for the top choice. This is "High Confidence."
+    -   If $T$ is **large** (2.0), the gap shrinks (2.5 vs 0.5). The softmax might output 70% and 20%. This is "Higher Entropy" or "Uncertainty."
+
+### ANNOTATED CODE WALKTHROUGH
+
+```python
+def predict_top_k(text: str, model, tokenizer, top_k: int = 5, temperature: float = 1.0, min_confidence: float = 0.05):
+    text_proc = preprocess_text(text)
+    # ↑ ANNOTATION: Preprocessing removes 'filler' words like 'um' and 'uh'. 
+    # This is critical because transformer models have a finite 'attention' window. 
+    # Garbage in = Garbage out.
+    
+    inputs = tokenizer(
+        text_proc,
+        padding="max_length",
+        truncation=True,
+        max_length=128,
+        return_tensors="pt",
+    )
+    # ↑ ANNOTATION: Tokenization turns text into numbers (vectors). 
+    # Padding to 128 ensures every batch has the same shape for the GPU/CPU.
+    
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+    # ↑ ANNOTATION: 'no_grad' tells PyTorch not to calculate gradients. 
+    # This saves massive amounts of memory and speed because we are doing 
+    # INFERENCE, not TRAINING. 'logits' are the raw, unnormalized AI scores.
+    
+    logits_scaled = logits / temperature
+    # ↑ ANNOTATION: This is the Temperature scaling we talked about. 
+    # By dividing the raw scores before the softmax, we control the 
+    # "concentration" of the probability.
+    
+    probs = F.softmax(logits_scaled, dim=1)[0].cpu().numpy()
+    # ↑ ANNOTATION: Softmax converts those raw scores into a probability 
+    # distribution where all values add up to 1.
+    
+    top_idx = probs.argsort()[::-1][:top_k]
+    # ↑ ANNOTATION: argsort() gives us the indices of the values. 
+    # [::-1] reverses it so the highest score is first.
+    
+    result = []
+    for idx in top_idx:
+        p = float(probs[idx])
+        if p < min_confidence:
+            continue
+        # ↑ ANNOTATION: We drop 'noise'. If the model is only 2% sure, 
+        # it's usually just background hallucination.
+        
+        result.append({
+            "intent_label": int(idx),
+            "intent_name": INTENT_CLASSES.get(int(idx), "unknown_intent"),
+            "confidence": p,
+            "priority": INTENT_PRIORITY.get(INTENT_CLASSES.get(int(idx), ""), 0)
+        })
+    return result
+```
+
+```python
+def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
+    model, tokenizer = load_intent_model()
+    
+    # basic splitting strategy: split on "but", "and", "also" - keep it simple
+    segments = re.split(r'\b(?:but|however|also|and|then|additionally|plus)\b', text)
+    # ↑ ANNOTATION: This is 'Rule-Based Segmentation'. While we could use 
+    # a model to split sentences, regex is 1000x faster and works for 
+    # 90% of banking queries where users concatenate problems with 'and'.
+    
+    segments = [s.strip() for s in segments if s.strip()]
+
+    results = []
+    detected = []
+    for seg in segments:
+        top = predict_top_k(seg, model, tokenizer, top_k=5, temperature=1.0, min_confidence=0.05)
+        
+        top = apply_overrides_and_hints(seg, top)
+        # ↑ ANNOTATION: This is a 'Safety Layer'. If the user mentions 
+        # 'fraud', we inject that intent with 100% confidence even if 
+        # the model missed it. Never trust a model with security.
+        
+        formatted = prioritize_and_format(top, top_n=3)
+        # ↑ ANNOTATION: We prioritize by severity (Priority 10 vs 1). 
+        # If someone has a lost card (10) and a balance question (1), 
+        # we MUST address the lost card first.
+        
+        primary = formatted[0]["intent"] if formatted else None
+        results.append({
+            "text": seg,
+            "primary_intent": primary,
+            "intents": formatted
+        })
+        detected.extend([f["intent"] for f in formatted])
+
+    unique = list(dict.fromkeys(detected))
+    complexity = classify_query_complexity(unique)
+    # ↑ ANNOTATION: Complexity is the 'Dispatcher' logic. 
+    # If segments > 1 or intent is 'complex', we route to the LLM. 
+    # Otherwise, a simple FAQ lookup is enough.
+    
+    return results, complexity
+```
+
+### EXECUTION FLOW DIAGRAM
+
+```text
+User Input: "My card was stolen and I need a refund."
+      ↓
+[Regex Splitter]
+      ├─ Segment 1: "My card was stolen"
+      └─ Segment 2: "I need a refund"
+      ↓
+[DistilBERT Model + Softmax]
+      ├─ Seg 1 Score: {"lost_card": 0.89}
+      └─ Seg 2 Score: {"request_refund": 0.76}
+      ↓
+[Override Engine]
+      └─ Check CRITICAL_KEYWORD_OVERRIDES for "stolen" -> Boost "lost_card" to 1.0
+      ↓
+[Prioritization]
+      └─ "lost_card" (Priority 10) > "request_refund" (Priority 7)
+      ↓
+[Complexity Classifier]
+      └─ Is segments > 1? YES -> Flag as "COMPLEX"
+      ↓
+Output: {segments: [...], complexity: "complex"}
+```
+
+### HOW I WOULD MODIFY THIS
+1.  **Add more splitting power**: If users use punctuation more than words, I would change Line 129 to: `re.split(r'\b(?:but|also|and|then)\b|[.!?]', text)`.
+2.  **Adjust 'High-Security' Confidence**: To make the model more cautious about fraud, I would lower the `min_confidence` on Line 44 to `0.01` for critical intents in a specialized override function.
+3.  **Dynamic Temperature**: I would pass a different `temperature` to [predict_top_k](file:///d:/intent-detector-banking%20-%20Copy%20%283%29/api/services/intent_detector.py#44-71) based on message length—higher temperature for short, ambiguous messages (e.g., "help").
+
+### INTERVIEW Q&A
+1.  **Q: Why use `AutoModelForSequenceClassification` instead of a vanilla BERT?**
+    *   **A**: `AutoModel` provides a pre-built linear "head" on top of the BERT embeddings. This head is already trained to map hidden states to our specific number of classes (77 intents), saving us from writing the softmax layer manually.
+2.  **Q: What is the risk of using `re.split` for multiple intents?**
+    *   **A**: It can break "Contextual Anaphora." If a user says "I lost my card and it is blue," the split will separate "it is blue" from the context of "card," potentially leading to a detection error for the second segment.
+3.  **Q: Why `lru_cache(maxsize=1)` on the model loader?**
+    *   **A**: ML models are massive (hundreds of MBs). We want them in memory, but we only need ONE instance. `lru_cache` ensures that if [load_intent_model](file:///d:/intent-detector-banking%20-%20Copy%20%283%29/api/services/intent_detector.py#36-43) is called again, it returns the existing pointer instead of reading from disk again.
+4.  **Q: Why set `model.eval()`?**
+    *   **A**: This disables layers like Dropout which are only used for training. If we don't call `.eval()`, the model's output will be non-deterministic (random) every time we call it.
+5.  **Q: What happens if `torch.topk` returns an intent that isn't in `INTENT_CLASSES`?**
+    *   **A**: Line 66 handles this gracefully with a `.get()` default of "unknown_intent". This prevents a 500 error if the model was trained on more classes than our config defines.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+READY FOR THE NEXT FILE? (session_manager.py)

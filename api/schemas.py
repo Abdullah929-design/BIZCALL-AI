@@ -65,3 +65,26 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     details: Optional[Dict[str, Any]] = None
+
+# New Twilio Schemas
+class InitiateOutboundRequest(BaseModel):
+    to_number: str = Field(..., description="E.164 format phone number (+15005550001)")
+    business_context: str = Field(..., description="Business context for marketing call")
+    instructions: str = Field(..., description="Instructions for LLM behavior during call")
+
+class CallStatusResponse(BaseModel):
+    call_sid: str
+    status: str  # queued, ringing, in-progress, completed, failed
+    from_number: str
+    to_number: str
+    duration: Optional[int] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+class TwilioWebhookPayload(BaseModel):
+    CallSid: str
+    From: str
+    To: str
+    CallStatus: Optional[str] = None
+    SpeechResult: Optional[str] = None
+    Digits: Optional[str] = None

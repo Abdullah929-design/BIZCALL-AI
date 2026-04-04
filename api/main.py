@@ -3,11 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from routers import banking, marketing, health
+from routers import banking, marketing, health, twilio
 
 app = FastAPI(
     title="Banking & Marketing Call Center API",
@@ -38,6 +42,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(banking.router, prefix="/api/banking", tags=["banking"])
 app.include_router(marketing.router, prefix="/api/marketing", tags=["marketing"])
+app.include_router(twilio.router, prefix="/api/twilio", tags=["twilio"])
 
 @app.get("/")
 async def root():
@@ -49,6 +54,7 @@ async def root():
         "endpoints": {
             "banking": "/api/banking",
             "marketing": "/api/marketing",
+            "twilio": "/api/twilio",
             "health": "/api/health"
         }
     }

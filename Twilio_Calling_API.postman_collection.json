@@ -1,0 +1,193 @@
+{
+	"info": {
+		"_postman_id": "8a32d1e2-9f3a-4e2b-8c1a-7b3b2a5c1d4e",
+		"name": "Twilio AI Calling Integration",
+		"description": "Endpoints for Twilio Inbound and Outbound Calling Simulation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Outbound",
+			"item": [
+				{
+					"name": "Initiate Outbound Call",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"to_number\": \"+15005550001\",\n    \"business_context\": \"New high-interest savings account (4.5% APY)\",\n    \"instructions\": \"Be polite, focus on the interest rate, and ask if they have 5 minutes to chat. If they say no, thank them and end call.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/twilio/initiate-outbound",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"twilio",
+								"initiate-outbound"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Call Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/twilio/call-status/CAxxxxxxxx",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"twilio",
+								"call-status",
+								"CAxxxxxxxx"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Webhooks (Simulation)",
+			"item": [
+				{
+					"name": "Simulate Inbound Webhook",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "CallSid",
+									"value": "CA12345",
+									"type": "text"
+								},
+								{
+									"key": "From",
+									"value": "+1234567890",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/twilio/inbound-call",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"twilio",
+								"inbound-call"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Process Call (Speech)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "SpeechResult",
+									"value": "How do I reset my account password?",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/twilio/process-call?session_id={{SESSION_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"twilio",
+								"process-call"
+							],
+							"query": [
+								{
+									"key": "session_id",
+									"value": "{{SESSION_ID}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Twilio Test Numbers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/health/twilio-test-numbers",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"twilio-test-numbers"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:8002",
+			"type": "string"
+		},
+		{
+			"key": "SESSION_ID",
+			"value": "your-session-uuid",
+			"type": "string"
+		}
+	]
+}

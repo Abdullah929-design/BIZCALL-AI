@@ -6,6 +6,7 @@ export const useChatSession = (callType = 'banking') => {
   const [sessionInfo, setSessionInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [messages, setMessages] = useState([]);
   const messagesRef = useRef([]);
 
   const api = callType === 'banking' ? bankingAPI : marketingAPI;
@@ -19,6 +20,7 @@ export const useChatSession = (callType = 'banking') => {
       setSessionId(sessionData.session_id);
       setSessionInfo(sessionData);
       messagesRef.current = [];
+      setMessages([]);
       return sessionData.session_id;
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create session');
@@ -56,6 +58,7 @@ export const useChatSession = (callType = 'banking') => {
     try {
       await api.clearSession(sessionId);
       messagesRef.current = [];
+      setMessages([]);
       setSessionInfo(null);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to clear session');
@@ -72,6 +75,8 @@ export const useChatSession = (callType = 'banking') => {
       timestamp: new Date().toISOString(),
     };
     messagesRef.current.push(message);
+    // Use a new array reference so React detects the state change and re-renders
+    setMessages([...messagesRef.current]);
     return message;
   }, []);
 
@@ -84,6 +89,7 @@ export const useChatSession = (callType = 'banking') => {
     setSessionInfo(null);
     setError(null);
     messagesRef.current = [];
+    setMessages([]);
   }, []);
 
   return {
@@ -91,7 +97,7 @@ export const useChatSession = (callType = 'banking') => {
     sessionInfo,
     isLoading,
     error,
-    messages: getMessages(),
+    messages,
     createSession,
     getSession,
     clearSession,

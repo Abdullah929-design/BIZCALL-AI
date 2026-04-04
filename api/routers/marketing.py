@@ -67,19 +67,6 @@ async def generate_marketing(req: QueryRequest, temperature: Optional[float] = 0
         # Add user message to session
         session_manager.add_message(session_id, "user", text)
         
-        # Try FAQ fallback for short simple queries
-        if len(text.split()) < 8:
-            faq = search_faq(text)
-            if faq:
-                session_manager.add_message(session_id, "assistant", faq["answer"])
-                response_time = time.time() - start_time
-                return LLMResponse(
-                    text=faq["answer"],
-                    session_id=session_id,
-                    mode="faq",
-                    response_time=response_time
-                )
-        
         # Generate marketing response with session context
         messages = session_manager.get_messages_for_llm(session_id)
         response = generate_marketing_response(text, temperature=temperature)
@@ -115,19 +102,6 @@ async def generate_marketing_chat(req: QueryRequest, temperature: Optional[float
         
         # Add user message to session
         session_manager.add_message(session_id, "user", text)
-        
-        # Try FAQ fallback for short simple queries
-        if len(text.split()) < 8:
-            faq = search_faq(text)
-            if faq:
-                session_manager.add_message(session_id, "assistant", faq["answer"])
-                response_time = time.time() - start_time
-                return LLMResponse(
-                    text=faq["answer"],
-                    session_id=session_id,
-                    mode="faq",
-                    response_time=response_time
-                )
         
         # Generate marketing response with chat context
         messages = session_manager.get_messages_for_llm(session_id)
@@ -231,19 +205,6 @@ async def handle_marketing_query(req: QueryRequest, temperature: Optional[float]
         
         # Add user message to session
         session_manager.add_message(session_id, "user", text)
-        
-        # Try FAQ fallback for short simple queries
-        if len(text.split()) < 8:
-            faq = search_faq(text)
-            if faq:
-                session_manager.add_message(session_id, "assistant", faq["answer"])
-                response_time = time.time() - start_time
-                return LLMResponse(
-                    text=faq["answer"],
-                    session_id=session_id,
-                    mode="faq",
-                    response_time=response_time
-                )
         
         # Return streaming endpoint info
         response_time = time.time() - start_time
