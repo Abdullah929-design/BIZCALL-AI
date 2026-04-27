@@ -15,8 +15,6 @@ __pycache__/
 # Ollama & model folders
 ollama_models/
 ollama_marketing_models_new/
-intent_detection_model/
-llm_complex_path/gemma_banking_model/
 ollama_marketing_models_latest/
 
 # OS
