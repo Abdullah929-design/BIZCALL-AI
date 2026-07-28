@@ -172,17 +172,19 @@ async def banking_stream(session_id: str):
                     if len(faq_text) > MAX_FAQ_CHARS:
                         faq_text = faq_text[:MAX_FAQ_CHARS].rsplit(' ', 1)[0] + "\u2026"
 
-                    # Plain labelled format — NO bracket tags.
-                    # Bracket/markdown tags leak into output on small models;
-                    # plain labels are treated as context, not as text to continue.
-                    grounded_content = (
-                        f"Knowledge base answer: {faq_text}\n\n"
-                        f"Customer question: {last_user_message}"
-                    )
-                    for i in reversed(range(len(messages))):
-                        if messages[i].get("role") == "user":
-                            messages[i] = {"role": "user", "content": grounded_content}
+                    # Append RAG context to the system message instead of replacing
+                    # the user message. This keeps the user message clean so the small
+                    # Gemma 2B model receives a plain question and does not echo the
+                    # "Knowledge base answer:" prefix back in its output.
+                    rag_addition = f"\n\nRelevant banking knowledge for this query: {faq_text}"
+                    system_updated = False
+                    for i, msg in enumerate(messages):
+                        if msg.get("role") == "system":
+                            messages[i] = {"role": "system", "content": msg["content"] + rag_addition}
+                            system_updated = True
                             break
+                    if not system_updated:
+                        messages.insert(0, {"role": "system", "content": f"Relevant banking knowledge: {faq_text}"})
                     rag_context_added = True
                     rag_confidence = faq['confidence']
                     rag_intent = faq['intent']

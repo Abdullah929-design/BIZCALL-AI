@@ -3,6 +3,8 @@ import BankingChat from './components/BankingChat.jsx';
 import MarketingChat from './components/MarketingChat.jsx';
 import TwilioCallDemo from './components/TwilioCallDemo.jsx';
 import TestAPI from './components/TestAPI.jsx';
+import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
+import HumanAgentSupport from './components/HumanAgentSupport.jsx';
 import { healthAPI } from './services/api.jsx';
 import './App.css';
 
@@ -29,6 +31,8 @@ function App() {
     { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
     { id: 'voice', icon: '📞', label: 'AI Voice Simulator', sub: 'Inbound & Outbound' },
     { id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
+    { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
+    { id: 'agents', icon: '👥', label: 'Agent Support', sub: 'Human escalation desk' },
   ];
 
   const activeNav = navItems.find(n => n.id === activeTab);
@@ -88,6 +92,8 @@ function App() {
           {activeTab === 'marketing' && <MarketingChat />}
           {activeTab === 'voice' && <TwilioCallDemo />}
           {activeTab === 'test' && <TestAPI />}
+          {activeTab === 'analytics' && <AnalyticsDashboard />}
+          {activeTab === 'agents' && <HumanAgentSupport />}
         </div>
       </main>
     </div>
