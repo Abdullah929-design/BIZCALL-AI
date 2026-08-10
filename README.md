@@ -43,6 +43,50 @@ BIZCALL AI is a full-stack conversational AI platform that handles both **inboun
 
 ---
 
+## 🎥 Video Demos
+
+### 📺 System Overview & Architecture
+[![BIZCALL AI System Overview](https://via.placeholder.com/560x315/1f6feb/ffffff?text=BIZCALL+AI+System+Overview)](https://youtube.com/placeholder)
+
+Watch a complete walkthrough of the system architecture, components, and data flow.
+
+---
+
+### 💬 Banking Intent Detection Demo
+[![Banking Intent Detection Demo](https://via.placeholder.com/560x315/238636/ffffff?text=Intent+Detection+Demo)](https://youtube.com/placeholder)
+
+See how the system detects multiple intents, handles edge cases, and prioritizes responses.
+
+---
+
+### 📞 Twilio Call Integration Demo
+[![Twilio Call Integration](https://via.placeholder.com/560x315/3fb950/ffffff?text=Twilio+Call+Demo)](https://youtube.com/placeholder)
+
+Live demonstration of inbound calls, speech processing, and real-time AI responses.
+
+---
+
+### 🎨 Frontend Dashboard Walkthrough
+[![Frontend Dashboard Walkthrough](https://via.placeholder.com/560x315/d29922/ffffff?text=Dashboard+Walkthrough)](https://youtube.com/placeholder)
+
+Complete tour of the React web interface, chat interface, and analytics dashboard.
+
+---
+
+### 📊 Analytics & Monitoring
+[![Analytics & Monitoring Dashboard](https://via.placeholder.com/560x315/a371f7/ffffff?text=Analytics+Dashboard)](https://youtube.com/placeholder)
+
+Real-time performance metrics, latency tracking, and call analytics via Streamlit.
+
+---
+
+### 🚀 Setup & Deployment Guide
+[![Setup & Deployment Guide](https://via.placeholder.com/560x315/79c0ff/ffffff?text=Setup+Guide)](https://youtube.com/placeholder)
+
+Step-by-step walkthrough to get BIZCALL AI running locally or in the cloud.
+
+---
+
 ## 🏗️ Architecture
 
 ```
