@@ -1,16 +1,7 @@
 fastapi
 uvicorn[standard]
-transformers
-torch
-sentence-transformers
-faiss-cpu
-numpy
 python-multipart
 pydantic
 python-dotenv
-streamlit
-nltk
-regex
 requests
-filelock
-safetensors
+retell-sdk
