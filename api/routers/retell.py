@@ -64,11 +64,11 @@ async def register_web_call(req: RegisterCallRequest):
         request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
         with urllib.request.urlopen(request) as response:
             res_data = json.loads(response.read().decode('utf-8'))
-            print(f"✅ [Retell API Success] Created Web Call: {res_data.get('call_id')}")
+            print(f"[Retell API Success] Created Web Call: {res_data.get('call_id')}")
             return {"success": True, "call_data": res_data}
             
     except Exception as e:
-        print(f"❌ [Retell API Direct Call Error]: {e}")
+        print(f"[Retell API Direct Call Error]: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Retell Direct API Error: {str(e)}")
@@ -88,23 +88,35 @@ async def create_custom_agent(req: CreateCustomAgentRequest):
             general_prompt=full_prompt
         )
         llm_id = llm.llm_id
-        print(f"✅ [Retell LLM Created] LLM ID: {llm_id}")
+        print(f"[Retell LLM Created] LLM ID: {llm_id}")
 
         # 2. Create Agent using newly created Retell LLM
         agent_name = req.agent_name or "Custom Voice Agent"
         voice_id = req.voice_id or "11labs-Adrian"
         
-        agent = client.agent.create(
-            agent_name=agent_name,
-            response_engine={
-                "type": "retell-llm",
-                "llm_id": llm_id
-            },
-            voice_id=voice_id
-        )
+        try:
+            agent = client.agent.create(
+                agent_name=agent_name,
+                response_engine={
+                    "type": "retell-llm",
+                    "llm_id": llm_id
+                },
+                voice_id=voice_id
+            )
+        except Exception as voice_err:
+            print(f"[Retell Voice Warning] Voice ID '{voice_id}' not found, falling back to '11labs-Adrian': {voice_err}")
+            voice_id = "11labs-Adrian"
+            agent = client.agent.create(
+                agent_name=agent_name,
+                response_engine={
+                    "type": "retell-llm",
+                    "llm_id": llm_id
+                },
+                voice_id=voice_id
+            )
         
         agent_id = agent.agent_id
-        print(f"🎉 [Retell Agent Provisioned Successfully] Agent ID: {agent_id} | Name: {agent_name} | Voice: {voice_id}")
+        print(f"[Retell Agent Provisioned Successfully] Agent ID: {agent_id} | Name: {agent_name} | Voice: {voice_id}")
 
         return {
             "success": True,
@@ -118,7 +130,7 @@ async def create_custom_agent(req: CreateCustomAgentRequest):
         }
             
     except Exception as e:
-        print(f"❌ [Retell Agent Provisioning Error]: {e}")
+        print(f"[Retell Agent Provisioning Error]: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create agent on Retell AI: {str(e)}")

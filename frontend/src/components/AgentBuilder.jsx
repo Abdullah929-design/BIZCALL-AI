@@ -10,7 +10,7 @@ const AgentBuilder = () => {
   const [agentName, setAgentName] = useState('');
   const [prompt, setPrompt] = useState('');
   const [knowledgeBaseText, setKnowledgeBaseText] = useState('');
-  const [voiceId, setVoiceId] = useState('eleven_labs_adam');
+  const [voiceId, setVoiceId] = useState('11labs-Adrian');
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [activeCallAgentId, setActiveCallAgentId] = useState(null);
