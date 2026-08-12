@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
     "axios": "^1.13.6",
     "lucide-react": "^1.6.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "retell-client-js-sdk": "^2.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

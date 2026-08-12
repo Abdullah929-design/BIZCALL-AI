@@ -11,9 +11,7 @@ load_dotenv()
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from routers import health, retell
-# Legacy routers (dead code preserved in repo)
-# from routers import banking, marketing, twilio
+from routers import health, retell, auth
 
 app = FastAPI(
     title="Banking & Marketing Call Center API",
@@ -42,6 +40,7 @@ app.add_middleware(
 
 # Include active routers
 app.include_router(health.router, prefix="/api")
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(retell.router, prefix="/api/retell", tags=["retell"])
 
 @app.get("/")
