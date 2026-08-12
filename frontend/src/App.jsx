@@ -158,7 +158,7 @@ function App() {
         </div>
 
         <div className="app-content">
-          {activeTab === 'builder' && <AgentBuilder />}
+          {activeTab === 'builder' && <AgentBuilder user={user} />}
           {activeTab === 'retell' && <WebCallDemo />}
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}

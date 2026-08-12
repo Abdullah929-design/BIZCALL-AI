@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { RetellWebClient } from 'retell-client-js-sdk';
+import { supabase } from '../services/supabaseClient';
 import './RetellCallDemo.css';
 
 const API_BASE_URL = '/api/retell';
 
-const AgentBuilder = () => {
+const AgentBuilder = ({ user }) => {
   const [callType, setCallType] = useState('inbound'); // inbound vs outbound
   const [agentName, setAgentName] = useState('');
   const [prompt, setPrompt] = useState('');
@@ -16,15 +17,55 @@ const AgentBuilder = () => {
   const [activeCallAgentId, setActiveCallAgentId] = useState(null);
   const [activeCallStatus, setActiveCallStatus] = useState('');
   const retellClientRef = useRef(null);
+  const [myAgents, setMyAgents] = useState([]);
 
-  const [myAgents, setMyAgents] = useState(() => {
+  const userId = user?.id || user?.email || 'demo_user';
+
+  const saveAgentsToStorage = (agentsList, currentUserId) => {
     try {
-      const saved = localStorage.getItem('bizcall_agents');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+      const storageKey = `bizcall_agents_${currentUserId || userId}`;
+      localStorage.setItem(storageKey, JSON.stringify(agentsList));
+    } catch (e) {
+      console.error('Failed to save agents to localStorage', e);
     }
-  });
+  };
+
+  const fetchUserAgents = async () => {
+    const currentUserId = user?.id || user?.email || 'demo_user';
+
+    // 1. Try to fetch from Supabase database
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        setMyAgents(data);
+        saveAgentsToStorage(data, currentUserId);
+        return;
+      }
+    } catch (e) {
+      console.log('Supabase agents query info:', e);
+    }
+
+    // 2. Fallback to user-scoped localStorage
+    try {
+      const saved = localStorage.getItem(`bizcall_agents_${currentUserId}`);
+      if (saved) {
+        setMyAgents(JSON.parse(saved));
+      } else {
+        setMyAgents([]);
+      }
+    } catch (e) {
+      setMyAgents([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserAgents();
+  }, [user]);
 
   const handleStartCall = async (agent) => {
     setActiveCallAgentId(agent.agent_id);
@@ -80,14 +121,6 @@ const AgentBuilder = () => {
     setActiveCallStatus('Call ended.');
   };
 
-  const saveAgentsToStorage = (agentsList) => {
-    try {
-      localStorage.setItem('bizcall_agents', JSON.stringify(agentsList));
-    } catch (e) {
-      console.error('Failed to save agents to localStorage', e);
-    }
-  };
-
   const handleDeployAgent = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -105,9 +138,25 @@ const AgentBuilder = () => {
 
       if (res.data && res.data.success) {
         const newAgent = res.data.agent;
+        const currentUserId = user?.id || user?.email || 'demo_user';
+
+        // Attempt inserting into Supabase agents table
+        try {
+          await supabase.from('agents').insert([{
+            user_id: currentUserId,
+            agent_id: newAgent.agent_id,
+            agent_name: newAgent.agent_name,
+            call_type: newAgent.call_type,
+            voice_id: newAgent.voice_id,
+            llm_id: newAgent.llm_id
+          }]);
+        } catch (e) {
+          console.log('Supabase insert notice:', e);
+        }
+
         setMyAgents(prev => {
           const updated = [newAgent, ...prev];
-          saveAgentsToStorage(updated);
+          saveAgentsToStorage(updated, currentUserId);
           return updated;
         });
         setStatusMsg(`✅ Agent "${agentName}" deployed successfully! Agent ID: ${newAgent.agent_id}`);
@@ -126,10 +175,22 @@ const AgentBuilder = () => {
     }
   };
 
-  const handleDeleteAgent = (agentIdToDelete) => {
+  const handleDeleteAgent = async (agentIdToDelete) => {
+    const currentUserId = user?.id || user?.email || 'demo_user';
+
+    try {
+      await supabase
+        .from('agents')
+        .delete()
+        .eq('agent_id', agentIdToDelete)
+        .eq('user_id', currentUserId);
+    } catch (e) {
+      console.log('Supabase delete notice:', e);
+    }
+
     setMyAgents(prev => {
       const updated = prev.filter(a => a.agent_id !== agentIdToDelete);
-      saveAgentsToStorage(updated);
+      saveAgentsToStorage(updated, currentUserId);
       return updated;
     });
   };
