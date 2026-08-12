@@ -19,8 +19,14 @@ const AuthModal = ({ onLoginSuccess }) => {
       if (isSignUp) {
         const res = await axios.post('/api/auth/signup', { email, password });
         if (res.data && res.data.success) {
+          const session = res.data.data?.session;
           const userData = res.data.data?.user || { email };
-          onLoginSuccess(userData);
+          if (session) {
+            onLoginSuccess(userData);
+          } else {
+            alert('🎉 Account created on Supabase! If email confirmation is enabled, check your inbox, or click Sign In to continue.');
+            setIsSignUp(false);
+          }
         }
       } else {
         const res = await axios.post('/api/auth/login', { email, password });

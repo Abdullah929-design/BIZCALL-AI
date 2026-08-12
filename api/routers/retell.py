@@ -75,72 +75,53 @@ async def register_web_call(req: RegisterCallRequest):
 
 @router.post("/create-custom-agent")
 async def create_custom_agent(req: CreateCustomAgentRequest):
-    """Provision a custom Retell AI Agent dynamically for Inbound or Outbound SaaS users."""
-    api_key = os.getenv("RETELL_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="RETELL_API_KEY environment variable is not configured.")
-        
+    """Provision a real custom Retell AI Agent dynamically using Retell SDK."""
+    client = get_retell_client()
+    
     try:
-        import urllib.request
-        import json
-        
-        # 1. Create LLM / Conversation Flow dynamically for user's prompt & KB
-        llm_url = "https://api.retellai.com/v2/create-retell-llm"
-        llm_payload = {
-            "general_prompt": f"{req.prompt}\n\n[Knowledge Base & FAQs]:\n{req.knowledge_base or 'N/A'}"
-        }
-        
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        llm_req = urllib.request.Request(llm_url, data=json.dumps(llm_payload).encode('utf-8'), headers=headers, method="POST")
-        with urllib.request.urlopen(llm_req) as response:
-            llm_res = json.loads(response.read().decode('utf-8'))
-            llm_id = llm_res.get("llm_id")
+        # 1. Create LLM / Conversation Flow for prompt + knowledge base
+        full_prompt = f"{req.prompt}"
+        if req.knowledge_base and req.knowledge_base.strip():
+            full_prompt += f"\n\n[Knowledge Base & FAQs]:\n{req.knowledge_base.strip()}"
+            
+        llm = client.llm.create(
+            general_prompt=full_prompt
+        )
+        llm_id = llm.llm_id
+        print(f"✅ [Retell LLM Created] LLM ID: {llm_id}")
 
-        # 2. Create Agent using LLM ID
-        agent_url = "https://api.retellai.com/v2/create-agent"
-        agent_payload = {
-            "agent_name": req.agent_name,
-            "response_engine": {
+        # 2. Create Agent using newly created Retell LLM
+        agent_name = req.agent_name or "Custom Voice Agent"
+        voice_id = req.voice_id or "11labs-Adrian"
+        
+        agent = client.agent.create(
+            agent_name=agent_name,
+            response_engine={
                 "type": "retell-llm",
                 "llm_id": llm_id
             },
-            "voice_id": req.voice_id or "11labs-Adrian"
-        }
+            voice_id=voice_id
+        )
         
-        agent_req = urllib.request.Request(agent_url, data=json.dumps(agent_payload).encode('utf-8'), headers=headers, method="POST")
-        with urllib.request.urlopen(agent_req) as response:
-            agent_res = json.loads(response.read().decode('utf-8'))
-            agent_id = agent_res.get("agent_id")
-            
-            print(f"✅ [Custom Agent Created] ID: {agent_id} | Name: {req.agent_name} | Type: {req.call_type}")
-            return {
-                "success": True,
-                "agent": {
-                    "agent_id": agent_id,
-                    "agent_name": req.agent_name,
-                    "call_type": req.call_type,
-                    "voice_id": req.voice_id,
-                    "llm_id": llm_id
-                }
-            }
-            
-    except Exception as e:
-        print(f"⚠️ [Create Custom Agent Fallback] using active agent ID: {e}")
-        # Fallback for prototype testing if custom LLM API format varies
-        fallback_id = os.getenv("RETELL_AGENT_ID", "agent_a84bfa12b9d61b4e168f9e4201")
+        agent_id = agent.agent_id
+        print(f"🎉 [Retell Agent Provisioned Successfully] Agent ID: {agent_id} | Name: {agent_name} | Voice: {voice_id}")
+
         return {
             "success": True,
             "agent": {
-                "agent_id": fallback_id,
-                "agent_name": req.agent_name,
+                "agent_id": agent_id,
+                "agent_name": agent_name,
                 "call_type": req.call_type,
-                "voice_id": req.voice_id or "11labs-Adrian"
+                "voice_id": voice_id,
+                "llm_id": llm_id
             }
         }
+            
+    except Exception as e:
+        print(f"❌ [Retell Agent Provisioning Error]: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to create agent on Retell AI: {str(e)}")
 
 @router.post("/create-phone-call")
 async def create_phone_call(req: CreatePhoneCallRequest):

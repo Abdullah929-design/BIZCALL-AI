@@ -42,15 +42,11 @@ async def signup(req: AuthRequest):
             msg = err_body
         raise HTTPException(status_code=e.code, detail=msg)
     except urllib.error.URLError as e:
-        print(f"⚠️ [Supabase Network/DNS Error during Signup]: {e.reason}. Falling back to local Dev Auth.")
-        return {
-            "success": True,
-            "data": {
-                "user": {"id": "dev-user-id", "email": req.email},
-                "session": {"access_token": "dev-access-token"}
-            },
-            "is_dev_fallback": True
-        }
+        print(f"❌ [Supabase Connection/DNS Error]: {e.reason}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Cannot connect to Supabase at {SUPABASE_URL} ({e.reason}). Please check your SUPABASE_URL in .env or verify your Supabase project is running."
+        )
     except Exception as e:
         print(f"❌ [Signup General Error]: {type(e).__name__}: {str(e)}")
         import traceback
@@ -82,15 +78,11 @@ async def login(req: AuthRequest):
             msg = err_body
         raise HTTPException(status_code=e.code, detail=msg)
     except urllib.error.URLError as e:
-        print(f"⚠️ [Supabase Network/DNS Error during Login]: {e.reason}. Falling back to local Dev Auth.")
-        return {
-            "success": True,
-            "data": {
-                "user": {"id": "dev-user-id", "email": req.email},
-                "session": {"access_token": "dev-access-token"}
-            },
-            "is_dev_fallback": True
-        }
+        print(f"❌ [Supabase Connection/DNS Error]: {e.reason}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Cannot connect to Supabase at {SUPABASE_URL} ({e.reason}). Please check your SUPABASE_URL in .env or verify your Supabase project is running."
+        )
     except Exception as e:
         print(f"❌ [Login General Error]: {type(e).__name__}: {str(e)}")
         import traceback
