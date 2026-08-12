@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import BankingChat from './components/BankingChat.jsx';
 import MarketingChat from './components/MarketingChat.jsx';
 import TwilioCallDemo from './components/TwilioCallDemo.jsx';
+import WebCallDemo from './components/WebCallDemo.jsx';
 import TestAPI from './components/TestAPI.jsx';
 import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
 import HumanAgentSupport from './components/HumanAgentSupport.jsx';
@@ -9,7 +10,7 @@ import { healthAPI } from './services/api.jsx';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('banking');
+  const [activeTab, setActiveTab] = useState('retell');
   const [apiStatus, setApiStatus] = useState('checking');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,9 +28,10 @@ function App() {
   };
 
   const navItems = [
+    { id: 'retell', icon: '🎙️', label: 'Retell AI Voice Tester', sub: 'Active Call Engine' },
     { id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
     { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
-    { id: 'voice', icon: '📞', label: 'AI Voice Simulator', sub: 'Inbound & Outbound' },
+    { id: 'voice', icon: '📞', label: 'Legacy Voice Call (Twilio)', sub: 'Inbound & Outbound' },
     { id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
     { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
     { id: 'agents', icon: '👥', label: 'Agent Support', sub: 'Human escalation desk' },
@@ -88,6 +90,7 @@ function App() {
         </div>
 
         <div className="app-content">
+          {activeTab === 'retell' && <WebCallDemo />}
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}
           {activeTab === 'voice' && <TwilioCallDemo />}

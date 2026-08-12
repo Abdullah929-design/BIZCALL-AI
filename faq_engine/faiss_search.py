@@ -12,11 +12,24 @@ SIMILARITY_THRESHOLD = 0.10
 
 model = SentenceTransformer(MODEL_NAME)
 
-index = faiss.read_index(os.path.join(SCRIPT_DIR, "faiss.index"))
-with open(os.path.join(SCRIPT_DIR, "faq_meta.pkl"), "rb") as f:
-    meta = pickle.load(f)
+index = None
+meta = []
+
+try:
+    index_path = os.path.join(SCRIPT_DIR, "faiss.index")
+    meta_path = os.path.join(SCRIPT_DIR, "faq_meta.pkl")
+    if os.path.exists(index_path) and os.path.exists(meta_path):
+        index = faiss.read_index(index_path)
+        with open(meta_path, "rb") as f:
+            meta = pickle.load(f)
+    else:
+        print(f"⚠️ FAISS index or metadata missing in {SCRIPT_DIR}. FAQ RAG fallback will be disabled.")
+except Exception as e:
+    print(f"⚠️ Failed to load FAISS index: {e}")
 
 def search_faq(query_text, predicted_intent=None):
+    if index is None or not meta:
+        return None
     query_vec = model.encode([query_text], convert_to_numpy=True)
     faiss.normalize_L2(query_vec)
 

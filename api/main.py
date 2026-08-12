@@ -11,7 +11,9 @@ load_dotenv()
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from routers import banking, marketing, health, twilio
+from routers import health, retell
+# Legacy routers (dead code preserved in repo)
+# from routers import banking, marketing, twilio
 
 app = FastAPI(
     title="Banking & Marketing Call Center API",
@@ -38,11 +40,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Include active routers
 app.include_router(health.router, prefix="/api")
-app.include_router(banking.router, prefix="/api/banking", tags=["banking"])
-app.include_router(marketing.router, prefix="/api/marketing", tags=["marketing"])
-app.include_router(twilio.router, prefix="/api/twilio", tags=["twilio"])
+app.include_router(retell.router, prefix="/api/retell", tags=["retell"])
 
 @app.get("/")
 async def root():
@@ -52,6 +52,7 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs",
         "endpoints": {
+            "retell": "/api/retell",
             "banking": "/api/banking",
             "marketing": "/api/marketing",
             "twilio": "/api/twilio",
@@ -61,20 +62,10 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize models and services on startup"""
-    print(" Starting Banking & Marketing API...")
-    print(" Loading intent detection model...")
-    
-    # Pre-load the intent detection model
-    try:
-        from services.intent_detector import load_intent_model
-        model, tokenizer = load_intent_model()
-        print(" Intent detection model loaded successfully")
-    except Exception as e:
-        print(f" Failed to load intent detection model: {e}")
-    
-    print(" API is ready to serve requests!")
-    print(" Documentation available at: http://localhost:8000/docs")
+    """Initialize Retell API service on startup"""
+    print("🚀 Starting Retell AI Voice Call Center API...")
+    print("✅ Retell API is ready to serve requests!")
+    print("📚 Documentation available at: http://localhost:8002/docs")
 
 if __name__ == "__main__":
     uvicorn.run(
