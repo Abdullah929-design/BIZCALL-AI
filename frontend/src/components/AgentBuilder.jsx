@@ -298,8 +298,13 @@ const AgentBuilder = ({ user }) => {
               }}
             >
               <option value="11labs-Adrian">Male Professional (Adrian - ElevenLabs)</option>
-              <option value="11labs-Rachel">Female Friendly (Rachel - ElevenLabs)</option>
-              <option value="11labs-Domi">Female Energetic (Domi - ElevenLabs)</option>
+              <option value="11labs-Emily">Female Professional (Emily - ElevenLabs)</option>
+              <option value="11labs-Brian">Male Friendly (Brian - ElevenLabs)</option>
+              <option value="11labs-Jenny">Female Support (Jenny - ElevenLabs)</option>
+              <option value="11labs-John">Male Executive (John - ElevenLabs)</option>
+              <option value="11labs-Grace">Female Warm (Grace - ElevenLabs)</option>
+              <option value="openai-Nova">Female Expressive (Nova - OpenAI)</option>
+              <option value="openai-Echo">Male Deep (Echo - OpenAI)</option>
             </select>
           </div>
 
