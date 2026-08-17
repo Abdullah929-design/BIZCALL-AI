@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { supabase } from '../services/supabaseClient';
 import './AuthModal.css';
 
@@ -10,39 +9,54 @@ const AuthModal = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
+const handleAuth = async (e) => {
+  e.preventDefault();
 
-    try {
-      if (isSignUp) {
-        const res = await axios.post('/api/auth/signup', { email, password });
-        if (res.data && res.data.success) {
-          const session = res.data.data?.session;
-          const userData = res.data.data?.user || { email };
-          if (session) {
-            onLoginSuccess(userData);
-          } else {
-            alert('🎉 Account created on Supabase! If email confirmation is enabled, check your inbox, or click Sign In to continue.');
-            setIsSignUp(false);
-          }
-        }
-      } else {
-        const res = await axios.post('/api/auth/login', { email, password });
-        if (res.data && res.data.success) {
-          const userData = res.data.data?.user || { email };
-          onLoginSuccess(userData);
-        }
+  setLoading(true);
+  setErrorMsg('');
+
+  try {
+    if (isSignUp) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
       }
-    } catch (err) {
-      const msg = err.response?.data?.detail || err.message;
-      setErrorMsg(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
 
+      if (data.session) {
+        onLoginSuccess(data.session.user);
+      } else {
+        setErrorMsg(
+          'Account created. Please check your email and confirm your account before signing in.'
+        );
+        setIsSignUp(false);
+      }
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.session) {
+        throw new Error('No Supabase session was returned.');
+      }
+
+      onLoginSuccess(data.session.user);
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
+    setErrorMsg(error.message || 'Authentication failed.');
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="auth-overlay">
       <div className="auth-modal">
@@ -86,23 +100,6 @@ const AuthModal = ({ onLoginSuccess }) => {
           <span onClick={() => setIsSignUp(!isSignUp)}>
             {isSignUp ? 'Log In' : 'Sign Up Free'}
           </span>
-        </div>
-
-        <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button
-            type="button"
-            onClick={() => onLoginSuccess({ email: 'demo@bizcall.ai' })}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#94a3b8',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            ⚡ Continue as Demo User (Bypass Auth)
-          </button>
         </div>
       </div>
     </div>

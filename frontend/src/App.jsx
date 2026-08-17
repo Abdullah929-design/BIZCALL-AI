@@ -13,56 +13,51 @@ import { healthAPI } from './services/api.jsx';
 import './App.css';
 
 function App() {
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('bizcall_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('builder');
   const [apiStatus, setApiStatus] = useState('checking');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    try {
-      localStorage.setItem('bizcall_user', JSON.stringify(userData));
-    } catch (e) {
-      console.error('Failed to save user session', e);
-    }
   };
 
   const handleLogout = () => {
     setUser(null);
-    try {
-      localStorage.removeItem('bizcall_user');
-    } catch (e) {
-      console.error('Failed to clear user session', e);
-    }
-    supabase.auth.signOut().catch(() => {});
+    supabase.auth.signOut().catch(() => { });
   };
+
 
   useEffect(() => {
     checkAPIHealth();
 
-    // Check active Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleLoginSuccess(session.user);
+    let mounted = true;
+
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setUser(session?.user ?? null);
+      }
+    };
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        handleLoginSuccess(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
   const checkAPIHealth = async () => {
     try {
       await healthAPI.check();

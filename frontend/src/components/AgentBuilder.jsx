@@ -6,6 +6,21 @@ import './RetellCallDemo.css';
 
 const API_BASE_URL = '/api/retell';
 
+const looksLikeMissingAgentsTable = (error) => {
+  const message = (error?.message || error?.details || error?.hint || '').toLowerCase();
+  const code = String(error?.code || '').toLowerCase();
+  const status = Number(error?.status || 0);
+
+  return (
+    status === 404 ||
+    code === '42p01' ||
+    code === 'pgrst205' ||
+    message.includes('relation') ||
+    message.includes('does not exist') ||
+    message.includes('not found')
+  );
+};
+
 const AgentBuilder = ({ user }) => {
   const [callType, setCallType] = useState('inbound'); // inbound vs outbound
   const [agentName, setAgentName] = useState('');
@@ -21,15 +36,6 @@ const AgentBuilder = ({ user }) => {
 
   const userId = user?.id || user?.email || 'demo_user';
 
-  const saveAgentsToStorage = (agentsList, currentUserId) => {
-    try {
-      const storageKey = `bizcall_agents_${currentUserId || userId}`;
-      localStorage.setItem(storageKey, JSON.stringify(agentsList));
-    } catch (e) {
-      console.error('Failed to save agents to localStorage', e);
-    }
-  };
-
   const fetchUserAgents = async () => {
     const currentUserId = user?.id || user?.email || 'demo_user';
 
@@ -41,25 +47,21 @@ const AgentBuilder = ({ user }) => {
         .eq('user_id', currentUserId)
         .order('created_at', { ascending: false });
 
+      if (error) {
+        if (looksLikeMissingAgentsTable(error)) {
+          setStatusMsg('⚠️ Supabase table public.agents is missing in the configured project. Using local storage fallback.');
+        } else {
+          setStatusMsg(`⚠️ Supabase read failed: ${error.message || 'Unknown error'}. Using local storage fallback.`);
+        }
+      }
+
       if (!error && data && data.length > 0) {
         setMyAgents(data);
-        saveAgentsToStorage(data, currentUserId);
         return;
       }
     } catch (e) {
       console.log('Supabase agents query info:', e);
-    }
-
-    // 2. Fallback to user-scoped localStorage
-    try {
-      const saved = localStorage.getItem(`bizcall_agents_${currentUserId}`);
-      if (saved) {
-        setMyAgents(JSON.parse(saved));
-      } else {
-        setMyAgents([]);
-      }
-    } catch (e) {
-      setMyAgents([]);
+      setStatusMsg('⚠️ Could not read agents from Supabase. Using local storage fallback.');
     }
   };
 
@@ -115,7 +117,7 @@ const AgentBuilder = ({ user }) => {
     if (retellClientRef.current) {
       try {
         retellClientRef.current.stopCall();
-      } catch (e) {}
+      } catch (e) { }
     }
     setActiveCallAgentId(null);
     setActiveCallStatus('Call ended.');
@@ -141,22 +143,22 @@ const AgentBuilder = ({ user }) => {
         const currentUserId = user?.id || user?.email || 'demo_user';
 
         // Attempt inserting into Supabase agents table
-        try {
-          await supabase.from('agents').insert([{
-            user_id: currentUserId,
-            agent_id: newAgent.agent_id,
-            agent_name: newAgent.agent_name,
-            call_type: newAgent.call_type,
-            voice_id: newAgent.voice_id,
-            llm_id: newAgent.llm_id
-          }]);
-        } catch (e) {
-          console.log('Supabase insert notice:', e);
+        const { error: insertError } = await supabase.from('agents').insert([{
+          user_id: currentUserId,
+          agent_id: newAgent.agent_id,
+          agent_name: newAgent.agent_name,
+          call_type: newAgent.call_type,
+          voice_id: newAgent.voice_id,
+          llm_id: newAgent.llm_id
+        }]);
+
+        if (insertError) {
+          throw new Error(insertError.message || 'Failed to save to Supabase');
         }
+
 
         setMyAgents(prev => {
           const updated = [newAgent, ...prev];
-          saveAgentsToStorage(updated, currentUserId);
           return updated;
         });
         setStatusMsg(`✅ Agent "${agentName}" deployed successfully! Agent ID: ${newAgent.agent_id}`);
@@ -178,19 +180,36 @@ const AgentBuilder = ({ user }) => {
   const handleDeleteAgent = async (agentIdToDelete) => {
     const currentUserId = user?.id || user?.email || 'demo_user';
 
+    // 1. If this agent is currently in an active call, hang up first!
+    if (activeCallAgentId === agentIdToDelete) {
+      handleStopCall();
+    }
+
+    // 2. Delete from Retell API Dashboard
     try {
-      await supabase
+      await axios.delete(`${API_BASE_URL}/delete-agent/${agentIdToDelete}`);
+    } catch (e) {
+      console.log('Retell API delete notice:', e);
+    }
+
+    // 3. Delete from Supabase Database
+    try {
+      const { error: deleteError } = await supabase
         .from('agents')
         .delete()
         .eq('agent_id', agentIdToDelete)
         .eq('user_id', currentUserId);
+
+      if (deleteError) {
+        console.log('Supabase delete notice:', deleteError);
+      }
     } catch (e) {
       console.log('Supabase delete notice:', e);
     }
 
+    // 4. Update UI state
     setMyAgents(prev => {
       const updated = prev.filter(a => a.agent_id !== agentIdToDelete);
-      saveAgentsToStorage(updated, currentUserId);
       return updated;
     });
   };

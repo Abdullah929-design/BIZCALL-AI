@@ -10,8 +10,9 @@ load_dotenv()
 
 router = APIRouter()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://uwtbxipuwtbcebu9n7gl.supabase.co")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_G_UrtxiPuwtb_cE-bu9n7g_Lc7dB1E0")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
 
 class AuthRequest(BaseModel):
     email: str

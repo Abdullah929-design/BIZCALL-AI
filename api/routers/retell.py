@@ -160,6 +160,19 @@ async def get_config():
         "has_api_key": bool(RETELL_API_KEY)
     }
 
+@router.delete("/delete-agent/{agent_id}")
+async def delete_agent(agent_id: str):
+    """Delete the custom agent from Retell AI servers."""
+    client = get_retell_client()
+    try:
+        client.agent.delete(agent_id)
+        print(f"[Retell API] Agent {agent_id} deleted successfully.")
+        return {"success": True}
+    except Exception as e:
+        print(f"[Retell Agent Deletion Error]: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete agent on Retell AI: {str(e)}")
+
+
 @router.get("/webhook")
 @router.head("/webhook")
 async def retell_webhook_verify():
