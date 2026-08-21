@@ -11,6 +11,8 @@ import HumanAgentSupport from './components/HumanAgentSupport.jsx';
 import { supabase } from './services/supabaseClient.js';
 import { healthAPI } from './services/api.jsx';
 import './App.css';
+import RetellLiveCalls from './components/RetellLiveCalls.jsx';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -70,6 +72,7 @@ function App() {
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Inbound/Outbound Builder', sub: 'Create AI Agents' },
     { id: 'retell', icon: '🎙️', label: 'Retell AI Voice Tester', sub: 'Active Call Engine' },
+    { id: 'live-calls', icon: '⚡', label: 'Retell Live Calls', sub: 'Twilio Live Console' },
     { id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
     { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
     { id: 'voice', icon: '📞', label: 'Legacy Voice Call (Twilio)', sub: 'Inbound & Outbound' },
@@ -155,6 +158,7 @@ function App() {
         <div className="app-content">
           {activeTab === 'builder' && <AgentBuilder user={user} />}
           {activeTab === 'retell' && <WebCallDemo />}
+          {activeTab === 'live-calls' && <RetellLiveCalls user={user} />}
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}
           {activeTab === 'voice' && <TwilioCallDemo />}

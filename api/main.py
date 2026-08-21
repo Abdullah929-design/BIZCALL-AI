@@ -22,13 +22,20 @@ app = FastAPI(
 )
 
 # CORS - allow your React dev host; tighten for production
+# CORS - allow your React dev host; tighten for production
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
-    "http://localhost:5173",   # Vite dev server
+    "http://localhost:5173",   # Vite dev server (Dashboard)
     "http://127.0.0.1:5173",
+    "http://localhost:5174",   # Lead A Dev Server
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",   # Lead B Dev Server
+    "http://127.0.0.1:5175",
+    "http://localhost:5176",   # Lead C Dev Server
+    "http://127.0.0.1:5176",
 ]
 app.add_middleware(
     CORSMiddleware,
