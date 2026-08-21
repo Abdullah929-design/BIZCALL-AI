@@ -36,6 +36,10 @@ origins = [
     "http://127.0.0.1:5175",
     "http://localhost:5176",   # Lead C Dev Server
     "http://127.0.0.1:5176",
+    "https://bizcallai-ahmed.netlify.app",
+    "https://bizcallai-fatimaali.netlify.app",
+    "https://bizcallai-muhammadzain.netlify.app",
+    "https://bizcallai-aisha.netlify.app"
 ]
 app.add_middleware(
     CORSMiddleware,
