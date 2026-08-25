@@ -174,8 +174,9 @@ async def create_phone_call(req: CreatePhoneCallRequest):
             from_number=req.from_number,
             to_number=req.to_number,
             override_agent_id=agent_id,
-            retell_llm_dynamic_variables=req.retell_llm_dynamic_variables,
+            retell_llm_dynamic_variables=req.retell_llm_dynamic_variables or {},
         )
+
 
         # Extract Twilio SID if available in the response model attributes
         twilio_call_sid = None
