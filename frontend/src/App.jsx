@@ -71,14 +71,14 @@ function App() {
 
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Inbound/Outbound Builder', sub: 'Create AI Agents' },
-    { id: 'retell', icon: '🎙️', label: 'Retell AI Voice Tester', sub: 'Active Call Engine' },
+    //{ id: 'retell', icon: '🎙️', label: 'Retell AI Voice Tester', sub: 'Active Call Engine' },
     { id: 'live-calls', icon: '⚡', label: 'Retell Live Calls', sub: 'Twilio Live Console' },
-    { id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
-    { id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
-    { id: 'voice', icon: '📞', label: 'Legacy Voice Call (Twilio)', sub: 'Inbound & Outbound' },
-    { id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
+    //{ id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
+    //{ id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
+    //{ id: 'voice', icon: '📞', label: 'Legacy Voice Call (Twilio)', sub: 'Inbound & Outbound' },
+    //{ id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
     { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
-    { id: 'agents', icon: '👥', label: 'Agent Support', sub: 'Human escalation desk' },
+    //{ id: 'agents', icon: '👥', label: 'Agent Support', sub: 'Human escalation desk' },
   ];
 
   const activeNav = navItems.find(n => n.id === activeTab);
