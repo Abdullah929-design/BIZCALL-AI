@@ -28,9 +28,14 @@ function useCallTimer(startedAt, active) {
     return elapsed;
 }
 
+const isCallActive = (call) => {
+    if (!call) return false;
+    const isStale = call.created_at && (Date.now() - new Date(call.created_at).getTime()) > 15 * 60 * 1000;
+    return !isStale && ['active', 'ringing', 'registered'].includes(call.status);
+};
+
 const CallSlot = ({ call, direction, onHangup }) => {
-    const isStale = call?.created_at && (Date.now() - new Date(call.created_at).getTime()) > 2 * 60 * 60 * 1000;
-    const active = !!call && !isStale && ['active', 'ringing', 'registered'].includes(call.status);
+    const active = isCallActive(call);
     const elapsed = useCallTimer(call?.created_at, active);
 
     if (!active) {
@@ -387,8 +392,8 @@ const RetellLiveCalls = ({ user }) => {
         }
     };
 
-    const inboundActive = inboundSlots.filter(Boolean).length;
-    const outboundActive = outboundSlots.filter(Boolean).length;
+    const inboundActive = inboundSlots.filter(isCallActive).length;
+    const outboundActive = outboundSlots.filter(isCallActive).length;
 
     return (
         <div className="live-calls-page">
