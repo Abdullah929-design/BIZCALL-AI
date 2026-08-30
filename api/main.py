@@ -11,7 +11,7 @@ load_dotenv()
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from routers import health, retell, auth
+from routers import health, retell, auth, company
 
 app = FastAPI(
     title="Banking & Marketing Call Center API",
@@ -20,9 +20,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
-
-# CORS - allow your React dev host; tighten for production
-# CORS - allow your React dev host; tighten for production
+# CORS configuration
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -30,11 +28,11 @@ origins = [
     "http://127.0.0.1:3001",
     "http://localhost:5173",   # Vite dev server (Dashboard)
     "http://127.0.0.1:5173",
-    "http://localhost:5174",   # Lead A Dev Server
+    "http://localhost:5174",
     "http://127.0.0.1:5174",
-    "http://localhost:5175",   # Lead B Dev Server
+    "http://localhost:5175",
     "http://127.0.0.1:5175",
-    "http://localhost:5176",   # Lead C Dev Server
+    "http://localhost:5176",
     "http://127.0.0.1:5176",
     "https://bizcallai-ahmed.netlify.app",
     "https://bizcallai-fatimaali.netlify.app",
@@ -53,6 +51,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(retell.router, prefix="/api/retell", tags=["retell"])
+app.include_router(company.router, prefix="/api/company", tags=["company"])
 
 @app.get("/")
 async def root():

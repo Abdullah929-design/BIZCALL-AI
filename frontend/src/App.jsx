@@ -12,7 +12,7 @@ import { supabase } from './services/supabaseClient.js';
 import { healthAPI } from './services/api.jsx';
 import './App.css';
 import RetellLiveCalls from './components/RetellLiveCalls.jsx';
-
+import CompanySettings from './components/CompanySettings.jsx';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -71,14 +71,9 @@ function App() {
 
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Inbound/Outbound Builder', sub: 'Create AI Agents' },
-    //{ id: 'retell', icon: '🎙️', label: 'Retell AI Voice Tester', sub: 'Active Call Engine' },
     { id: 'live-calls', icon: '⚡', label: 'Retell Live Calls', sub: 'Twilio Live Console' },
-    //{ id: 'banking', icon: '🏦', label: 'Banking Assistant', sub: 'Inbound support' },
-    //{ id: 'marketing', icon: '📢', label: 'Marketing Agent', sub: 'Chat interface' },
-    //{ id: 'voice', icon: '📞', label: 'Legacy Voice Call (Twilio)', sub: 'Inbound & Outbound' },
-    //{ id: 'test', icon: '🧪', label: 'API Explorer', sub: 'Dev tools' },
     { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
-    //{ id: 'agents', icon: '👥', label: 'Agent Support', sub: 'Human escalation desk' },
+    { id: 'company', icon: '⚙️', label: 'Company Settings', sub: 'Profile & AI KB' },
   ];
 
   const activeNav = navItems.find(n => n.id === activeTab);
@@ -165,6 +160,7 @@ function App() {
           {activeTab === 'test' && <TestAPI />}
           {activeTab === 'analytics' && <AnalyticsDashboard />}
           {activeTab === 'agents' && <HumanAgentSupport />}
+          {activeTab === 'company' && <CompanySettings user={user} />}
         </div>
       </main>
     </div>
