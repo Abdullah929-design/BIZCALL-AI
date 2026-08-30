@@ -227,6 +227,92 @@ async def delete_agent(agent_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete agent on Retell AI: {str(e)}")
 
 
+@router.get("/calls")
+def list_calls(limit: int = 50):
+    """Fetch recent call logs and sync latest transcripts/durations from Retell AI."""
+    # 1. Sync latest call metadata directly from Retell AI API
+    try:
+        client = get_retell_client()
+        res = client.call.list(limit=20)
+        items = getattr(res, "items", res) if not isinstance(res, list) else res
+        
+        for item in items:
+            c_id = getattr(item, "call_id", None)
+            if not c_id:
+                continue
+            
+            dur_ms = getattr(item, "duration_ms", None) or 0
+            dur_sec = dur_ms // 1000 if dur_ms else 0
+            
+            analysis = getattr(item, "call_analysis", None)
+            summary = getattr(analysis, "call_summary", None) if analysis else None
+            sentiment = getattr(analysis, "user_sentiment", None) if analysis else None
+            
+            db_manager.upsert_call({
+                "call_id": c_id,
+                "agent_id": getattr(item, "agent_id", None),
+                "agent_name": getattr(item, "agent_name", None),
+                "direction": getattr(item, "direction", "inbound"),
+                "from_number": getattr(item, "from_number", None),
+                "to_number": getattr(item, "to_number", None),
+                "status": "completed" if getattr(item, "call_status", "") == "ended" else "active",
+                "duration": dur_sec,
+                "recording_url": getattr(item, "recording_url", None),
+                "transcript": getattr(item, "transcript", None),
+                "summary": summary,
+                "sentiment": sentiment,
+            })
+    except Exception as sync_err:
+        print(f"[retell sync notice]: could not sync live calls from Retell API: {sync_err}")
+
+    # 2. Return latest calls from database
+    try:
+        calls = db_manager.list_recent_calls(limit=limit)
+        return {"success": True, "calls": calls}
+    except Exception as e:
+        print(f"[db_manager] error fetching calls: {e}")
+        return {"success": False, "calls": [], "error": str(e)}
+
+@router.get("/calls/{call_id}")
+def get_call_detail(call_id: str):
+    """Fetch detailed metadata for a single call."""
+    try:
+        client = get_retell_client()
+        try:
+            item = client.call.retrieve(call_id)
+            if item:
+                dur_ms = getattr(item, "duration_ms", None) or 0
+                dur_sec = dur_ms // 1000 if dur_ms else 0
+                analysis = getattr(item, "call_analysis", None)
+                summary = getattr(analysis, "call_summary", None) if analysis else None
+                sentiment = getattr(analysis, "user_sentiment", None) if analysis else None
+                
+                db_manager.upsert_call({
+                    "call_id": call_id,
+                    "agent_id": getattr(item, "agent_id", None),
+                    "agent_name": getattr(item, "agent_name", None),
+                    "direction": getattr(item, "direction", "inbound"),
+                    "from_number": getattr(item, "from_number", None),
+                    "to_number": getattr(item, "to_number", None),
+                    "status": "completed" if getattr(item, "call_status", "") == "ended" else "active",
+                    "duration": dur_sec,
+                    "recording_url": getattr(item, "recording_url", None),
+                    "transcript": getattr(item, "transcript", None),
+                    "summary": summary,
+                    "sentiment": sentiment,
+                })
+        except Exception:
+            pass
+
+        call = db_manager.get_call(call_id)
+        if not call:
+            raise HTTPException(status_code=404, detail="Call record not found")
+        return {"success": True, "call": call}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/webhook")
 @router.head("/webhook")
 async def retell_webhook_verify():
@@ -285,10 +371,17 @@ async def retell_webhook(request: Request):
 
         elif event_type in ("call_analyzed", "call_completed"):
             analysis = data.get("call_analysis", {}) or {}
+            duration_seconds = None
+            if data.get("start_timestamp") and data.get("end_timestamp"):
+                duration_seconds = int(
+                    (data["end_timestamp"] - data["start_timestamp"]) / 1000
+                )
             db_manager.update_call_status(
                 call_id,
                 status="completed",
                 extra_data={
+                    "duration": duration_seconds or data.get("duration_ms", 0) // 1000 if data.get("duration_ms") else None,
+                    "recording_url": data.get("recording_url"),
                     "transcript": data.get("transcript"),
                     "summary": analysis.get("call_summary"),
                     "sentiment": analysis.get("user_sentiment"),

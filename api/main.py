@@ -73,9 +73,9 @@ async def root():
 @app.on_event("startup")
 async def startup_event():
     """Initialize Retell API service on startup"""
-    print("🚀 Starting Retell AI Voice Call Center API...")
-    print("✅ Retell API is ready to serve requests!")
-    print("📚 Documentation available at: http://localhost:8002/docs")
+    print("[INFO] Starting Retell AI Voice Call Center API...")
+    print("[INFO] Retell API is ready to serve requests!")
+    print("[INFO] Documentation available at: http://localhost:8002/docs")
 
 if __name__ == "__main__":
     uvicorn.run(

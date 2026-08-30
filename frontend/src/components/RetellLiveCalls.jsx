@@ -29,10 +29,11 @@ function useCallTimer(startedAt, active) {
 }
 
 const CallSlot = ({ call, direction, onHangup }) => {
-    const active = !!call && ['active', 'ringing', 'registered'].includes(call.status);
+    const isStale = call?.created_at && (Date.now() - new Date(call.created_at).getTime()) > 2 * 60 * 60 * 1000;
+    const active = !!call && !isStale && ['active', 'ringing', 'registered'].includes(call.status);
     const elapsed = useCallTimer(call?.created_at, active);
 
-    if (!call) {
+    if (!active) {
         return (
             <div className="call-slot call-slot-empty">
                 <div className="slot-dotted-icon">{direction === 'inbound' ? '📞' : '📤'}</div>
@@ -123,7 +124,7 @@ const RetellLiveCalls = ({ user }) => {
 
     // ---- Load recent history + slot state from Supabase ----
     const applyCallToSlots = useCallback((call) => {
-        const isTerminal = ['completed', 'failed'].includes(call.status);
+        const isTerminal = ['completed', 'failed', 'ended'].includes(call.status);
         const setter = call.direction === 'inbound' ? setInboundSlots : setOutboundSlots;
 
         setter((prev) => {
@@ -156,10 +157,12 @@ const RetellLiveCalls = ({ user }) => {
 
     useEffect(() => {
         const bootstrap = async () => {
+            const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
             const { data } = await supabase
                 .from('calls')
                 .select('*')
                 .in('status', ['registered', 'ringing', 'active'])
+                .gte('created_at', fifteenMinsAgo)
                 .order('created_at', { ascending: false });
             (data || []).forEach(applyCallToSlots);
             await refreshHistory();
@@ -330,7 +333,7 @@ const RetellLiveCalls = ({ user }) => {
                 })
                 .eq('id', incomingCall.id);
 
-            setIncomingCall(null);
+            setIncomingQueue(prev => prev.slice(1));
             setStatusMsg('🎙️ Call accepted. Lead is connecting...');
         } catch (e) {
             setStatusMsg(`❌ Inbound accept failed: ${e.message}`);
@@ -344,7 +347,7 @@ const RetellLiveCalls = ({ user }) => {
             .from('call_requests')
             .update({ status: 'rejected' })
             .eq('id', incomingCall.id);
-        setIncomingCall(null);
+        setIncomingQueue(prev => prev.slice(1));
     };
 
     const handleHangupSimulated = async (reqId) => {

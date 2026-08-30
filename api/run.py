@@ -17,13 +17,17 @@ def main():
     
     # Load environment variables
     from dotenv import load_dotenv
-    env_path = Path(__file__).parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-        print("📄 Environment variables loaded from .env")
+    root_env = Path(__file__).parent.parent / ".env"
+    api_env = Path(__file__).parent / ".env"
+    
+    if root_env.exists():
+        load_dotenv(root_env)
+        print("[INFO] Loaded environment variables from root .env")
+    elif api_env.exists():
+        load_dotenv(api_env)
+        print("[INFO] Loaded environment variables from api/.env")
     else:
-        print("⚠️  No .env file found, using default configuration")
-        print("💡 Copy .env.example to .env to configure settings")
+        print("[WARN] No .env file found")
     
     # Get configuration
     host = os.getenv("HOST", "0.0.0.0")
@@ -31,17 +35,16 @@ def main():
     debug = os.getenv("DEBUG", "false").lower() == "true"
     log_level = os.getenv("LOG_LEVEL", "info")
     
-    print(f"🚀 Starting Banking & Marketing Call Center API")
-    print(f"🌐 Server: http://{host}:{port}")
-    print(f"📚 Documentation: http://{host}:{port}/docs")
-    print(f"🔧 Debug mode: {debug}")
+    print(f"[INFO] Starting Banking & Marketing Call Center API")
+    print(f"[INFO] Server: http://{host}:{port}")
+    print(f"[INFO] Documentation: http://{host}:{port}/docs")
     
     # Start the server
     uvicorn.run(
         "main:app",
         host=host,
         port=port,
-        reload=debug,
+        reload=True,
         log_level=log_level
     )
 
