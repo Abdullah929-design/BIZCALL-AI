@@ -414,6 +414,11 @@ def set_campaign_content_for_pending_leads(user_id: str, subject: str = None, me
         status_idx = headers.index("status") if "status" in headers else -1
         subj_idx = headers.index("email_subject") if "email_subject" in headers else -1
         body_idx = headers.index("email_body") if "email_body" in headers else -1
+        fn_idx = headers.index("first_name") if "first_name" in headers else -1
+        ln_idx = headers.index("last_name") if "last_name" in headers else -1
+        comp_idx = headers.index("company") if "company" in headers else -1
+        title_idx = headers.index("title") if "title" in headers else -1
+        name_idx = headers.index("name") if "name" in headers else -1
 
         updates = []
         for row_idx, row in enumerate(values[1:], start=2):
@@ -426,17 +431,39 @@ def set_campaign_content_for_pending_leads(user_id: str, subject: str = None, me
                 if row_status != "pending":
                     continue
 
-            if subj_idx != -1 and subject:
+            fn = row[fn_idx].strip() if (fn_idx != -1 and len(row) > fn_idx) else ""
+            ln = row[ln_idx].strip() if (ln_idx != -1 and len(row) > ln_idx) else ""
+            comp = row[comp_idx].strip() if (comp_idx != -1 and len(row) > comp_idx) else ""
+            title = row[title_idx].strip() if (title_idx != -1 and len(row) > title_idx) else ""
+            full_name = row[name_idx].strip() if (name_idx != -1 and len(row) > name_idx) else f"{fn} {ln}".strip()
+            if not fn and full_name:
+                fn = full_name.split()[0]
+
+            def render_tpl(text: str) -> str:
+                if not text:
+                    return ""
+                t = text
+                t = t.replace("{{first_name}}", fn).replace("{{firstName}}", fn)
+                t = t.replace("{{last_name}}", ln).replace("{{lastName}}", ln)
+                t = t.replace("{{name}}", full_name or fn)
+                t = t.replace("{{company}}", comp)
+                t = t.replace("{{title}}", title)
+                return t
+
+            row_subj = render_tpl(subject) if subject else ""
+            row_body = render_tpl(message) if message else ""
+
+            if subj_idx != -1 and row_subj:
                 col_letter = chr(ord('A') + subj_idx)
                 updates.append({
                     "range": f"'Leads'!{col_letter}{row_idx}",
-                    "values": [[subject]]
+                    "values": [[row_subj]]
                 })
-            if body_idx != -1 and message:
+            if body_idx != -1 and row_body:
                 col_letter = chr(ord('A') + body_idx)
                 updates.append({
                     "range": f"'Leads'!{col_letter}{row_idx}",
-                    "values": [[message]]
+                    "values": [[row_body]]
                 })
 
         if updates:
