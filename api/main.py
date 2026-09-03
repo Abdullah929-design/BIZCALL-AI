@@ -5,6 +5,7 @@ import sys
 import os
 from dotenv import load_dotenv
 
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -12,6 +13,7 @@ load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from routers import health, retell, auth, company
+from modules.cold_email.router import router as cold_email_router
 
 app = FastAPI(
     title="Banking & Marketing Call Center API",
@@ -52,6 +54,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(retell.router, prefix="/api/retell", tags=["retell"])
 app.include_router(company.router, prefix="/api/company", tags=["company"])
+app.include_router(cold_email_router, prefix="/api/cold-email", tags=["cold-email"])
 
 @app.get("/")
 async def root():

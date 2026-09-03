@@ -152,21 +152,45 @@ const RetellLiveCalls = ({ user }) => {
     }, []);
 
     const refreshHistory = useCallback(async () => {
+        // 1. Fetch user's agent IDs
+        const { data: userAgents } = await supabase
+            .from('agents')
+            .select('agent_id')
+            .eq('user_id', userId);
+        
+        const agentIds = (userAgents || []).map(a => a.agent_id);
+        
+        if (agentIds.length === 0) {
+            setHistory([]);
+            return;
+        }
+
+        // 2. Fetch calls belonging only to these agent IDs
         const { data } = await supabase
             .from('calls')
             .select('*')
+            .in('agent_id', agentIds)
             .order('created_at', { ascending: false })
             .limit(50);
         setHistory(data || []);
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         const bootstrap = async () => {
+            const { data: userAgents } = await supabase
+                .from('agents')
+                .select('agent_id')
+                .eq('user_id', userId);
+            
+            const agentIds = (userAgents || []).map(a => a.agent_id);
+            if (agentIds.length === 0) return;
+
             const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
             const { data } = await supabase
                 .from('calls')
                 .select('*')
                 .in('status', ['registered', 'ringing', 'active'])
+                .in('agent_id', agentIds)
                 .gte('created_at', fifteenMinsAgo)
                 .order('created_at', { ascending: false });
             (data || []).forEach(applyCallToSlots);

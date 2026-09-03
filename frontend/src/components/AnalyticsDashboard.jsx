@@ -53,7 +53,8 @@ const MOCK_FALLBACK_CALLS = [
   }
 ];
 
-const AnalyticsDashboard = () => {
+const AnalyticsDashboard = ({ user }) => {
+  const userId = user?.id || user?.email || 'demo_user';
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDirection, setFilterDirection] = useState('all'); // all, inbound, outbound
@@ -63,8 +64,24 @@ const AnalyticsDashboard = () => {
 
   const fetchCalls = async () => {
     try {
-      const res = await axios.get('/api/retell/calls?limit=50', { timeout: 8000 });
-      if (res.data && res.data.success && Array.isArray(res.data.calls) && res.data.calls.length > 0) {
+      // 1. Fetch user's private agent IDs from Supabase
+      const { supabase } = await import('../services/supabaseClient');
+      const { data: userAgents } = await supabase
+        .from('agents')
+        .select('agent_id')
+        .eq('user_id', userId);
+      
+      const agentIds = (userAgents || []).map(a => a.agent_id);
+      
+      if (agentIds.length === 0) {
+        setCalls([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch calls from backend filtering by user's agent IDs
+      const res = await axios.post('/api/retell/calls/filter', { agent_ids: agentIds, limit: 50 }, { timeout: 8000 });
+      if (res.data && res.data.success && Array.isArray(res.data.calls)) {
         setCalls(res.data.calls);
         setLoading(false);
         return;
@@ -76,14 +93,25 @@ const AnalyticsDashboard = () => {
     // Direct Supabase Fallback
     try {
       const { supabase } = await import('../services/supabaseClient');
-      const { data, error } = await supabase
-        .from('calls')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data: userAgents } = await supabase
+        .from('agents')
+        .select('agent_id')
+        .eq('user_id', userId);
+      
+      const agentIds = (userAgents || []).map(a => a.agent_id);
+      if (agentIds.length > 0) {
+        const { data, error } = await supabase
+          .from('calls')
+          .select('*')
+          .in('agent_id', agentIds)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (!error && Array.isArray(data)) {
-        setCalls(data);
+        if (!error && Array.isArray(data)) {
+          setCalls(data);
+        }
+      } else {
+        setCalls([]);
       }
     } catch (sbErr) {
       console.log('Supabase direct fetch error:', sbErr);
@@ -91,6 +119,7 @@ const AnalyticsDashboard = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchCalls();
@@ -107,7 +136,7 @@ const AnalyticsDashboard = () => {
   const inboundCount = calls.filter(c => c.direction === 'inbound').length;
   const outboundCount = calls.filter(c => c.direction === 'outbound').length;
   const completedCount = calls.filter(c => c.status === 'completed').length;
-  
+
   const positiveCalls = calls.filter(c => (c.sentiment || '').toLowerCase().includes('postive') || (c.sentiment || '').toLowerCase().includes('pos') || (c.customer_satisfaction || '').toLowerCase().includes('high') || (c.customer_satisfaction || '').toLowerCase().includes('excel')).length;
   const positiveRatio = totalCalls > 0 ? Math.round((positiveCalls / totalCalls) * 100) : 100;
 
@@ -512,7 +541,7 @@ const AnalyticsDashboard = () => {
               <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#818cf8', marginBottom: '12px' }}>
                 💬 Full Call Conversation Transcript
               </div>
-              
+
               {selectedCall.transcript ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
                   {typeof selectedCall.transcript === 'string' ? (

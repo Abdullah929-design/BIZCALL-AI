@@ -225,6 +225,34 @@ async def delete_agent(agent_id: str):
     except Exception as e:
         print(f"[Retell Agent Deletion Error]: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete agent on Retell AI: {str(e)}")
+class FilteredCallsRequest(BaseModel):
+    agent_ids: list[str]
+    limit: Optional[int] = 50
+
+@router.post("/calls/filter")
+def list_filtered_calls(req: FilteredCallsRequest):
+    """Fetch call logs belonging only to the user's agents."""
+    try:
+        if not req.agent_ids:
+            return {"success": True, "calls": []}
+            
+        agent_filter = ",".join(req.agent_ids)
+        headers = {
+            "apikey": os.getenv("SUPABASE_SERVICE_ROLE_KEY"),
+            "Authorization": f"Bearer {os.getenv('SUPABASE_SERVICE_ROLE_KEY')}"
+        }
+        params = {
+            "agent_id": f"in.({agent_filter})",
+            "order": "created_at.desc",
+            "limit": str(req.limit)
+        }
+        url = f"{os.getenv('SUPABASE_URL')}/rest/v1/calls"
+        resp = _requests.get(url, headers=headers, params=params, timeout=10)
+        resp.raise_for_status()
+        return {"success": True, "calls": resp.json()}
+    except Exception as e:
+        print(f"[calls/filter] error: {e}")
+        return {"success": False, "calls": [], "error": str(e)}
 
 
 @router.get("/calls")

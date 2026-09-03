@@ -54,4 +54,8 @@ Thumbs.db
 .idea/
 
 token.txt
-*.zip
+*.zip
+
+secrets/
+*.json
+!api/package*.json
