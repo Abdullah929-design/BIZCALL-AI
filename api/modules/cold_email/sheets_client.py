@@ -392,3 +392,59 @@ def mark_lead_replied(user_id: str, lead_id: str = None, lead_email: str = None)
         except Exception as e:
             print(f"[WARN] Error marking lead replied in {tab_name}: {e}")
 
+
+def set_campaign_content_for_pending_leads(user_id: str, subject: str = None, message: str = None):
+    """
+    Sets email_subject and email_body on all 'pending' rows belonging to user_id in the Leads tab.
+    """
+    if not subject and not message:
+        return
+    service = get_sheets_service()
+    sheet_id = settings.COLD_EMAIL_SHEET_ID
+    try:
+        res = service.spreadsheets().values().get(
+            spreadsheetId=sheet_id,
+            range="'Leads'!A1:Z"
+        ).execute()
+        values = res.get("values", [])
+        if not values or len(values) < 2:
+            return
+        headers = [str(h).strip().lower() for h in values[0]]
+        user_id_idx = headers.index("user_id") if "user_id" in headers else -1
+        status_idx = headers.index("status") if "status" in headers else -1
+        subj_idx = headers.index("email_subject") if "email_subject" in headers else -1
+        body_idx = headers.index("email_body") if "email_body" in headers else -1
+
+        updates = []
+        for row_idx, row in enumerate(values[1:], start=2):
+            if user_id_idx != -1:
+                row_uid = row[user_id_idx].strip() if len(row) > user_id_idx else ""
+                if row_uid != user_id:
+                    continue
+            if status_idx != -1:
+                row_status = row[status_idx].strip().lower() if len(row) > status_idx else ""
+                if row_status != "pending":
+                    continue
+
+            if subj_idx != -1 and subject:
+                col_letter = chr(ord('A') + subj_idx)
+                updates.append({
+                    "range": f"'Leads'!{col_letter}{row_idx}",
+                    "values": [[subject]]
+                })
+            if body_idx != -1 and message:
+                col_letter = chr(ord('A') + body_idx)
+                updates.append({
+                    "range": f"'Leads'!{col_letter}{row_idx}",
+                    "values": [[message]]
+                })
+
+        if updates:
+            service.spreadsheets().values().batchUpdate(
+                spreadsheetId=sheet_id,
+                body={"valueInputOption": "USER_ENTERED", "data": updates}
+            ).execute()
+    except Exception as e:
+        print(f"[WARN] Failed to set campaign content for pending leads: {e}")
+
+

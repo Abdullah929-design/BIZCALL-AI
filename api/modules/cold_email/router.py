@@ -3,8 +3,8 @@ import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from .auth import get_current_user, AuthenticatedUser
 from . import n8n_client, sheets_client
-from .schemas import SendReplyRequest, CreateLeadRequest, UpdateLeadRequest
-from typing import List
+from .schemas import SendReplyRequest, CreateLeadRequest, UpdateLeadRequest, SendBatchRequest
+from typing import List, Optional
 
 import time
 from typing import Dict
@@ -84,10 +84,11 @@ async def delete_lead(row_number: int, user: AuthenticatedUser = Depends(get_cur
 
 
 @router.post("/send-batch")
-async def send_batch(user: AuthenticatedUser = Depends(get_current_user)):
+async def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Triggers n8n batch email processing for the authenticated user.
     Enforces server-side debounce to prevent duplicate batch triggers.
+    Allows passing custom subject and message for mass campaign.
     """
     now = time.time()
     last_run = _last_batch_trigger.get(user.id, 0)
@@ -102,8 +103,17 @@ async def send_batch(user: AuthenticatedUser = Depends(get_current_user)):
 
     _last_batch_trigger[user.id] = now
 
+    subject = payload.subject.strip() if (payload and payload.subject) else None
+    message = (payload.message or payload.content or "").strip() if payload else None
+    if not message:
+        message = None
+
+    # If custom campaign content provided, persist on pending leads in Google Sheets
+    if subject or message:
+        sheets_client.set_campaign_content_for_pending_leads(user_id=user.id, subject=subject, message=message)
+
     try:
-        result = await n8n_client.trigger_send_batch(user_id=user.id)
+        result = await n8n_client.trigger_send_batch(user_id=user.id, subject=subject, message=message)
         return {"status": "started", "n8n_response": result}
     except Exception as e:
         # Reset on failure so the user can retry

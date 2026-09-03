@@ -76,9 +76,13 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     };
 }
 
-export async function sendBatch(): Promise<{ status: string; n8n_response: any }> {
+export async function sendBatch(campaign?: { subject?: string; message?: string }): Promise<{ status: string; n8n_response: any }> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/send-batch", { method: "POST", headers });
+    const res = await fetch("/api/cold-email/send-batch", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(campaign || {})
+    });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || "Failed to start batch send");

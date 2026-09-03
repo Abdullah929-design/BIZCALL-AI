@@ -2,17 +2,28 @@
 import httpx
 from .config import settings
 
-async def trigger_send_batch(user_id: str):
+async def trigger_send_batch(user_id: str, subject: str = None, message: str = None):
     """
     Calls n8n Workflow 1 (Cold Email Automation) webhook.
     user_id is strictly derived from the verified user session.
+    Optional subject and message allow custom mass campaign content.
     """
+    payload = {"user_id": user_id}
+    if subject:
+        payload["subject"] = subject
+        payload["email_subject"] = subject
+    if message:
+        payload["message"] = message
+        payload["content"] = message
+        payload["email_body"] = message
+        payload["body"] = message
+
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{settings.N8N_BASE_URL}/send-batch",
-            json={"user_id": user_id},
+            json=payload,
             headers={"x-api-key": settings.N8N_API_KEY},
-            timeout=20,
+            timeout=25,
         )
         resp.raise_for_status()
         try:

@@ -136,7 +136,10 @@ export const ColdEmailDashboard: React.FC = () => {
                     >
                         🔄 Refresh Sheets
                     </button>
-                    <SendBatchButton onBatchStarted={handleBatchTriggered} />
+                    <SendBatchButton
+                        onBatchStarted={handleBatchTriggered}
+                        pendingCount={allLeads.filter(l => (l.status || '').toLowerCase() === 'pending').length}
+                    />
                 </div>
             </div>
 

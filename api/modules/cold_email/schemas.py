@@ -9,6 +9,11 @@ class SendReplyRequest(BaseModel):
     message: str
     # NOTE: no user_id field here on purpose — derived exclusively on server
 
+class SendBatchRequest(BaseModel):
+    subject: Optional[str] = None
+    message: Optional[str] = None
+    content: Optional[str] = None
+
 class LeadItem(BaseModel):
     row_number: int
     name: Optional[str] = ""
