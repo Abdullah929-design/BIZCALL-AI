@@ -16,6 +16,8 @@ import axios from 'axios';
 import RetellLiveCalls from './components/RetellLiveCalls.jsx';
 import CompanySettings from './components/CompanySettings.jsx';
 import OnboardingSplash from './components/OnboardingSplash.jsx';
+import LeadFinder from './components/LeadFinder.jsx';
+
 
 
 function App() {
@@ -99,6 +101,7 @@ function App() {
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Inbound/Outbound Builder', sub: 'Create AI Agents' },
     { id: 'live-calls', icon: '⚡', label: 'Retell Live Calls', sub: 'Twilio Live Console' },
+    { id: 'lead-finder', icon: '🔍', label: 'Lead Finder & Scraper', sub: 'Prospecting & Dialer' },
     { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
     { id: 'company', icon: '⚙️', label: 'Company Settings', sub: 'Profile & AI KB' },
     { id: 'cold-email', icon: '📧', label: '📧 Cold Email', sub: 'Automated outreach' },
@@ -184,6 +187,7 @@ function App() {
         </div>
 
         <div className="app-content">
+          {activeTab === 'lead-finder' && <LeadFinder user={user} />}
           {activeTab === 'builder' && <AgentBuilder user={user} />}
           {activeTab === 'retell' && <WebCallDemo />}
           {activeTab === 'live-calls' && <RetellLiveCalls user={user} />}
