@@ -172,19 +172,27 @@ async def run_model_inference(req: ModelInferenceRequest):
             print(f"[models_on_demand] Space predict error: {e}")
             global hf_client
             hf_client = None
-            # Fallback if Space is sleeping or waking up
-            model_output = (
-                f"Thank you for reaching out regarding '{query}'. "
-                "Based on our banking service policies, you can proceed by visiting our nearest branch "
-                "or accessing our online banking portal with your verified credentials. "
-                "Our customer support team is available 24/7 to assist with your request."
-            )
+            if faq_match and faq_match.get("answer"):
+                model_output = (
+                    f"Certainly! Based on our verified banking guidelines, here are the step-by-step details:\n\n"
+                    f"{faq_match['answer']}\n\n"
+                    "For account-specific adjustments or identity verification, you can finalize this directly inside your mobile banking app."
+                )
+            else:
+                detected_names = [i['intent'] for seg in intent_results for i in seg.get('intents', [])]
+                primary_intent = detected_names[0].replace('_', ' ').title() if detected_names else "Banking Inquiry"
+                model_output = (
+                    f"Here is the standard procedure regarding your {primary_intent}:\n\n"
+                    "1. Log in to your Mobile Banking app using your secure biometric or PIN authentication.\n"
+                    "2. Access the relevant management menu from your account overview.\n"
+                    "3. Submit the required request details or confirm the transaction prompts.\n\n"
+                    "Our customer support team is on standby to assist with verification if required."
+                )
     else:
-        model_output = (
-            f"Thank you for your inquiry about '{query}'. "
-            "Our banking system has processed your request. "
-            "Please ensure you have your account identification ready for authentication."
-        )
+        if faq_match and faq_match.get("answer"):
+            model_output = faq_match["answer"]
+        else:
+            model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
 
     latency_ms = int((time.time() - start_time) * 1000)
 
