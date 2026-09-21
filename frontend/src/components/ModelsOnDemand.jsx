@@ -170,14 +170,19 @@ const ModelsOnDemand = () => {
                                 </div>
                             </div>
                             <span style={{
-                                background: 'rgba(59, 130, 246, 0.2)',
-                                color: '#93c5fd',
-                                padding: '3px 8px',
+                                background: 'rgba(16, 185, 129, 0.2)',
+                                color: '#34d399',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                padding: '3px 10px',
                                 borderRadius: '8px',
-                                fontSize: '0.7rem',
-                                fontWeight: 600
+                                fontSize: '0.72rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
                             }}>
-                                Active Live
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
+                                Ready to Test
                             </span>
                         </div>
                         <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5 }}>
@@ -213,14 +218,15 @@ const ModelsOnDemand = () => {
                                 </div>
                             </div>
                             <span style={{
-                                background: 'rgba(234, 88, 12, 0.15)',
-                                color: '#fdba74',
-                                padding: '3px 8px',
+                                background: 'rgba(245, 158, 11, 0.15)',
+                                color: '#fbbf24',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                padding: '3px 10px',
                                 borderRadius: '8px',
-                                fontSize: '0.7rem',
+                                fontSize: '0.72rem',
                                 fontWeight: 600
                             }}>
-                                On Demand
+                                ⏳ Coming Soon
                             </span>
                         </div>
                         <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5 }}>
@@ -402,6 +408,44 @@ const ModelsOnDemand = () => {
                         }}>
                             ⚡ Total Latency: {result.latency_ms}ms
                         </div>
+                    </div>
+
+                    {/* Pipeline Route Indicator */}
+                    <div style={{
+                        background: result.complexity === 'complex' 
+                            ? 'rgba(234, 88, 12, 0.12)' 
+                            : 'rgba(16, 185, 129, 0.12)',
+                        border: result.complexity === 'complex' 
+                            ? '1px solid rgba(234, 88, 12, 0.3)' 
+                            : '1px solid rgba(16, 185, 129, 0.3)',
+                        borderRadius: '10px',
+                        padding: '10px 16px',
+                        marginBottom: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                            <span>🔄</span>
+                            <span style={{ color: '#cbd5e1' }}>Pipeline Flow:</span>
+                            <strong style={{ color: result.complexity === 'complex' ? '#fb923c' : '#34d399' }}>
+                                {result.complexity === 'complex' 
+                                    ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context' 
+                                    : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match'}
+                            </strong>
+                        </div>
+                        <span style={{
+                            fontSize: '0.72rem',
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            color: '#e2e8f0',
+                            fontWeight: 600
+                        }}>
+                            Complexity: {result.complexity?.toUpperCase()}
+                        </span>
                     </div>
 
                     {/* 3-Column Diagnostic Grid */}
