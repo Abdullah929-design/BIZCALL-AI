@@ -14,7 +14,7 @@ load_dotenv()
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from routers import health, retell, auth, company,scraper
+from routers import health, retell, auth, company, scraper, models_on_demand
 from modules.cold_email.router import router as cold_email_router
 
 app = FastAPI(
@@ -58,6 +58,7 @@ app.include_router(retell.router, prefix="/api/retell", tags=["retell"])
 app.include_router(company.router, prefix="/api/company", tags=["company"])
 app.include_router(cold_email_router, prefix="/api/cold-email", tags=["cold-email"])
 app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
+app.include_router(models_on_demand.router, prefix="/api/models-on-demand", tags=["models-on-demand"])
 
 
 @app.get("/")

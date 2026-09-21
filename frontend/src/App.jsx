@@ -18,6 +18,7 @@ import RetellLiveCalls from './components/RetellLiveCalls.jsx';
 import CompanySettings from './components/CompanySettings.jsx';
 import OnboardingSplash from './components/OnboardingSplash.jsx';
 import LeadFinder from './components/LeadFinder.jsx';
+import ModelsOnDemand from './components/ModelsOnDemand.jsx';
 
 
 
@@ -107,7 +108,7 @@ function App() {
     { id: 'company', icon: '⚙️', label: 'Company Settings', sub: 'Profile & AI KB' },
     { id: 'cold-email', icon: '📧', label: '📧 Cold Email', sub: 'Automated outreach' },
     { id: 'messenger', icon: '💬', label: 'Messenger CRM', sub: 'Meta AI Outreach' },
-
+    { id: 'models-on-demand', icon: '🧠', label: 'Models on Demand', sub: 'Domain Fine-Tuned SLMs' },
   ];
 
   const activeNav = navItems.find(n => n.id === activeTab);
@@ -202,8 +203,7 @@ function App() {
           {activeTab === 'company' && <CompanySettings user={user} />}
           {activeTab === 'cold-email' && <ColdEmailDashboard />}
           {activeTab === 'messenger' && <MessengerDashboard user={user} />}
-
-
+          {activeTab === 'models-on-demand' && <ModelsOnDemand user={user} />}
         </div>
       </main>
     </div>
