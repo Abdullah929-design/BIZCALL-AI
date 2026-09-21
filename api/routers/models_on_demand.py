@@ -33,7 +33,14 @@ except Exception as e:
     print(f"[models_on_demand] FAISS init warning: {e}")
 
 # 3. Hugging Face Gradio Client for ZeroGPU Model
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+except ImportError:
+    pass
+
 HF_SPACE_ID = "abdullahsallehaqeel123/bizcall-banking-slm"
+HF_TOKEN = os.getenv("HF_TOKEN")
 hf_client = None
 
 def get_hf_client():
@@ -41,7 +48,8 @@ def get_hf_client():
     if hf_client is None:
         try:
             from gradio_client import Client
-            hf_client = Client(HF_SPACE_ID)
+            hf_client = Client(HF_SPACE_ID, token=HF_TOKEN)
+            print("[models_on_demand] Connected successfully to Hugging Face ZeroGPU Space with authenticated token.")
         except Exception as e:
             print(f"[models_on_demand] Error connecting to Hugging Face Space: {e}")
             hf_client = None
@@ -162,6 +170,8 @@ async def run_model_inference(req: ModelInferenceRequest):
             model_output = client.predict(customer_query=query)
         except Exception as e:
             print(f"[models_on_demand] Space predict error: {e}")
+            global hf_client
+            hf_client = None
             # Fallback if Space is sleeping or waking up
             model_output = (
                 f"Thank you for reaching out regarding '{query}'. "
