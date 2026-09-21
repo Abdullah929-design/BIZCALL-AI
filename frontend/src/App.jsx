@@ -5,6 +5,7 @@ import TwilioCallDemo from './components/TwilioCallDemo.jsx';
 import WebCallDemo from './components/WebCallDemo.jsx';
 import { ColdEmailDashboard } from './features/cold-email/pages/ColdEmailDashboard';
 import AgentBuilder from './components/AgentBuilder.jsx';
+import { MessengerDashboard } from './features/messenger/pages/MessengerDashboard';
 import AuthModal from './components/AuthModal.jsx';
 import TestAPI from './components/TestAPI.jsx';
 import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
@@ -105,6 +106,7 @@ function App() {
     { id: 'analytics', icon: '📊', label: 'Analytics', sub: 'Logs & sentiment' },
     { id: 'company', icon: '⚙️', label: 'Company Settings', sub: 'Profile & AI KB' },
     { id: 'cold-email', icon: '📧', label: '📧 Cold Email', sub: 'Automated outreach' },
+    { id: 'messenger', icon: '💬', label: 'Messenger CRM', sub: 'Meta AI Outreach' },
 
   ];
 
@@ -199,6 +201,8 @@ function App() {
           {activeTab === 'agents' && <HumanAgentSupport />}
           {activeTab === 'company' && <CompanySettings user={user} />}
           {activeTab === 'cold-email' && <ColdEmailDashboard />}
+          {activeTab === 'messenger' && <MessengerDashboard user={user} />}
+
 
         </div>
       </main>

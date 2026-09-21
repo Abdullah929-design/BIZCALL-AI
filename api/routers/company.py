@@ -32,14 +32,33 @@ def fetch_profile_from_supabase(user_id: str) -> Optional[Dict[str, Any]]:
         print(f"[company] error fetching profile from Supabase: {e}")
         return None
 
+ALLOWED_PROFILE_COLUMNS = {
+    "user_id",
+    "company_name",
+    "industry",
+    "primary_goal",
+    "support_email",
+    "phone",
+    "website",
+    "business_hours",
+    "knowledge_base_notes",
+    "custom_instructions",
+    "onboarding_completed"
+}
+
 def save_profile_to_supabase(profile_data: Dict[str, Any]) -> bool:
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        print("[company] error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
         return False
     try:
         url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles"
         headers = get_supabase_headers()
         headers["Prefer"] = "resolution=merge-duplicates"
-        res = requests.post(url, headers=headers, json=profile_data, timeout=10)
+        # Only keep allowed table columns
+        filtered_payload = {k: v for k, v in profile_data.items() if k in ALLOWED_PROFILE_COLUMNS}
+        res = requests.post(url, headers=headers, json=filtered_payload, timeout=10)
+        if not res.ok:
+            print(f"[company] Supabase save error ({res.status_code}): {res.text}")
         res.raise_for_status()
         return True
     except Exception as e:
@@ -92,7 +111,9 @@ async def save_company_profile(req: CompanyProfileRequest):
     print(f"[DEBUG POST PROFILE] user_id: {req.user_id}")
     profile_data = req.dict()
     profile_data["onboarding_completed"] = True
-    save_profile_to_supabase(profile_data)
+    success = save_profile_to_supabase(profile_data)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save company profile to database.")
     return {"success": True, "profile": profile_data, "message": "Company profile saved successfully!"}
 
 @router.post("/onboard-chat")

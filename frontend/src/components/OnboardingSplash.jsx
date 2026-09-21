@@ -6,15 +6,15 @@ const OnboardingSplash = ({ user, onComplete }) => {
 
     const [profile, setProfile] = useState({
         user_id: userId,
-        company_name: '',
-        industry: '',
-        primary_goal: '',
+        company_name: 'Acme Corp',
+        industry: 'Retail Banking & Services',
+        primary_goal: 'Automate Inbound Support & Outbound Sales',
         support_email: user?.email || '',
-        phone: '',
-        website: '',
+        phone: '+1 (800) 555-0199',
+        website: 'https://acme.com',
         business_hours: '9:00 AM - 6:00 PM EST',
-        knowledge_base_notes: '',
-        custom_instructions: ''
+        knowledge_base_notes: 'We provide 24/7 AI call center support and automated lead follow-ups.',
+        custom_instructions: 'Be professional, polite, and helpful at all times.'
     });
 
     const [submitting, setSubmitting] = useState(false);
