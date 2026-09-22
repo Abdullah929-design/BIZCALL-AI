@@ -27,7 +27,8 @@ except Exception as e:
 # 2. Local FAISS RAG
 FAISS_AVAILABLE = False
 try:
-    from faq_engine.faiss_search import search_faq
+    from faq_engine.faiss_search import search_faq, reload_index
+    reload_index()
     FAISS_AVAILABLE = True
 except Exception as e:
     print(f"[models_on_demand] FAISS init warning: {e}")
