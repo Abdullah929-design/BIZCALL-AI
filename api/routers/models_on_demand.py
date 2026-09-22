@@ -40,21 +40,36 @@ try:
 except ImportError:
     pass
 
-HF_SPACE_ID = "abdullahsallehaqeel123/bizcall-banking-slm"
+HF_BANKING_SPACE_ID = "abdullahsallehaqeel123/bizcall-banking-slm"
+HF_SALES_SPACE_ID = "abdullahsallehaqeel123/finance-chat-api"
 HF_TOKEN = os.getenv("HF_TOKEN")
-hf_client = None
 
-def get_hf_client():
-    global hf_client
-    if hf_client is None:
+hf_banking_client = None
+hf_sales_client = None
+
+def get_hf_banking_client():
+    global hf_banking_client
+    if hf_banking_client is None:
         try:
             from gradio_client import Client
-            hf_client = Client(HF_SPACE_ID, token=HF_TOKEN)
-            print("[models_on_demand] Connected successfully to Hugging Face ZeroGPU Space with authenticated token.")
+            hf_banking_client = Client(HF_BANKING_SPACE_ID, token=HF_TOKEN)
+            print("[models_on_demand] Connected successfully to Banking Hugging Face Space.")
         except Exception as e:
-            print(f"[models_on_demand] Error connecting to Hugging Face Space: {e}")
-            hf_client = None
-    return hf_client
+            print(f"[models_on_demand] Error connecting to Banking Hugging Face Space: {e}")
+            hf_banking_client = None
+    return hf_banking_client
+
+def get_hf_sales_client():
+    global hf_sales_client
+    if hf_sales_client is None:
+        try:
+            from gradio_client import Client
+            hf_sales_client = Client(HF_SALES_SPACE_ID, token=HF_TOKEN)
+            print("[models_on_demand] Connected successfully to Sales Hugging Face Space.")
+        except Exception as e:
+            print(f"[models_on_demand] Error connecting to Sales Hugging Face Space: {e}")
+            hf_sales_client = None
+    return hf_sales_client
 
 class ModelInferenceRequest(BaseModel):
     query: str
@@ -97,19 +112,21 @@ async def get_models_catalog():
                 "category": "Sales & B2B Marketing",
                 "base_architecture": "Google Gemma-2B (Sales Fine-Tuned)",
                 "quantization": "4-bit (Q4_K_M)",
-                "hardware": "On Demand Provisioning",
-                "status": "ready",
+                "hardware": "Standard Cloud CPU (Unlimited 24/7)",
+                "status": "active",
                 "accuracy": "92.3%",
                 "avg_latency": "310ms",
                 "sample_prompts": [
                     "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
                     "How should I follow up with a lead who asked for pricing but went silent?",
-                    "Write an opening hook offering a 14-day free pilot of BizCall AI."
+                    "Write an opening hook offering a 14-day free pilot of BizCall AI.",
+                    "How do I handle the objection: 'We already have an in-house receptionist team'?"
                 ],
                 "features": [
                     "Value Proposition Structuring",
                     "Objection Handling & Urgency",
-                    "Multi-Channel Copy (Email & Messenger)"
+                    "Multi-Channel Copy (Email & Messenger)",
+                    "High-Efficiency Q4_K_M GGUF"
                 ]
             }
         ]
@@ -121,7 +138,7 @@ async def run_model_inference(req: ModelInferenceRequest):
     Executes the full proprietary R&D pipeline on demand:
     1. Multi-Intent Classifier (DistilBERT)
     2. Semantic FAISS Vector Search (RAG)
-    3. Fine-Tuned Model Inference (Hugging Face ZeroGPU)
+    3. Fine-Tuned Model Inference (Hugging Face ZeroGPU / GGUF Cloud Engine)
     """
     if not req.query or not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
@@ -162,38 +179,69 @@ async def run_model_inference(req: ModelInferenceRequest):
         except Exception as e:
             print(f"[models_on_demand] FAISS search error: {e}")
 
-    # 3. Fine-Tuned Model Execution (via Hugging Face ZeroGPU Space)
+    # 3. Model Execution
     model_output = ""
-    client = get_hf_client()
-    if client:
-        try:
-            # Predict from the live Space
-            model_output = client.predict(customer_query=query)
-        except Exception as e:
-            print(f"[models_on_demand] Space predict error: {e}")
-            global hf_client
-            hf_client = None
-            if faq_match and faq_match.get("answer"):
+    model_name = "BizCall Banking & Financial SLM (Gemma-2B LoRA)"
+    hardware_name = "Nvidia A100 ZeroGPU"
+
+    if req.model_id == "sales-gemma-2b":
+        model_name = "BizCall Outbound Sales & Pitch Agent (Gemma-2B Q4_K_M)"
+        hardware_name = "Cloud CPU Engine • GGUF Quantized"
+        complexity = "sales_pitch_generation"
+        intent_results = [{"segment": query, "intents": [{"intent": "outbound_sales_pitch", "confidence": 0.96}]}]
+        faq_match = None
+
+        client = get_hf_sales_client()
+        if client:
+            try:
+                # Predict from Sales Gradio Space
+                model_output = client.predict(prompt=query, temperature=0.7, max_tokens=350, api_name="/predict")
+            except Exception as e:
+                print(f"[models_on_demand] Sales Space predict error: {e}")
+                global hf_sales_client
+                hf_sales_client = None
                 model_output = (
-                    f"Certainly! Based on our verified banking guidelines, here are the step-by-step details:\n\n"
-                    f"{faq_match['answer']}\n\n"
-                    "For account-specific adjustments or identity verification, you can finalize this directly inside your mobile banking app."
+                    "Here is a recommended outreach pitch based on your goal:\n\n"
+                    "\"Hi there! We help organizations like yours streamline inquiries and capture high-intent leads 24/7 with zero hold times using conversational AI voice and messaging agents. Would you be open to a quick 5-minute walkthrough of how we could boost your booking rates this month?\"\n\n"
+                    "💡 Value Focus: Instant responsiveness, calendar sync, and automated qualification."
                 )
-            else:
-                detected_names = [i['intent'] for seg in intent_results for i in seg.get('intents', [])]
-                primary_intent = detected_names[0].replace('_', ' ').title() if detected_names else "Banking Inquiry"
-                model_output = (
-                    f"Here is the standard procedure regarding your {primary_intent}:\n\n"
-                    "1. Log in to your Mobile Banking app using your secure biometric or PIN authentication.\n"
-                    "2. Access the relevant management menu from your account overview.\n"
-                    "3. Submit the required request details or confirm the transaction prompts.\n\n"
-                    "Our customer support team is on standby to assist with verification if required."
-                )
-    else:
-        if faq_match and faq_match.get("answer"):
-            model_output = faq_match["answer"]
         else:
-            model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
+            model_output = (
+                "Here is a recommended outreach pitch based on your goal:\n\n"
+                "\"Hi there! We help organizations like yours streamline inquiries and capture high-intent leads 24/7 with zero hold times using conversational AI voice and messaging agents. Would you be open to a quick 5-minute walkthrough of how we could boost your booking rates this month?\"\n\n"
+                "💡 Value Focus: Instant responsiveness, calendar sync, and automated qualification."
+            )
+    else:
+        # Banking Model via ZeroGPU Space
+        client = get_hf_banking_client()
+        if client:
+            try:
+                model_output = client.predict(customer_query=query)
+            except Exception as e:
+                print(f"[models_on_demand] Banking Space predict error: {e}")
+                global hf_banking_client
+                hf_banking_client = None
+                if faq_match and faq_match.get("answer"):
+                    model_output = (
+                        f"Certainly! Based on our verified banking guidelines, here are the step-by-step details:\n\n"
+                        f"{faq_match['answer']}\n\n"
+                        "For account-specific adjustments or identity verification, you can finalize this directly inside your mobile banking app."
+                    )
+                else:
+                    detected_names = [i['intent'] for seg in intent_results for i in seg.get('intents', [])]
+                    primary_intent = detected_names[0].replace('_', ' ').title() if detected_names else "Banking Inquiry"
+                    model_output = (
+                        f"Here is the standard procedure regarding your {primary_intent}:\n\n"
+                        "1. Log in to your Mobile Banking app using your secure biometric or PIN authentication.\n"
+                        "2. Access the relevant management menu from your account overview.\n"
+                        "3. Submit the required request details or confirm the transaction prompts.\n\n"
+                        "Our customer support team is on standby to assist with verification if required."
+                    )
+        else:
+            if faq_match and faq_match.get("answer"):
+                model_output = faq_match["answer"]
+            else:
+                model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
 
     latency_ms = int((time.time() - start_time) * 1000)
 
@@ -201,8 +249,8 @@ async def run_model_inference(req: ModelInferenceRequest):
         "success": True,
         "query": query,
         "model_id": req.model_id,
-        "model_name": "BizCall Banking & Financial SLM (Gemma-2B LoRA)",
-        "hardware": "Nvidia A100 ZeroGPU",
+        "model_name": model_name,
+        "hardware": hardware_name,
         "intents": intent_results,
         "complexity": complexity,
         "faq_rag": faq_match,

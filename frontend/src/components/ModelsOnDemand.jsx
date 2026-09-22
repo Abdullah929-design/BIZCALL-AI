@@ -9,12 +9,21 @@ const ModelsOnDemand = () => {
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
-    const samplePrompts = [
+    const bankingPrompts = [
         "How do I open a fixed deposit account and what are the interest rates?",
         "I lost my debit card yesterday, how do I freeze it immediately?",
         "What are the eligibility criteria and documents required for a personal loan?",
         "Can I dispute an unauthorized charge appearing on my monthly statement?"
     ];
+
+    const salesPrompts = [
+        "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
+        "How should I follow up with a lead who asked for pricing but went silent?",
+        "Write an opening hook offering a 14-day free pilot of BizCall AI.",
+        "How do I handle the objection: 'We already have an in-house receptionist team'?"
+    ];
+
+    const activePrompts = selectedModel === 'sales-gemma-2b' ? salesPrompts : bankingPrompts;
 
     useEffect(() => {
         const fetchCatalog = async () => {
@@ -105,12 +114,12 @@ const ModelsOnDemand = () => {
                                 gap: '6px'
                             }}>
                                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                                ZeroGPU Nvidia A100 Live
+                                ZeroGPU & Cloud Engine Active
                             </span>
                         </div>
                         <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', maxWidth: '780px', lineHeight: 1.6 }}>
                             Deploy proprietary, domain-specialized Small Language Models (SLMs) fine-tuned on enterprise vertical data. 
-                            Features real-time multi-intent segmentation, semantic FAISS vector retrieval, and on-demand GPU inference.
+                            Features real-time multi-intent segmentation, semantic FAISS vector retrieval, and on-demand cloud inference.
                         </p>
                     </div>
 
@@ -132,8 +141,8 @@ const ModelsOnDemand = () => {
                             borderRadius: '12px',
                             textAlign: 'center'
                         }}>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#34d399' }}>94.8%</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Domain F1</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#34d399' }}>2 Models</div>
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Production SLMs</div>
                         </div>
                     </div>
                 </div>
@@ -218,15 +227,19 @@ const ModelsOnDemand = () => {
                                 </div>
                             </div>
                             <span style={{
-                                background: 'rgba(245, 158, 11, 0.15)',
-                                color: '#fbbf24',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                background: 'rgba(16, 185, 129, 0.2)',
+                                color: '#34d399',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
                                 padding: '3px 10px',
                                 borderRadius: '8px',
                                 fontSize: '0.72rem',
-                                fontWeight: 600
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
                             }}>
-                                ⏳ Coming Soon
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
+                                Ready to Test
                             </span>
                         </div>
                         <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5 }}>
@@ -235,7 +248,7 @@ const ModelsOnDemand = () => {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                             <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Cold Outreach</span>
                             <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Pitch Generator</span>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>GGUF Format</span>
+                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>GGUF 4-Bit</span>
                         </div>
                     </div>
                 </div>
@@ -260,7 +273,7 @@ const ModelsOnDemand = () => {
 
                 {/* Sample Prompt Chips */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
-                    {samplePrompts.map((p, idx) => (
+                    {activePrompts.map((p, idx) => (
                         <button
                             key={idx}
                             type="button"
@@ -280,7 +293,7 @@ const ModelsOnDemand = () => {
                                 textAlign: 'left'
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = '#3b82f6';
+                                e.currentTarget.style.borderColor = selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#3b82f6';
                                 e.currentTarget.style.color = '#fff';
                             }}
                             onMouseLeave={e => {
@@ -298,7 +311,11 @@ const ModelsOnDemand = () => {
                     <textarea
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Type customer inquiry here (e.g. I want to open an account and freeze my card)..."
+                        placeholder={
+                            selectedModel === 'sales-gemma-2b'
+                                ? "Type sales or outreach goal (e.g. Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic)..."
+                                : "Type customer inquiry here (e.g. How do I open a fixed deposit account and freeze my card)..."
+                        }
                         rows={3}
                         style={{
                             flex: '1 1 500px',
@@ -312,7 +329,7 @@ const ModelsOnDemand = () => {
                             outline: 'none',
                             fontFamily: 'inherit'
                         }}
-                        onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                        onFocus={e => e.target.style.borderColor = selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#3b82f6'}
                         onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                     />
 
@@ -321,7 +338,9 @@ const ModelsOnDemand = () => {
                         onClick={() => handleRunInference(query)}
                         disabled={loading || !query.trim()}
                         style={{
-                            background: loading ? 'rgba(59, 130, 246, 0.4)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                            background: loading 
+                                ? (selectedModel === 'sales-gemma-2b' ? 'rgba(234, 88, 12, 0.4)' : 'rgba(59, 130, 246, 0.4)') 
+                                : (selectedModel === 'sales-gemma-2b' ? 'linear-gradient(135deg, #ea580c, #c2410c)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)'),
                             color: '#fff',
                             border: 'none',
                             borderRadius: '12px',
@@ -333,7 +352,9 @@ const ModelsOnDemand = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
+                            boxShadow: selectedModel === 'sales-gemma-2b' 
+                                ? '0 8px 20px rgba(234, 88, 12, 0.3)' 
+                                : '0 8px 20px rgba(37, 99, 235, 0.3)',
                             minHeight: '52px'
                         }}
                     >
@@ -348,11 +369,12 @@ const ModelsOnDemand = () => {
                                     borderRadius: '50%',
                                     animation: 'spin 0.8s linear infinite'
                                 }} />
-                                Generating on A100...
+                                {selectedModel === 'sales-gemma-2b' ? 'Generating Pitch...' : 'Generating on A100...'}
                             </>
                         ) : (
                             <>
-                                <span>🚀</span> Run Model on Demand
+                                <span>{selectedModel === 'sales-gemma-2b' ? '📈' : '🚀'}</span>
+                                {selectedModel === 'sales-gemma-2b' ? 'Generate Sales Pitch' : 'Run Model on Demand'}
                             </>
                         )}
                     </button>
@@ -430,10 +452,12 @@ const ModelsOnDemand = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
                             <span>🔄</span>
                             <span style={{ color: '#cbd5e1' }}>Pipeline Flow:</span>
-                            <strong style={{ color: result.complexity === 'complex' ? '#fb923c' : '#34d399' }}>
-                                {result.complexity === 'complex' 
-                                    ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context' 
-                                    : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match'}
+                            <strong style={{ color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : (result.complexity === 'complex' ? '#fb923c' : '#34d399') }}>
+                                {result.model_id === 'sales-gemma-2b'
+                                    ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Gemma-2B Q4_K_M Engine)'
+                                    : (result.complexity === 'complex' 
+                                        ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context' 
+                                        : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match')}
                             </strong>
                         </div>
                         <span style={{
@@ -444,13 +468,13 @@ const ModelsOnDemand = () => {
                             color: '#e2e8f0',
                             fontWeight: 600
                         }}>
-                            Complexity: {result.complexity?.toUpperCase()}
+                            Mode: {result.model_id === 'sales-gemma-2b' ? 'SALES / PITCH' : `Complexity: ${result.complexity?.toUpperCase()}`}
                         </span>
                     </div>
 
                     {/* 3-Column Diagnostic Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-                        {/* Panel 1: Intent Decomposition */}
+                        {/* Panel 1: Intent / Strategy */}
                         <div style={{
                             background: 'rgba(30, 41, 59, 0.5)',
                             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -459,17 +483,17 @@ const ModelsOnDemand = () => {
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🎯</span> 1. Multi-Intent Classifier
+                                    <span>🎯</span> {result.model_id === 'sales-gemma-2b' ? '1. Outbound Intent Classifier' : '1. Multi-Intent Classifier'}
                                 </span>
                                 <span style={{
                                     fontSize: '0.7rem',
                                     padding: '2px 8px',
                                     borderRadius: '6px',
-                                    background: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                                    color: result.complexity === 'complex' ? '#fb923c' : '#34d399',
+                                    background: 'rgba(16, 185, 129, 0.2)',
+                                    color: '#34d399',
                                     fontWeight: 600
                                 }}>
-                                    {result.complexity?.toUpperCase()}
+                                    {result.model_id === 'sales-gemma-2b' ? 'B2B LEAD OUTREACH' : result.complexity?.toUpperCase()}
                                 </span>
                             </div>
 
@@ -491,7 +515,7 @@ const ModelsOnDemand = () => {
                                                         fontSize: '0.72rem',
                                                         fontWeight: 600
                                                     }}>
-                                                        {item.intent} ({Math.round(item.confidence * 100)}%)
+                                                        {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
                                                     </span>
                                                 ))}
                                             </div>
@@ -499,11 +523,11 @@ const ModelsOnDemand = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>General banking customer intent detected</div>
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Customer inquiry intent recognized</div>
                             )}
                         </div>
 
-                        {/* Panel 2: FAISS Vector RAG */}
+                        {/* Panel 2: FAISS Vector RAG or Sales Pillars */}
                         <div style={{
                             background: 'rgba(30, 41, 59, 0.5)',
                             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -512,7 +536,8 @@ const ModelsOnDemand = () => {
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>📚</span> 2. FAISS Semantic Vector RAG
+                                    <span>{result.model_id === 'sales-gemma-2b' ? '💡' : '📚'}</span> 
+                                    {result.model_id === 'sales-gemma-2b' ? '2. Pitch Strategy & Conversion Engine' : '2. FAISS Semantic Vector RAG'}
                                 </span>
                                 {result.faq_rag && (
                                     <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
@@ -521,7 +546,21 @@ const ModelsOnDemand = () => {
                                 )}
                             </div>
 
-                            {result.faq_rag ? (
+                            {result.model_id === 'sales-gemma-2b' ? (
+                                <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Clear Value Proposition:</strong> Quantifiable ROI and time-saved pitch
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Frictionless CTA:</strong> Low-commitment 5-minute invite or free trial
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Channel Format:</strong> Optimized for cold email & messenger CRM
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : result.faq_rag ? (
                                 <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                                         <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
@@ -545,17 +584,20 @@ const ModelsOnDemand = () => {
 
                     {/* Panel 3: Fine-Tuned Model Generated Output */}
                     <div style={{
-                        background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                        border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                        background: result.model_id === 'sales-gemma-2b'
+                            ? 'linear-gradient(135deg, rgba(234, 88, 12, 0.2) 0%, rgba(15, 23, 42, 0.6) 100%)'
+                            : 'linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                        border: result.model_id === 'sales-gemma-2b' ? '1.5px solid rgba(234, 88, 12, 0.4)' : '1.5px solid rgba(59, 130, 246, 0.4)',
                         borderRadius: '16px',
                         padding: '20px'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>🤖</span> 3. Fine-Tuned Model on Demand Response
+                                <span>{result.model_id === 'sales-gemma-2b' ? '📈' : '🤖'}</span> 
+                                {result.model_id === 'sales-gemma-2b' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
                             </span>
-                            <span style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 500 }}>
-                                Gemma-2B LoRA Adapter
+                            <span style={{ fontSize: '0.72rem', color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : '#60a5fa', fontWeight: 500 }}>
+                                {result.model_id === 'sales-gemma-2b' ? 'Gemma-2B Q4_K_M GGUF' : 'Gemma-2B LoRA Adapter'}
                             </span>
                         </div>
                         <div style={{
