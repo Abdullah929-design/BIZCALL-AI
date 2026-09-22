@@ -118,9 +118,9 @@ async def get_models_catalog():
                 "avg_latency": "310ms",
                 "sample_prompts": [
                     "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
-                    "How should I follow up with a lead who asked for pricing but went silent?",
-                    "Write an opening hook offering a 14-day free pilot of BizCall AI.",
-                    "How do I handle the objection: 'We already have an in-house receptionist team'?"
+                    "Write a high-converting follow-up email for a B2B prospect who requested pricing but went silent.",
+                    "Write a compelling cold outreach hook offering a 14-day free pilot of BizCall AI.",
+                    "What are the technical capabilities, CRM integrations, and sub-second latency of BizCall AI?"
                 ],
                 "features": [
                     "Value Proposition Structuring",
@@ -149,12 +149,20 @@ async def run_model_inference(req: ModelInferenceRequest):
     # 1. OUTBOUND SALES & MARKETING SLM (No Banking Intent, No Banking FAISS)
     # =========================================================================
     if req.model_id == "sales-gemma-2b":
+        # Expert persona conditioning & technical prompt engineering
+        sales_prompt = (
+            "You are the Senior Enterprise Sales & Solutions Architect for BizCall AI "
+            "(an enterprise conversational AI voice call center with sub-second latency, CRM telephony integration, "
+            "and 24/7 automated lead qualification). Provide a persuasive, conversion-focused, and technically detailed response "
+            f"with clear business value, quantifiable ROI, and an actionable Call-to-Action:\n{query}"
+        )
+
         client = get_hf_sales_client()
         model_output = ""
         if client:
             try:
-                # Predict from dedicated Sales Gradio Space
-                model_output = client.predict(prompt=query, temperature=0.7, max_tokens=350, api_name="/predict")
+                # Predict with optimized parameters (temp=0.35 for highest consistency & depth, max_tokens=450)
+                model_output = client.predict(prompt=sales_prompt, temperature=0.35, max_tokens=450, api_name="/predict")
             except Exception as e:
                 print(f"[models_on_demand] Sales Space predict error: {e}")
                 global hf_sales_client

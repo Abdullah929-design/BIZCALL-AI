@@ -18,9 +18,9 @@ const ModelsOnDemand = () => {
 
     const salesPrompts = [
         "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
-        "How should I follow up with a lead who asked for pricing but went silent?",
-        "Write an opening hook offering a 14-day free pilot of BizCall AI.",
-        "How do I handle the objection: 'We already have an in-house receptionist team'?"
+        "Write a high-converting follow-up email for a B2B prospect who requested pricing but went silent.",
+        "Write a compelling cold outreach hook offering a 14-day free pilot of BizCall AI.",
+        "What are the technical capabilities, CRM integrations, and sub-second latency of BizCall AI?"
     ];
 
     const activePrompts = selectedModel === 'sales-gemma-2b' ? salesPrompts : bankingPrompts;
