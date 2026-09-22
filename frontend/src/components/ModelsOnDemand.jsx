@@ -472,115 +472,173 @@ const ModelsOnDemand = () => {
                         </span>
                     </div>
 
-                    {/* 3-Column Diagnostic Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-                        {/* Panel 1: Intent / Strategy */}
-                        <div style={{
-                            background: 'rgba(30, 41, 59, 0.5)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            borderRadius: '14px',
-                            padding: '18px'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🎯</span> {result.model_id === 'sales-gemma-2b' ? '1. Outbound Intent Classifier' : '1. Multi-Intent Classifier'}
-                                </span>
-                                <span style={{
-                                    fontSize: '0.7rem',
-                                    padding: '2px 8px',
-                                    borderRadius: '6px',
-                                    background: 'rgba(16, 185, 129, 0.2)',
-                                    color: '#34d399',
-                                    fontWeight: 600
-                                }}>
-                                    {result.model_id === 'sales-gemma-2b' ? 'B2B LEAD OUTREACH' : result.complexity?.toUpperCase()}
-                                </span>
+                    {/* Diagnostic Grid: Sales vs Banking */}
+                    {result.model_id === 'sales-gemma-2b' ? (
+                        /* Sales & Pitch Diagnostic Strategy */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                            {/* Panel 1: Campaign Target & Scenario */}
+                            <div style={{
+                                background: 'rgba(30, 41, 59, 0.5)',
+                                border: '1px solid rgba(234, 88, 12, 0.25)',
+                                borderRadius: '14px',
+                                padding: '18px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fb923c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span>🎯</span> 1. Outreach Target & Campaign Objective
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.7rem',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px',
+                                        background: 'rgba(234, 88, 12, 0.2)',
+                                        color: '#fb923c',
+                                        fontWeight: 600
+                                    }}>
+                                        B2B OUTREACH
+                                    </span>
+                                </div>
+                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                                        Target Goal & Prompt
+                                    </div>
+                                    <div style={{ fontSize: '0.84rem', color: '#f1f5f9', fontStyle: 'italic', lineHeight: 1.45 }}>
+                                        "{result.query}"
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
+                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Cold Pitch</span>
+                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Value Proposition</span>
+                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Objection Preemption</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {result.intents && result.intents.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {result.intents.map((seg, sIdx) => (
-                                        <div key={sIdx} style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                            <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginBottom: '6px', fontStyle: 'italic' }}>
-                                                "{seg.segment}"
-                                            </div>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                {seg.intents.map((item, iIdx) => (
-                                                    <span key={iIdx} style={{
-                                                        background: 'rgba(37, 99, 235, 0.25)',
-                                                        color: '#93c5fd',
-                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.72rem',
-                                                        fontWeight: 600
-                                                    }}>
-                                                        {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Customer inquiry intent recognized</div>
-                            )}
-                        </div>
-
-                        {/* Panel 2: FAISS Vector RAG or Sales Pillars */}
-                        <div style={{
-                            background: 'rgba(30, 41, 59, 0.5)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            borderRadius: '14px',
-                            padding: '18px'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>{result.model_id === 'sales-gemma-2b' ? '💡' : '📚'}</span> 
-                                    {result.model_id === 'sales-gemma-2b' ? '2. Pitch Strategy & Conversion Engine' : '2. FAISS Semantic Vector RAG'}
-                                </span>
-                                {result.faq_rag && (
-                                    <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
-                                        Sim: {result.faq_rag.confidence}
+                            {/* Panel 2: Pitch Strategy & Value Pillars */}
+                            <div style={{
+                                background: 'rgba(30, 41, 59, 0.5)',
+                                border: '1px solid rgba(16, 185, 129, 0.25)',
+                                borderRadius: '14px',
+                                padding: '18px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span>💡</span> 2. Pitch Strategy & Conversion Engine
                                     </span>
+                                    <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
+                                        HIGH CONVERSION
+                                    </span>
+                                </div>
+                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Clear ROI Hook:</strong> Solves missed customer inquiries and eliminates hold times
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Frictionless CTA:</strong> Low-friction 5-minute walkthrough or free trial invite
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Multi-Channel Ready:</strong> Usable in Retell Voice, Cold Email & Messenger CRM
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Banking 2-Column Multi-Intent & FAISS Grid */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                            {/* Panel 1: Intent Decomposition */}
+                            <div style={{
+                                background: 'rgba(30, 41, 59, 0.5)',
+                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                borderRadius: '14px',
+                                padding: '18px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span>🎯</span> 1. Multi-Intent Classifier (DistilBERT)
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.7rem',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px',
+                                        background: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                        color: result.complexity === 'complex' ? '#fb923c' : '#34d399',
+                                        fontWeight: 600
+                                    }}>
+                                        {result.complexity?.toUpperCase()}
+                                    </span>
+                                </div>
+
+                                {result.intents && result.intents.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {result.intents.map((seg, sIdx) => (
+                                            <div key={sIdx} style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                                <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginBottom: '6px', fontStyle: 'italic' }}>
+                                                    "{seg.segment}"
+                                                </div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {seg.intents.map((item, iIdx) => (
+                                                        <span key={iIdx} style={{
+                                                            background: 'rgba(37, 99, 235, 0.25)',
+                                                            color: '#93c5fd',
+                                                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.72rem',
+                                                            fontWeight: 600
+                                                        }}>
+                                                            {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>General banking customer intent detected</div>
                                 )}
                             </div>
 
-                            {result.model_id === 'sales-gemma-2b' ? (
-                                <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem', color: '#cbd5e1' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Clear Value Proposition:</strong> Quantifiable ROI and time-saved pitch
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Frictionless CTA:</strong> Low-commitment 5-minute invite or free trial
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Channel Format:</strong> Optimized for cold email & messenger CRM
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : result.faq_rag ? (
-                                <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                        <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
-                                            Policy Intent: {result.faq_rag.intent}
+                            {/* Panel 2: FAISS Vector RAG */}
+                            <div style={{
+                                background: 'rgba(30, 41, 59, 0.5)',
+                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                borderRadius: '14px',
+                                padding: '18px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span>📚</span> 2. FAISS Semantic Vector RAG
+                                    </span>
+                                    {result.faq_rag && (
+                                        <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
+                                            Sim: {result.faq_rag.confidence}
                                         </span>
-                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'capitalize' }}>
-                                            Priority: {result.faq_rag.priority}
-                                        </span>
+                                    )}
+                                </div>
+
+                                {result.faq_rag ? (
+                                    <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
+                                                Policy Intent: {result.faq_rag.intent}
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'capitalize' }}>
+                                                Priority: {result.faq_rag.priority}
+                                            </span>
+                                        </div>
+                                        <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
+                                            {result.faq_rag.answer}
+                                        </p>
                                     </div>
-                                    <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
-                                        {result.faq_rag.answer}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', padding: '12px 0' }}>
-                                    No exact FAQ policy threshold triggered. Routed directly to Model Reasoning layer.
-                                </div>
-                            )}
+                                ) : (
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', padding: '12px 0' }}>
+                                        No exact FAQ policy threshold triggered. Routed directly to Model Reasoning layer.
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Panel 3: Fine-Tuned Model Generated Output */}
                     <div style={{
