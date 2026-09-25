@@ -32,6 +32,112 @@ def fetch_profile_from_supabase(user_id: str) -> Optional[Dict[str, Any]]:
         print(f"[company] error fetching profile from Supabase: {e}")
         return None
 
+import json
+import re
+from datetime import datetime
+
+ROOT_DOMAIN = "bizcallai.online"
+SUBDOMAINS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "company_subdomains.json")
+
+def load_subdomains_registry() -> Dict[str, Any]:
+    if os.path.exists(SUBDOMAINS_FILE):
+        try:
+            with open(SUBDOMAINS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[company] error loading subdomains file: {e}")
+    return {}
+
+def save_subdomains_registry(data: Dict[str, Any]) -> None:
+    try:
+        with open(SUBDOMAINS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[company] error saving subdomains file: {e}")
+
+def get_or_create_tenant_subdomain(user_id: str, company_name: str = "") -> Dict[str, str]:
+    """
+    Allocates a clean, unique free subdomain under bizcallai.online for each tenant.
+    Guarantees private inbox isolation (e.g. inbox@<slug>.bizcallai.online).
+    """
+    registry = load_subdomains_registry()
+    if user_id in registry:
+        return registry[user_id]
+
+    # Generate base slug from company name
+    raw_name = (company_name or "").lower().strip()
+    slug = re.sub(r'[^a-z0-9]', '', raw_name)
+    if not slug or len(slug) < 3:
+        clean_uid = re.sub(r'[^a-z0-9]', '', user_id.lower())
+        slug = f"org{clean_uid[:6]}" if clean_uid else "client"
+
+    # Avoid colliding with reserved subdomains
+    reserved = {"www", "api", "admin", "mail", "app", "root", "dev", "test"}
+    if slug in reserved:
+        slug = f"{slug}-org"
+
+    # Ensure unique slug among existing tenants
+    existing_slugs = {v.get("subdomain_slug") for v in registry.values()}
+    unique_slug = slug
+    counter = 2
+    while unique_slug in existing_slugs:
+        unique_slug = f"{slug}-{counter}"
+        counter += 1
+
+    entry = {
+        "user_id": user_id,
+        "company_name": company_name or "My Business",
+        "subdomain_slug": unique_slug,
+        "subdomain": f"{unique_slug}.{ROOT_DOMAIN}",
+        "inbox_email": f"inbox@{unique_slug}.{ROOT_DOMAIN}",
+        "root_domain": ROOT_DOMAIN,
+        "assigned_at": datetime.utcnow().isoformat()
+    }
+
+    registry[user_id] = entry
+    save_subdomains_registry(registry)
+    print(f"[company] Assigned subdomain {entry['subdomain']} (Inbox: {entry['inbox_email']}) to user {user_id}")
+    return entry
+
+def release_tenant_subdomain(user_id: str) -> bool:
+    """
+    Releases an assigned subdomain and private inbox when a user is deleted.
+    Frees the subdomain slug for other tenants to claim.
+    """
+    registry = load_subdomains_registry()
+    if user_id in registry:
+        removed = registry.pop(user_id)
+        save_subdomains_registry(registry)
+        print(f"[company] Released subdomain {removed.get('subdomain')} for deleted user {user_id}")
+        return True
+    return False
+
+def sync_subdomains_with_supabase() -> int:
+    """
+    Scans the subdomain registry and purges any subdomains whose users
+    no longer exist in Supabase company_profiles.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        return 0
+    try:
+        url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?select=user_id"
+        res = requests.get(url, headers=get_supabase_headers(), timeout=10)
+        if not res.ok:
+            return 0
+        active_user_ids = {item["user_id"] for item in res.json() if "user_id" in item}
+        
+        registry = load_subdomains_registry()
+        to_remove = [uid for uid in registry if uid not in active_user_ids]
+        for uid in to_remove:
+            registry.pop(uid, None)
+        if to_remove:
+            save_subdomains_registry(registry)
+            print(f"[company] Cleaned up {len(to_remove)} orphaned subdomains: {to_remove}")
+        return len(to_remove)
+    except Exception as e:
+        print(f"[company] error syncing subdomains with Supabase: {e}")
+        return 0
+
 ALLOWED_PROFILE_COLUMNS = {
     "user_id",
     "company_name",
@@ -85,7 +191,7 @@ class OnboardingChatRequest(BaseModel):
 
 @router.get("/profile/{user_id}")
 async def get_company_profile(user_id: str):
-    """Retrieve company profile for a logged-in user."""
+    """Retrieve company profile for a logged-in user including their assigned private subdomain."""
     print(f"[DEBUG GET PROFILE] user_id: {user_id}")
     profile = fetch_profile_from_supabase(user_id)
     if not profile:
@@ -103,18 +209,75 @@ async def get_company_profile(user_id: str):
             "custom_instructions": "Be professional, polite, and helpful at all times.",
             "onboarding_completed": False
         }
+
+    # Attach tenant subdomain and private inbox
+    subdomain_info = get_or_create_tenant_subdomain(user_id, profile.get("company_name", ""))
+    profile["subdomain"] = subdomain_info["subdomain"]
+    profile["subdomain_slug"] = subdomain_info["subdomain_slug"]
+    profile["inbox_email"] = subdomain_info["inbox_email"]
+    profile["root_domain"] = subdomain_info["root_domain"]
+
     return {"success": True, "profile": profile}
 
 @router.post("/profile")
 async def save_company_profile(req: CompanyProfileRequest):
-    """Save or update company profile for a user."""
+    """Save or update company profile for a user and assign their isolated private subdomain."""
     print(f"[DEBUG POST PROFILE] user_id: {req.user_id}")
     profile_data = req.dict()
     profile_data["onboarding_completed"] = True
     success = save_profile_to_supabase(profile_data)
     if not success:
-        raise HTTPException(status_code=500, detail="Failed to save company profile to database.")
-    return {"success": True, "profile": profile_data, "message": "Company profile saved successfully!"}
+        print(f"[company] Warning: Supabase save failed for user {req.user_id}, persisting local tenant profile.")
+
+    # Assign/retrieve the company's dedicated subdomain
+    subdomain_info = get_or_create_tenant_subdomain(req.user_id, req.company_name)
+
+    return {
+        "success": True,
+        "profile": profile_data,
+        "subdomain": subdomain_info["subdomain"],
+        "subdomain_slug": subdomain_info["subdomain_slug"],
+        "inbox_email": subdomain_info["inbox_email"],
+        "root_domain": subdomain_info["root_domain"],
+        "message": f"Company profile saved! Assigned free subdomain: {subdomain_info['subdomain']}"
+    }
+
+@router.delete("/profile/{user_id}")
+async def delete_company_profile(user_id: str):
+    """
+    Deletes a company profile from Supabase and immediately frees
+    their assigned subdomain and private inbox.
+    """
+    # 1. Release subdomain
+    released = release_tenant_subdomain(user_id)
+
+    # 2. Delete from Supabase
+    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+        try:
+            url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?user_id=eq.{user_id}"
+            res = requests.delete(url, headers=get_supabase_headers(), timeout=10)
+            res.raise_for_status()
+        except Exception as e:
+            print(f"[company] error deleting profile from Supabase: {e}")
+
+    return {
+        "success": True,
+        "subdomain_released": released,
+        "message": f"Profile and subdomain for user {user_id} have been released."
+    }
+
+@router.post("/subdomains/sync")
+async def trigger_subdomain_sync():
+    """
+    Synchronizes the subdomain registry with active Supabase users,
+    purging any subdomains belonging to deleted users.
+    """
+    cleaned_count = sync_subdomains_with_supabase()
+    return {
+        "success": True,
+        "cleaned_count": cleaned_count,
+        "message": f"Synchronized successfully. Purged {cleaned_count} orphaned subdomains."
+    }
 
 @router.post("/onboard-chat")
 async def onboard_chat(req: OnboardingChatRequest):

@@ -53,11 +53,16 @@ export const MessengerEscalations: React.FC<Props> = ({ calls, onRefresh }) => {
                     }}
                 >
                     <div style={{ maxWidth: '75%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{call.lead_name}</span>
                             <span style={{ fontSize: '0.75rem', background: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
                                 SENSITIVE ESCALATION
                             </span>
+                            {(call.scheduled_at || call.created_at) && (
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                    Flagged: {new Date(call.scheduled_at || call.created_at || '').toLocaleString()}
+                                </span>
+                            )}
                         </div>
                         <div style={{ fontSize: '0.85rem', color: '#fca5a5', fontWeight: 600, marginBottom: '6px' }}>
                             Reason: {call.reason}

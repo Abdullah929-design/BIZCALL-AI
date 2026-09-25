@@ -33,6 +33,8 @@ export interface MessengerLead {
     follow_up_count: number;
     last_contacted_at: string;
     follow_up_delay_mins?: number;
+    lead_last_messaged_at?: string | null;
+    follow_up_sent_at?: string | null;
 }
 
 export interface MessengerMessage {
@@ -54,6 +56,8 @@ export interface HotLeadDraftItem {
     inbound_body?: string;
     created_at: string;
     send_status?: 'idle' | 'sending' | 'confirmed' | 'failed';
+    lead_last_messaged_at?: string | null;
+    follow_up_sent_at?: string | null;
 }
 
 export interface MessengerScheduledCall {
@@ -65,7 +69,8 @@ export interface MessengerScheduledCall {
     reason: string;
     lead_message: string;
     status: 'pending' | 'completed';
-    created_at: string;
+    created_at?: string;
+    scheduled_at?: string;
 }
 
 export interface MessengerStats {

@@ -19,6 +19,8 @@ const OnboardingSplash = ({ user, onComplete }) => {
 
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [assignedSubdomain, setAssignedSubdomain] = useState(null);
+    const [showSubdomainModal, setShowSubdomainModal] = useState(false);
 
     // 1. Validation checks
     const isEmailValid = (email) => {
@@ -62,7 +64,16 @@ const OnboardingSplash = ({ user, onComplete }) => {
             });
 
             if (res.data?.success) {
-                onComplete(); // Transition to the main dashboard
+                const cleanSlug = profile.company_name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'client';
+                const sub = res.data?.subdomain || `${cleanSlug}.bizcallai.online`;
+                const inbox = res.data?.inbox_email || `inbox@${sub}`;
+                setAssignedSubdomain({
+                    subdomain: sub,
+                    inbox_email: inbox,
+                    company_name: profile.company_name,
+                    root_domain: res.data?.root_domain || 'bizcallai.online'
+                });
+                setShowSubdomainModal(true);
             }
         } catch (err) {
             setErrorMsg(`❌ Onboarding failed: ${err.response?.data?.detail || err.message}`);
@@ -225,6 +236,167 @@ const OnboardingSplash = ({ user, onComplete }) => {
                     </button>
                 </form>
             </div>
+
+            {/* Subdomain & Private Inbox Notification Modal */}
+            {showSubdomainModal && assignedSubdomain && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.85)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: 20
+                }}>
+                    <div style={{
+                        background: 'linear-gradient(145deg, #181828, #0e0e17)',
+                        border: '1px solid rgba(99, 102, 241, 0.4)',
+                        borderRadius: 24,
+                        padding: '36px 32px',
+                        maxWidth: 580,
+                        width: '100%',
+                        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.2)',
+                        textAlign: 'center',
+                        color: '#edeae2',
+                        position: 'relative'
+                    }}>
+                        {/* Header Badge */}
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            color: '#34d399',
+                            padding: '6px 16px',
+                            borderRadius: 999,
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            marginBottom: 18,
+                            letterSpacing: '0.04em'
+                        }}>
+                            ✨ FREE DEDICATED SUBDOMAIN ASSIGNED
+                        </div>
+
+                        <h2 style={{
+                            margin: '0 0 10px',
+                            fontSize: '1.75rem',
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontFamily: "'Cormorant Garamond', serif"
+                        }}>
+                            Welcome aboard, {assignedSubdomain.company_name}!
+                        </h2>
+
+                        <p style={{
+                            margin: '0 0 24px',
+                            fontSize: '0.88rem',
+                            color: 'rgba(237, 234, 226, 0.75)',
+                            lineHeight: 1.5
+                        }}>
+                            Your isolated tenant environment and private inbox have been provisioned. The primary domain (<strong style={{ color: '#c9a84c' }}>{assignedSubdomain.root_domain}</strong>) remains reserved for platform governance.
+                        </p>
+
+                        {/* Subdomain & Inbox Details Card */}
+                        <div style={{
+                            background: 'rgba(0, 0, 0, 0.45)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            borderRadius: 16,
+                            padding: '20px',
+                            textAlign: 'left',
+                            marginBottom: 26,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 14
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#818cf8', fontWeight: 600, marginBottom: 5 }}>
+                                    🌐 Your Dedicated Subdomain
+                                </div>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    background: 'rgba(255, 255, 255, 0.04)',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.95rem',
+                                    color: '#67e8f9'
+                                }}>
+                                    <span>https://{assignedSubdomain.subdomain}</span>
+                                    <span style={{ fontSize: '0.72rem', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: 6 }}>
+                                        LIVE DNS
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#818cf8', fontWeight: 600, marginBottom: 5 }}>
+                                    📫 Private Inbox Address
+                                </div>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    background: 'rgba(255, 255, 255, 0.04)',
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.95rem',
+                                    color: '#a78bfa'
+                                }}>
+                                    <span>{assignedSubdomain.inbox_email}</span>
+                                    <span style={{ fontSize: '0.72rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '2px 8px', borderRadius: 6 }}>
+                                        ISOLATED
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{
+                                fontSize: '0.78rem',
+                                color: 'rgba(237, 234, 226, 0.65)',
+                                background: 'rgba(255, 255, 255, 0.02)',
+                                padding: '10px 12px',
+                                borderRadius: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8
+                            }}>
+                                <span>🛡️</span>
+                                <span>All outbound campaigns and prospect replies operate strictly through this private inbox.</span>
+                            </div>
+                        </div>
+
+                        {/* Launch Button */}
+                        <button
+                            onClick={() => {
+                                setShowSubdomainModal(false);
+                                onComplete();
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '14px 20px',
+                                borderRadius: 12,
+                                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                                color: '#fff',
+                                border: 'none',
+                                fontWeight: 600,
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            🚀 Launch Dashboard & Start Campaigns →
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

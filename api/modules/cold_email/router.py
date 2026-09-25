@@ -112,13 +112,45 @@ async def send_batch(payload: Optional[SendBatchRequest] = None, user: Authentic
     if subject or message:
         sheets_client.set_campaign_content_for_pending_leads(user_id=user.id, subject=subject, message=message)
 
+    # Resolve tenant's dedicated subdomain and private inbox
+    sender_email = None
+    subdomain = None
     try:
-        result = await n8n_client.trigger_send_batch(user_id=user.id, subject=subject, message=message)
-        return {"status": "started", "n8n_response": result}
+        from routers.company import get_or_create_tenant_subdomain
+        sub_info = get_or_create_tenant_subdomain(user.id)
+        sender_email = sub_info.get("inbox_email")
+        subdomain = sub_info.get("subdomain")
+    except Exception as ex:
+        print(f"[cold_email] Failed to resolve tenant subdomain: {ex}")
+
+    try:
+        result = await n8n_client.trigger_send_batch(
+            user_id=user.id,
+            subject=subject,
+            message=message,
+            sender_email=sender_email,
+            subdomain=subdomain
+        )
+        sheets_client.invalidate_tab_cache("Leads")
+        return {"status": "started", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
     except Exception as e:
         # Reset on failure so the user can retry
         _last_batch_trigger.pop(user.id, None)
         raise HTTPException(status_code=502, detail=f"Failed to trigger n8n batch workflow: {str(e)}")
+
+
+@router.get("/bundle")
+async def get_dashboard_bundle(force: bool = False, user: AuthenticatedUser = Depends(get_current_user)):
+    """
+    Fetches all CRM dashboard tabs (leads, hot_leads, neutral_leads, failed_leads)
+    in a single round-trip with in-memory caching and Google batchGet.
+    Set ?force=true to bypass cache and fetch directly from Google Sheets.
+    """
+    try:
+        data = sheets_client.fetch_dashboard_bundle(user_id=user.id, force=force)
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading dashboard bundle: {str(e)}")
 
 
 @router.get("/leads")
@@ -200,6 +232,17 @@ async def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depend
     except Exception as e:
         # Non-fatal defense check logging
         print(f"[WARN] Leads defense check skipped: {e}")
+    # Resolve tenant's dedicated subdomain and private inbox
+    sender_email = None
+    subdomain = None
+    try:
+        from routers.company import get_or_create_tenant_subdomain
+        sub_info = get_or_create_tenant_subdomain(user.id)
+        sender_email = sub_info.get("inbox_email")
+        subdomain = sub_info.get("subdomain")
+    except Exception as ex:
+        print(f"[cold_email] Failed to resolve tenant subdomain for reply: {ex}")
+
     try:
         result = await n8n_client.trigger_send_reply(
             user_id=user.id,
@@ -207,9 +250,11 @@ async def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depend
             lead_email=payload.lead_email,
             subject=payload.subject,
             message=payload.message,
+            sender_email=sender_email,
+            subdomain=subdomain
         )
         # Immediately stamp the status='replied' in Google Sheets so UI reflects it
         sheets_client.mark_lead_replied(user_id=user.id, lead_id=payload.lead_id, lead_email=payload.lead_email)
-        return {"status": "sent", "n8n_response": result}
+        return {"status": "sent", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to send reply via n8n: {str(e)}")

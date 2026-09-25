@@ -72,11 +72,31 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
-        <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#94a3b8' }}>
+        <p style={{ margin: '0 0 12px', fontSize: '0.82rem', color: '#94a3b8' }}>
           {pendingCount !== undefined
             ? `This will dispatch outbound emails to your ${pendingCount} pending lead(s) via n8n & Brevo.`
             : 'This will dispatch outbound emails to all pending leads in your queue via n8n & Brevo.'}
         </p>
+
+        {/* Dedicated Subdomain Inbox Badge */}
+        <div style={{
+          background: 'rgba(99, 102, 241, 0.08)',
+          border: '1px solid rgba(99, 102, 241, 0.25)',
+          borderRadius: 8,
+          padding: '8px 12px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '0.78rem'
+        }}>
+          <span style={{ color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: 6 }}>
+            🛡️ <strong>Private Subdomain Isolation:</strong> Enabled
+          </span>
+          <span style={{ color: '#34d399', fontFamily: 'monospace', fontSize: '0.75rem', background: 'rgba(52, 211, 153, 0.12)', padding: '2px 8px', borderRadius: 4 }}>
+            Dedicated Private Inbox (*.bizcallai.online)
+          </span>
+        </div>
 
         {/* Custom Content Toggle */}
         <div style={{

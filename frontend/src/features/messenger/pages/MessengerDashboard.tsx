@@ -13,7 +13,7 @@ import {
     fetchScheduledCalls,
     fetchMessengerLeads,
     fetchMessengerCampaigns,
-    fetchMessengerStats,
+    calculateMessengerStats,
     fetchConnectedFacebookPage
 } from '../api/messengerApi';
 import { MessengerHotLeadsQueue } from '../components/MessengerHotLeadsQueue';
@@ -47,33 +47,47 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
 
     const userId = user?.id;
 
-    const loadAll = async () => {
-        if (!userId) return;
-        setLoading(true);
+    const loadAll = async (isBackground = false) => {
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
+        if (!isBackground) {
+            setLoading(true);
+        }
         try {
-            const [d, c, l, camp, s, page] = await Promise.all([
+            // Fetch leads and campaigns once, then calculate stats in-memory (avoiding duplicate DB round trips)
+            const [d, c, l, camp, page] = await Promise.all([
                 fetchHotLeadDrafts(userId),
                 fetchScheduledCalls(userId),
                 fetchMessengerLeads(userId),
                 fetchMessengerCampaigns(userId),
-                fetchMessengerStats(userId),
                 fetchConnectedFacebookPage(userId)
             ]);
             setDrafts(d);
             setCalls(c);
             setLeads(l);
             setCampaigns(camp);
-            setStats(s);
+            setStats(calculateMessengerStats(l, camp));
             setConnectedPage(page);
         } catch (err) {
             console.error('Error loading Messenger module data:', err);
         } finally {
-            setLoading(false);
+            if (!isBackground) {
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
-        loadAll();
+        loadAll(false);
+
+        // Silent background auto-refresh every 20 seconds to catch new inbound hot leads & escalations
+        const intervalId = setInterval(() => {
+            loadAll(true);
+        }, 20000);
+
+        return () => clearInterval(intervalId);
     }, [userId]);
 
     return (
@@ -139,7 +153,7 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
                     )}
 
                     <button
-                        onClick={loadAll}
+                        onClick={() => loadAll(false)}
                         disabled={loading}
                         style={{
                             padding: '8px 16px',
@@ -231,7 +245,7 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
                 <MessengerHotLeadsQueue drafts={drafts} userId={userId} onRefresh={loadAll} />
             )}
             {activeTab === 'campaigns' && (
-                <MessengerCampaigns userId={userId} campaigns={campaigns} onRefresh={loadAll} />
+                <MessengerCampaigns userId={userId} campaigns={campaigns} leads={leads} onRefresh={loadAll} />
             )}
             {activeTab === 'sensitive' && (
                 <MessengerEscalations calls={calls} onRefresh={loadAll} />

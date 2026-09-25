@@ -1,7 +1,7 @@
 // frontend/src/features/cold-email/pages/ColdEmailDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import type { ColdEmailLead } from '../types';
-import { fetchLeads, fetchHotLeads, fetchNeutralQueue, fetchFailedLeads, deleteLead } from '../api/coldEmailApi';
+import { fetchLeads, fetchHotLeads, fetchNeutralQueue, fetchFailedLeads, fetchDashboardBundle, deleteLead } from '../api/coldEmailApi';
 import { SendBatchButton } from '../components/SendBatchButton';
 import { LeadsTable } from '../components/LeadsTable';
 import { ReplyModal } from '../components/ReplyModal';
@@ -27,21 +27,30 @@ export const ColdEmailDashboard: React.FC = () => {
     // CSV Bulk Import modal state
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
-    const loadAllData = async () => {
+    const loadAllData = async (force: boolean = false) => {
         setLoading(true);
         try {
-            const [hot, all, neutral, failed] = await Promise.all([
-                fetchHotLeads().catch(() => []),
-                fetchLeads().catch(() => []),
-                fetchNeutralQueue().catch(() => []),
-                fetchFailedLeads().catch(() => [])
-            ]);
-            setHotLeads(hot);
-            setAllLeads(all);
-            setNeutralLeads(neutral);
-            setFailedLeads(failed);
+            const bundle = await fetchDashboardBundle(force);
+            setHotLeads(bundle.hot_leads || []);
+            setAllLeads(bundle.leads || []);
+            setNeutralLeads(bundle.neutral_leads || []);
+            setFailedLeads(bundle.failed_leads || []);
         } catch (err) {
-            console.error('Error fetching cold email data:', err);
+            console.warn('Dashboard bundle fetch failed, falling back to parallel fetch:', err);
+            try {
+                const [hot, all, neutral, failed] = await Promise.all([
+                    fetchHotLeads().catch(() => []),
+                    fetchLeads().catch(() => []),
+                    fetchNeutralQueue().catch(() => []),
+                    fetchFailedLeads().catch(() => [])
+                ]);
+                setHotLeads(hot);
+                setAllLeads(all);
+                setNeutralLeads(neutral);
+                setFailedLeads(failed);
+            } catch (fallbackErr) {
+                console.error('Error fetching cold email data:', fallbackErr);
+            }
         } finally {
             setLoading(false);
         }
@@ -49,11 +58,14 @@ export const ColdEmailDashboard: React.FC = () => {
 
     const handleBatchTriggered = () => {
         // Immediate refresh
-        loadAllData();
-        // Second refresh after n8n executes the workflow
+        loadAllData(true);
+        // Staged refreshes after n8n delivers email and writes 'sent' to Google Sheets
         setTimeout(() => {
-            loadAllData();
-        }, 4000);
+            loadAllData(true);
+        }, 3500);
+        setTimeout(() => {
+            loadAllData(true);
+        }, 7500);
     };
 
     const handleReplySuccess = (lead?: ColdEmailLead | null) => {
@@ -128,7 +140,7 @@ export const ColdEmailDashboard: React.FC = () => {
                         📥 Import CSV
                     </button>
                     <button
-                        onClick={loadAllData}
+                        onClick={() => loadAllData(true)}
                         style={{
                             padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: '0.85rem'

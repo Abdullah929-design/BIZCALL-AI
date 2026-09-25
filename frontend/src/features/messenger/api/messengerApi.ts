@@ -17,6 +17,8 @@ interface SupabaseLeadRow {
     id: string;
     psid: string;
     name: string;
+    lead_last_messaged_at?: string | null;
+    follow_up_sent_at?: string | null;
 }
 
 // --- 1. Fetch Hot Leads Queue (Drafts) ---
@@ -36,12 +38,22 @@ export const fetchHotLeadDrafts = async (userId: string): Promise<HotLeadDraftIt
 
     if (drafts.length === 0) return [];
 
-    const leadIds = [...new Set((drafts as any[]).map((d: any) => d.lead_id))];
+    // Deduplicate drafts by lead_id (keep only the latest draft per lead)
+    const seenLeads = new Set<string>();
+    const deduplicatedDrafts: any[] = [];
+    for (const d of (drafts as any[])) {
+        if (!seenLeads.has(d.lead_id)) {
+            seenLeads.add(d.lead_id);
+            deduplicatedDrafts.push(d);
+        }
+    }
 
-    // 2. Join with messenger_leads to get real PSID and name
+    const leadIds = [...seenLeads];
+
+    // 2. Join with messenger_leads to get real PSID, name, and window timing
     const { data: leads } = await supabase
         .from('messenger_leads')
-        .select('id, psid, name')
+        .select('id, psid, name, lead_last_messaged_at, follow_up_sent_at')
         .in('id', leadIds);
 
     const leadMap = new Map<string, SupabaseLeadRow>();
@@ -64,7 +76,7 @@ export const fetchHotLeadDrafts = async (userId: string): Promise<HotLeadDraftIt
         }
     });
 
-    return (drafts as any[]).map((d: any) => {
+    return deduplicatedDrafts.map((d: any) => {
         const lead = leadMap.get(d.lead_id);
         return {
             draft_message_id: d.id,
@@ -74,7 +86,9 @@ export const fetchHotLeadDrafts = async (userId: string): Promise<HotLeadDraftIt
             draft_body: d.body,
             inbound_body: inboundMap.get(d.lead_id) || 'No incoming text available',
             created_at: d.created_at,
-            send_status: 'idle'
+            send_status: 'idle',
+            lead_last_messaged_at: lead?.lead_last_messaged_at || null,
+            follow_up_sent_at: lead?.follow_up_sent_at || null
         };
     });
 };
@@ -126,17 +140,24 @@ export const launchCampaignWF1 = async (params: {
     userId: string;
     campaignName?: string;
     messageBody: string;
-    followUpDelayMins: number;
+    followUpDelayMins?: number;
+    enable23hFollowUp?: boolean;
     leads: Array<{ psid: string; name: string }>;
 }): Promise<string> => {
     const campaignId = crypto.randomUUID();
+    const delayMins = params.enable23hFollowUp ? 1380 : (params.followUpDelayMins || 0);
+
+    // Encode campaign name into message_body for DB persistence since table has no name column
+    const bodyForDb = params.campaignName?.trim()
+        ? `[Campaign: ${params.campaignName.trim()}]\n${params.messageBody}`
+        : params.messageBody;
 
     // 1. Create client-side campaign record in Supabase
     const { error: campErr } = await supabase.from('messenger_campaigns').insert({
         id: campaignId,
         user_id: params.userId,
-        message_body: params.messageBody,
-        follow_up_delay_mins: params.followUpDelayMins,
+        message_body: bodyForDb,
+        follow_up_delay_mins: delayMins,
         status: 'draft'
     });
 
@@ -145,13 +166,34 @@ export const launchCampaignWF1 = async (params: {
         throw new Error(`Failed to create campaign in Supabase: ${campErr.message}`);
     }
 
+    // 2. Ensure all recipient leads exist in messenger_leads (native Postgres upsert on unique psid)
+    if (params.leads && params.leads.length > 0) {
+        const leadsToUpsert = params.leads.map(l => ({
+            user_id: params.userId,
+            campaign_id: campaignId,
+            psid: l.psid,
+            name: l.name || 'Lead',
+            lead_status: 'no_reply' as const,
+            follow_up_count: 0,
+            last_contacted_at: new Date().toISOString()
+        }));
 
-    // 2. Dispatch to WF1
+        const { error: leadsErr } = await supabase
+            .from('messenger_leads')
+            .upsert(leadsToUpsert, { onConflict: 'psid' });
+
+        if (leadsErr) {
+            console.warn('Warning pre-upserting leads in Supabase:', leadsErr);
+        }
+    }
+
+    // 3. Dispatch clean message body to WF1 (Meta recipients won't see [Campaign: Name] tag)
     const payload = {
         user_id: params.userId,
         campaign_id: campaignId,
         message_body: params.messageBody,
-        follow_up_delay_mins: params.followUpDelayMins,
+        follow_up_delay_mins: delayMins,
+        enable_23h_followup: !!params.enable23hFollowUp,
         leads: params.leads
     };
 
@@ -225,15 +267,23 @@ export const fetchMessengerCampaigns = async (userId: string): Promise<Messenger
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-    return (data || []) as MessengerCampaign[];
+    return ((data || []) as any[]).map((c: any) => {
+        let name = 'Messenger Campaign';
+        let cleanBody = c.message_body || '';
+        const match = cleanBody.match(/^\[Campaign:\s*(.*?)\]\n?/);
+        if (match) {
+            name = match[1];
+            cleanBody = cleanBody.replace(/^\[Campaign:\s*(.*?)\]\n?/, '');
+        }
+        return {
+            ...c,
+            name,
+            message_body: cleanBody
+        };
+    });
 };
 
-export const fetchMessengerStats = async (userId: string): Promise<MessengerStats> => {
-    const [leads, campaigns] = await Promise.all([
-        fetchMessengerLeads(userId),
-        fetchMessengerCampaigns(userId)
-    ]);
-
+export const calculateMessengerStats = (leads: MessengerLead[], campaigns: MessengerCampaign[]): MessengerStats => {
     return {
         total_campaigns: campaigns.length,
         total_leads: leads.length,
@@ -243,6 +293,15 @@ export const fetchMessengerStats = async (userId: string): Promise<MessengerStat
         sensitive_leads: leads.filter(l => l.lead_status === 'sensitive').length,
         archived_leads: leads.filter(l => l.lead_status === 'archived').length
     };
+};
+
+export const fetchMessengerStats = async (userId: string): Promise<MessengerStats> => {
+    const [leads, campaigns] = await Promise.all([
+        fetchMessengerLeads(userId),
+        fetchMessengerCampaigns(userId)
+    ]);
+
+    return calculateMessengerStats(leads, campaigns);
 };
 
 // --- 6. Connected Facebook Page (Multi-Tenant) ---
@@ -268,6 +327,8 @@ export const saveConnectedFacebookPage = async (params: {
     // Check if user already has a page connected
     const existing = await fetchConnectedFacebookPage(params.userId);
 
+    const cleanToken = params.pageAccessToken.trim().replace(/^Bearer\s+/i, '');
+
     if (existing) {
         // Update existing connection
         const { data, error } = await supabase
@@ -275,7 +336,7 @@ export const saveConnectedFacebookPage = async (params: {
             .update({
                 page_id: params.pageId.trim(),
                 page_name: params.pageName?.trim() || 'Connected Facebook Page',
-                page_access_token: params.pageAccessToken.trim()
+                page_access_token: cleanToken
             })
             .eq('id', existing.id)
             .select()
@@ -291,7 +352,7 @@ export const saveConnectedFacebookPage = async (params: {
                 user_id: params.userId,
                 page_id: params.pageId.trim(),
                 page_name: params.pageName?.trim() || 'Connected Facebook Page',
-                page_access_token: params.pageAccessToken.trim()
+                page_access_token: cleanToken
             })
             .select()
             .single();

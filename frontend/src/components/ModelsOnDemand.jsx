@@ -51,6 +51,8 @@ const ModelsOnDemand = () => {
             const res = await axios.post('/api/models-on-demand/inference', {
                 query: textToRun,
                 model_id: selectedModel
+            }, {
+                timeout: 120000 // 2 minutes for full CPU generation
             });
 
             if (res.data?.success) {

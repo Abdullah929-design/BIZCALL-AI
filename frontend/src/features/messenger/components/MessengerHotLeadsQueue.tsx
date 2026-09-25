@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import type { HotLeadDraftItem } from '../types';
 import { sendReplyWF4, pollDraftConfirmation } from '../api/messengerApi';
+import { WindowTimerBadge } from './WindowTimerBadge';
 
 interface Props {
     drafts: HotLeadDraftItem[];
@@ -12,7 +13,7 @@ interface Props {
 export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefresh }) => {
     const [editedBodies, setEditedBodies] = useState<{ [draftId: string]: string }>({});
     const [statusMap, setStatusMap] = useState<{ [draftId: string]: 'sending' | 'confirmed' | 'failed' | undefined }>({});
-    const [errorMsg, setErrorMsg] = useState('');
+    const [errorMap, setErrorMap] = useState<{ [draftId: string]: string }>({});
 
     const handleSend = async (item: HotLeadDraftItem) => {
         const textToSend = editedBodies[item.draft_message_id] !== undefined
@@ -24,7 +25,7 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
             return;
         }
 
-        setErrorMsg('');
+        setErrorMap(prev => ({ ...prev, [item.draft_message_id]: '' }));
         setStatusMap(prev => ({ ...prev, [item.draft_message_id]: 'sending' }));
 
         try {
@@ -45,12 +46,18 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                 setTimeout(() => onRefresh(), 2000);
             } else {
                 setStatusMap(prev => ({ ...prev, [item.draft_message_id]: 'failed' }));
-                setErrorMsg(`⚠️ Message queued, but Meta did not confirm delivery for PSID: ${item.psid}. Make sure the PSID is genuine and within the 24h messaging window.`);
+                setErrorMap(prev => ({
+                    ...prev,
+                    [item.draft_message_id]: `⚠️ Message queued, but Meta did not confirm delivery for PSID: ${item.psid}. Make sure the PSID is genuine and within the 24h messaging window.`
+                }));
             }
         } catch (err: any) {
             console.error('Error sending reply via WF4:', err);
             setStatusMap(prev => ({ ...prev, [item.draft_message_id]: 'failed' }));
-            setErrorMsg(err.message || 'Failed to trigger WF4 reply webhook.');
+            setErrorMap(prev => ({
+                ...prev,
+                [item.draft_message_id]: err.message || 'Failed to trigger WF4 reply webhook.'
+            }));
         }
     };
 
@@ -68,17 +75,12 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {errorMsg && (
-                <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '8px', color: '#fca5a5', fontSize: '0.9rem' }}>
-                    {errorMsg}
-                </div>
-            )}
-
             {drafts.map(draft => {
                 const currentStatus = statusMap[draft.draft_message_id];
                 const currentBody = editedBodies[draft.draft_message_id] !== undefined
                     ? editedBodies[draft.draft_message_id]
                     : draft.draft_body;
+                const draftError = errorMap[draft.draft_message_id];
 
                 return (
                     <div
@@ -91,17 +93,32 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                             boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                         }}
                     >
+                        {draftError && (
+                            <div style={{
+                                padding: '10px 14px',
+                                background: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid #ef4444',
+                                borderRadius: '8px',
+                                color: '#fca5a5',
+                                fontSize: '0.85rem',
+                                marginBottom: '14px'
+                            }}>
+                                {draftError}
+                            </div>
+                        )}
+
                         {/* Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                             <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                     <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>{draft.lead_name}</span>
                                     <span style={{ fontSize: '0.75rem', background: '#0284c7', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
                                         PSID: {draft.psid}
                                     </span>
+                                    <WindowTimerBadge lastMessagedAt={draft.lead_last_messaged_at} followUpSentAt={draft.follow_up_sent_at} compact />
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                    Draft generated: {new Date(draft.created_at).toLocaleTimeString()}
+                                    Draft generated: {new Date(draft.created_at).toLocaleString()}
                                 </div>
                             </div>
 

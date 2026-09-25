@@ -80,6 +80,43 @@ const CompanySettings = ({ user }) => {
         </div>
       )}
 
+      {/* Dedicated Multi-Tenant Subdomain & Inbox Card */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.05))',
+        border: '1px solid rgba(99, 102, 241, 0.25)',
+        borderRadius: 14,
+        padding: '18px 22px',
+        marginBottom: 24,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <span style={{ fontSize: '1.2rem' }}>🌐</span>
+            <strong style={{ fontSize: '1rem', color: '#fff' }}>Dedicated Subdomain & Private Inbox</strong>
+            <span style={{ fontSize: '0.72rem', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', padding: '2px 10px', borderRadius: 999, fontWeight: 600 }}>
+              LIVE DNS ISOLATION
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(237, 234, 226, 0.7)' }}>
+            Your company is isolated under <strong style={{ color: '#67e8f9' }}>{profile.subdomain || 'loading...'}</strong>. The root domain (<strong style={{ color: '#c9a84c' }}>bizcallai.online</strong>) is reserved for system administration.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 10, padding: '8px 14px' }}>
+            <div style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 600, textTransform: 'uppercase' }}>Subdomain URL</div>
+            <div style={{ fontSize: '0.85rem', color: '#67e8f9', fontFamily: 'monospace' }}>https://{profile.subdomain || '...bizcallai.online'}</div>
+          </div>
+          <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 10, padding: '8px 14px' }}>
+            <div style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 600, textTransform: 'uppercase' }}>Private Inbox</div>
+            <div style={{ fontSize: '0.85rem', color: '#a78bfa', fontFamily: 'monospace' }}>{profile.inbox_email || 'inbox@...bizcallai.online'}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Manual Settings Form */}
       <form onSubmit={handleSaveProfile} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
         {/* General Information */}

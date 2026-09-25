@@ -90,6 +90,22 @@ export async function sendBatch(campaign?: { subject?: string; message?: string 
     return res.json();
 }
 
+export interface DashboardBundleData {
+    leads: ColdEmailLead[];
+    hot_leads: ColdEmailLead[];
+    neutral_leads: ColdEmailLead[];
+    failed_leads: ColdEmailLead[];
+}
+
+export async function fetchDashboardBundle(force: boolean = false): Promise<DashboardBundleData> {
+    const headers = await getAuthHeaders();
+    const url = force ? "/api/cold-email/bundle?force=true" : "/api/cold-email/bundle";
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error("Failed to load dashboard bundle");
+    const json = await res.json();
+    return json.data || { leads: [], hot_leads: [], neutral_leads: [], failed_leads: [] };
+}
+
 export async function fetchLeads(status?: string): Promise<ColdEmailLead[]> {
     const headers = await getAuthHeaders();
     const url = status
