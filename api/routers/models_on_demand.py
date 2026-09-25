@@ -10,8 +10,91 @@ import concurrent.futures
 # Ensure root paths are accessible
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import requests
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Groq Multi-Model Cloud Refinement Layer (gpt-oss-20b)
+# Uses isolated account credentials & strict fallback to ensure zero dependency.
+# ---------------------------------------------------------------------------
+GROQ_CLOUD_LAYER_API_KEY = os.getenv("GROQ_CLOUD_LAYER_API_KEY")
+GROQ_CLOUD_LAYER_MODEL = os.getenv("GROQ_CLOUD_LAYER_MODEL", "openai/gpt-oss-20b")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+def refine_with_groq_cloud(query: str, raw_response: str, domain_context: str = "banking") -> tuple[str, bool]:
+    """
+    Enhances raw local/HF domain SLM output via Groq Cloud Layer (openai/gpt-oss-20b).
+    Strictly non-dependent: If Groq experiences network failure, token limit, 
+    or latency timeouts, it safely falls back to the exact raw_response with zero disruption.
+    Optimized for minimum Groq token consumption.
+    """
+    if not raw_response or len(raw_response.strip()) < 15:
+        return raw_response, False
+
+    api_key = os.getenv("GROQ_CLOUD_LAYER_API_KEY") or GROQ_CLOUD_LAYER_API_KEY
+    if not api_key:
+        return raw_response, False
+
+    model_name = os.getenv("GROQ_CLOUD_LAYER_MODEL") or GROQ_CLOUD_LAYER_MODEL
+
+    if domain_context == "sales":
+        system_instruction = (
+            "You are a sales copy refinement layer. Polish the pitch for maximum clarity, persuasive flow, "
+            "and eliminate repetitive sentences. Keep the response complete, punchy, and under 280 words. "
+            "Never leave the response truncated mid-sentence. Output only the refined text directly."
+        )
+    else:
+        system_instruction = (
+            "You are a banking AI refinement layer. Polish the response for accuracy, professional tone, "
+            "and clear step-by-step guidance. Keep the response concise and complete (under 250 words, "
+            "4-5 key steps max, no oversized tables). Never leave the response truncated mid-sentence. "
+            "Output only the refined text directly."
+        )
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"}
+        ],
+        "max_tokens": 950,
+        "temperature": 0.2
+    }
+
+    try:
+        resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=9.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            choices = data.get("choices", [])
+            if choices:
+                refined_text = choices[0].get("message", {}).get("content", "").strip()
+                finish_reason = choices[0].get("finish_reason")
+                
+                # Safeguard: if hit length limit, cleanly trim back to last complete sentence
+                if finish_reason == "length" and refined_text:
+                    last_punct = max(
+                        refined_text.rfind('.'),
+                        refined_text.rfind('!'),
+                        refined_text.rfind('?'),
+                        refined_text.rfind('\n\n')
+                    )
+                    if last_punct > len(refined_text) // 2:
+                        refined_text = refined_text[:last_punct + 1].strip()
+
+                if refined_text and len(refined_text) > 20:
+                    return refined_text, True
+        else:
+            print(f"[models_on_demand] Groq returned status {resp.status_code}: {resp.text[:120]}")
+    except Exception as e:
+        print(f"[models_on_demand] Groq cloud refinement bypassed/failed (fallback to SLM): {e}")
+
+    return raw_response, False
 
 # ---------------------------------------------------------------------------
 # Paragraph generator: one seeded call → one clean paragraph from the model.
@@ -153,7 +236,7 @@ async def get_models_catalog():
                 "category": "Banking & Financial Services",
                 "base_architecture": "Google Gemma-2B (LoRA Fine-Tuned)",
                 "quantization": "4-bit (Q4_K_M) / Safetensors",
-                "hardware": "ZeroGPU • Nvidia A100 (Cloud Accelerated)",
+                "hardware": "ZeroGPU • Nvidia A100 + Groq Cloud Layer",
                 "status": "active",
                 "accuracy": "94.8%",
                 "avg_latency": "280ms",
@@ -167,6 +250,7 @@ async def get_models_catalog():
                     "Multi-Intent Recognition",
                     "Domain Semantic RAG (FAISS)",
                     "PII & Security Protocol Aware",
+                    "Groq Multi-Model Cloud Booster (gpt-oss-20b)",
                     "On-Premise & Cloud Exportable"
                 ]
             },
@@ -177,7 +261,7 @@ async def get_models_catalog():
                 "category": "Sales & B2B Marketing",
                 "base_architecture": "Google Gemma-2B (Sales Fine-Tuned)",
                 "quantization": "4-bit (Q4_K_M)",
-                "hardware": "Standard Cloud CPU (Unlimited 24/7)",
+                "hardware": "Cloud CPU Engine + Groq Cloud Layer",
                 "status": "active",
                 "accuracy": "92.3%",
                 "avg_latency": "310ms",
@@ -191,6 +275,7 @@ async def get_models_catalog():
                     "Value Proposition Structuring",
                     "Objection Handling & Urgency",
                     "Multi-Channel Copy (Email & Messenger)",
+                    "Groq Multi-Model Cloud Booster (gpt-oss-20b)",
                     "High-Efficiency Q4_K_M GGUF"
                 ]
             }
@@ -363,14 +448,22 @@ async def run_model_inference(req: ModelInferenceRequest):
         else:
             model_output = _build_sales_fallback(target_brand, query)
 
+        # Step 5: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
+        # Polishes repetitions, flow, and output precision with zero hard dependency
+        refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
+        if was_refined:
+            model_output = refined_output
+
         latency_ms = int((time.time() - start_time) * 1000)
         return {
             "success": True,
             "query": query,
             "model_id": req.model_id,
             "model_name": "BizCall Outbound Sales & Pitch Agent (Gemma-2B Q4_K_M)",
-            "hardware": "Cloud CPU Engine • GGUF Quantized",
+            "hardware": "Cloud CPU Engine • GGUF + Groq Cloud Layer" if was_refined else "Cloud CPU Engine • GGUF Quantized",
             "pipeline_type": "sales_marketing",
+            "cloud_layer_active": was_refined,
+            "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
             "model_response": str(model_output).strip(),
             "latency_ms": latency_ms
         }
@@ -443,6 +536,12 @@ async def run_model_inference(req: ModelInferenceRequest):
         else:
             model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
 
+    # Step 4: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
+    # Polishes factual guidance, grammar, and security instructions with zero hard dependency
+    refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="banking")
+    if was_refined:
+        model_output = refined_output
+
     latency_ms = int((time.time() - start_time) * 1000)
 
     return {
@@ -450,8 +549,10 @@ async def run_model_inference(req: ModelInferenceRequest):
         "query": query,
         "model_id": req.model_id,
         "model_name": "BizCall Banking & Financial SLM (Gemma-2B LoRA)",
-        "hardware": "Nvidia A100 ZeroGPU",
+        "hardware": "Nvidia A100 ZeroGPU + Groq Cloud Layer" if was_refined else "Nvidia A100 ZeroGPU",
         "pipeline_type": "banking_services",
+        "cloud_layer_active": was_refined,
+        "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
         "intents": intent_results,
         "complexity": complexity,
         "faq_rag": faq_match,
