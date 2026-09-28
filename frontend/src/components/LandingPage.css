@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+
 /* ==========================================================================
    Full-Screen Background Video Landing Page
    ========================================================================== */
@@ -58,12 +60,41 @@
   z-index: 10;
 }
 
-/* Left side of navbar (ready to populate with future links/content) */
+/* Left side of navbar */
 .landing-nav-left {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
 }
+
+/* Brand logo on top-left */
+.landing-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.7));
+  user-select: none;
+}
+
+/* Brand text on top-left */
+.landing-brand-text {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 20px;
+  /* Match or tweak slightly (e.g., 14px - 17px) */
+  font-weight: 600;
+  /* 500, 600, or 700 */
+  letter-spacing: 0.12em;
+  /* Adjust spacing between letters */
+  text-transform: uppercase;
+  color: #ffffff;
+  opacity: 0.9;
+  /* Adjust opacity or brightness */
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  /* Matches login text glow */
+  user-select: none;
+}
+
 
 /* Right side of navbar */
 .landing-nav-right {
@@ -80,25 +111,25 @@
   padding: 8px 0;
   margin: 0;
   color: #ffffff;
-  font-family: 'DM Mono', monospace;
-  font-size: 13px;
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 20px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   opacity: 0.9;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .landing-login-btn:hover {
   opacity: 1;
   color: #ffffff;
   transform: translateY(-1px);
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.45), 0 2px 12px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.5), 0 2px 14px rgba(0, 0, 0, 0.95);
 }
 
 .landing-login-btn:active {
@@ -106,8 +137,8 @@
 }
 
 .landing-arrow-icon {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   transition: transform 0.2s ease;
 }
 
@@ -115,13 +146,206 @@
   transform: translate(2px, -2px);
 }
 
-/* Responsive adjustments */
+/* ==========================================================================
+   Middle-Left Animated Headline (Desktop & Default)
+   ========================================================================== */
+
+.landing-hero-headline {
+  position: absolute;
+  top: 55%;
+  left: 54px;
+  /* Matches the navbar left boundary */
+  transform: translateY(-50%);
+  max-width: 580px;
+  /* Controls width so it wraps nicely into 2 lines */
+  z-index: 20;
+  /* Sits above video and overlays */
+  pointer-events: none;
+}
+
+.landing-hero-headline h1 {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 56px;
+  /* Large modern bold headline */
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85);
+
+  /* Flow in smoothly from left boundary */
+  animation: slideInFromLeft 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Keyframe animation sliding smoothly from left boundary */
+@keyframes slideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-120px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
+   Middle-Right Animated Headline (Desktop & Default)
+   ========================================================================== */
+
+.landing-hero-headline-right {
+  position: absolute;
+  top: 55%;
+  /* Same vertical level as middle-left */
+  right: 54px;
+  /* Matches the right boundary */
+  transform: translateY(-50%);
+  max-width: 580px;
+  /* Same wrapping width */
+  text-align: right;
+  /* Clean right alignment */
+  z-index: 20;
+  pointer-events: none;
+}
+
+.landing-hero-headline-right h1 {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85);
+
+  /* 1. Keeps it completely hidden during the 3.5s delay */
+  opacity: 0;
+
+  /* 2. Format: animation-name | duration | timing-function | DELAY | fill-mode */
+  animation: slideInFromRight 3s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards;
+}
+
+
+/* Keyframe animation sliding smoothly from right boundary */
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(120px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
+   Bottom Surface Feature Notes (Slide up from bottom)
+   ========================================================================== */
+
+.landing-bottom-left {
+  position: absolute;
+  bottom: 40px;
+  /* Distance from bottom surface */
+  left: 54px;
+  /* Matches the left alignment boundary */
+  z-index: 20;
+  pointer-events: none;
+}
+
+.landing-bottom-right {
+  position: absolute;
+  bottom: 40px;
+  /* Distance from bottom surface */
+  right: 54px;
+  /* Matches the right alignment boundary */
+  text-align: right;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.landing-bottom-left span,
+.landing-bottom-right span {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: 15px;
+  /* Small, refined text size */
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  /* Clean letter spacing */
+  text-transform: uppercase;
+  /* Or remove if you prefer lowercase/mixed case */
+  color: #e2e8f0;
+  opacity: 0;
+  /* Hidden until animation starts */
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+
+  /* Emerges smoothly from the bottom: duration 2.5s, delay 2.5s (adjust as needed) */
+  animation: slideInFromBottom 2.5s cubic-bezier(0.16, 1, 0.3, 1) 3s forwards;
+}
+
+/* Keyframe animation sliding vertically upward from lower surface */
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(60px);
+    /* Starts 60px lower */
+  }
+
+  100% {
+    opacity: 0.9;
+    transform: translateY(0);
+    /* Settles into position */
+  }
+}
+
+
+
+/* ==========================================================================
+   Responsive Adjustments (Mobile & Tablets only)
+   ========================================================================== */
 @media (max-width: 768px) {
   .landing-navbar {
     padding: 24px 24px;
   }
 
   .landing-login-btn {
+    font-size: 14px;
+  }
+
+  .landing-hero-headline {
+    left: 24px;
+    max-width: 90%;
+  }
+
+  .landing-hero-headline h1 {
+    font-size: 34px;
+  }
+
+  .landing-hero-headline-right {
+    right: 24px;
+    max-width: 90%;
+  }
+
+  .landing-hero-headline-right h1 {
+    font-size: 34px;
+  }
+
+  .landing-bottom-left {
+    bottom: 24px;
+    left: 24px;
+  }
+
+  .landing-bottom-right {
+    bottom: 24px;
+    right: 24px;
+  }
+
+  .landing-bottom-left span,
+  .landing-bottom-right span {
     font-size: 12px;
   }
+
+
 }
