@@ -48,7 +48,7 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                 setStatusMap(prev => ({ ...prev, [item.draft_message_id]: 'failed' }));
                 setErrorMap(prev => ({
                     ...prev,
-                    [item.draft_message_id]: `⚠️ Message queued, but Meta did not confirm delivery for PSID: ${item.psid}. Make sure the PSID is genuine and within the 24h messaging window.`
+                    [item.draft_message_id]: `Message queued, but Meta did not confirm delivery for PSID: ${item.psid}. Make sure the PSID is genuine and within the 24h messaging window.`
                 }));
             }
         } catch (err: any) {
@@ -63,18 +63,20 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
 
     if (drafts.length === 0) {
         return (
-            <div style={{ background: '#1e293b', padding: '40px', borderRadius: '12px', textAlign: 'center', border: '1px solid #334155' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🔥</div>
-                <h3 style={{ color: '#fff', marginBottom: '8px' }}>Hot Leads Queue is Clean</h3>
-                <p style={{ color: '#94a3b8', maxWidth: '450px', margin: '0 auto' }}>
-                    When a lead replies with positive intent, Gemini AI classifies it as <code style={{ color: '#38bdf8' }}>hot</code> and generates an editable draft here for human approval.
+            <div className="messenger-empty-card">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <div className="messenger-empty-title">Hot Leads Queue is Clear</div>
+                <p style={{ color: '#85899d', maxWidth: '450px', margin: '0 auto', fontSize: '12px' }}>
+                    When a lead replies with positive intent, Gemini AI classifies it as <code style={{ color: '#a5b4fc' }}>hot</code> and generates an editable draft here for human approval.
                 </p>
             </div>
         );
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {drafts.map(draft => {
                 const currentStatus = statusMap[draft.draft_message_id];
                 const currentBody = editedBodies[draft.draft_message_id] !== undefined
@@ -85,22 +87,16 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                 return (
                     <div
                         key={draft.draft_message_id}
-                        style={{
-                            background: '#1e293b',
-                            border: '1px solid #334155',
-                            borderRadius: '12px',
-                            padding: '20px 24px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                        }}
+                        className="hot-draft-card"
                     >
                         {draftError && (
                             <div style={{
                                 padding: '10px 14px',
-                                background: 'rgba(239, 68, 68, 0.15)',
-                                border: '1px solid #ef4444',
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.28)',
                                 borderRadius: '8px',
                                 color: '#fca5a5',
-                                fontSize: '0.85rem',
+                                fontSize: '12px',
                                 marginBottom: '14px'
                             }}>
                                 {draftError}
@@ -108,94 +104,77 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                         )}
 
                         {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div className="hot-draft-header">
                             <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>{draft.lead_name}</span>
-                                    <span style={{ fontSize: '0.75rem', background: '#0284c7', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                                <div className="hot-draft-lead-row">
+                                    <span className="hot-draft-name">{draft.lead_name}</span>
+                                    <span className="hot-draft-psid">
                                         PSID: {draft.psid}
                                     </span>
                                     <WindowTimerBadge lastMessagedAt={draft.lead_last_messaged_at} followUpSentAt={draft.follow_up_sent_at} compact />
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                    Draft generated: {new Date(draft.created_at).toLocaleString()}
+                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', fontFamily: 'DM Mono, monospace' }}>
+                                    Draft created: {new Date(draft.created_at).toLocaleString()}
                                 </div>
                             </div>
 
                             {/* Status Badge */}
                             {currentStatus === 'sending' && (
-                                <span style={{ padding: '4px 10px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-                                    ⏳ Sending to Meta API...
+                                <span style={{ padding: '3px 9px', background: 'rgba(88, 85, 214, 0.15)', color: '#a5b4fc', border: '1px solid rgba(88, 85, 214, 0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>
+                                    Sending to Meta API...
                                 </span>
                             )}
                             {currentStatus === 'confirmed' && (
-                                <span style={{ padding: '4px 10px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-                                    ✅ Delivered & Sent
+                                <span style={{ padding: '3px 9px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>
+                                    Delivered & Sent
                                 </span>
                             )}
                             {currentStatus === 'failed' && (
-                                <span style={{ padding: '4px 10px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-                                    ❌ Delivery Failed
+                                <span style={{ padding: '3px 9px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>
+                                    Delivery Failed
                                 </span>
                             )}
                         </div>
 
                         {/* Inbound Customer Message */}
-                        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', borderLeft: '4px solid #38bdf8', marginBottom: '16px' }}>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginBottom: '4px' }}>
-                                💬 INBOUND MESSAGE FROM LEAD:
+                        <div className="hot-inbound-box">
+                            <div className="hot-inbound-label">
+                                Inbound Message from Lead
                             </div>
-                            <div style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>
+                            <p className="hot-inbound-text">
                                 "{draft.inbound_body}"
-                            </div>
+                            </p>
                         </div>
 
                         {/* Editable AI Response Draft */}
-                        <div style={{ marginBottom: '16px' }}>
+                        <div style={{ marginBottom: '14px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1' }}>
-                                    🤖 AI PROPOSED DRAFT (EDIT BEFORE APPROVAL):
+                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#85899d', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                    AI Proposed Draft (Edit Before Approval)
                                 </label>
-                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>WF4 Human Reply</span>
+                                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'DM Mono, monospace' }}>WF4_HUMAN_REPLY</span>
                             </div>
                             <textarea
                                 rows={3}
                                 value={currentBody}
                                 onChange={(e) => setEditedBodies(prev => ({ ...prev, [draft.draft_message_id]: e.target.value }))}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    background: '#0f172a',
-                                    border: '1px solid #475569',
-                                    borderRadius: '8px',
-                                    color: '#fff',
-                                    fontSize: '0.95rem',
-                                    outline: 'none',
-                                    fontFamily: 'inherit'
-                                }}
+                                className="hot-draft-textarea"
                             />
                         </div>
 
                         {/* Action Buttons */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                             <button
+                                type="button"
                                 onClick={() => handleSend(draft)}
                                 disabled={currentStatus === 'sending' || currentStatus === 'confirmed'}
-                                style={{
-                                    padding: '9px 20px',
-                                    background: currentStatus === 'confirmed' ? '#059669' : '#2563eb',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontWeight: 600,
-                                    fontSize: '0.9rem',
-                                    cursor: currentStatus === 'sending' ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                }}
+                                className="btn-send-draft"
                             >
-                                {currentStatus === 'sending' ? 'Sending...' : currentStatus === 'confirmed' ? 'Sent' : '🚀 Approve & Send to Messenger'}
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                                {currentStatus === 'sending' ? 'Sending...' : currentStatus === 'confirmed' ? 'Sent' : 'Approve & Send to Messenger'}
                             </button>
                         </div>
                     </div>

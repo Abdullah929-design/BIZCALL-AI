@@ -21,6 +21,7 @@ import { MessengerCampaigns } from '../components/MessengerCampaigns';
 import { MessengerEscalations } from '../components/MessengerEscalations';
 import { MessengerAnalytics } from '../components/MessengerAnalytics';
 import { FacebookPageConnectModal } from '../components/FacebookPageConnectModal';
+import '../Messenger.css';
 
 interface Props {
     user: any;
@@ -56,7 +57,6 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
             setLoading(true);
         }
         try {
-            // Fetch leads and campaigns once, then calculate stats in-memory (avoiding duplicate DB round trips)
             const [d, c, l, camp, page] = await Promise.all([
                 fetchHotLeadDrafts(userId),
                 fetchScheduledCalls(userId),
@@ -82,7 +82,6 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
     useEffect(() => {
         loadAll(false);
 
-        // Silent background auto-refresh every 20 seconds to catch new inbound hot leads & escalations
         const intervalId = setInterval(() => {
             loadAll(true);
         }, 20000);
@@ -91,152 +90,120 @@ export const MessengerDashboard: React.FC<Props> = ({ user }) => {
     }, [userId]);
 
     return (
-        <div style={{ padding: '24px 28px', color: '#edeae2', fontFamily: "'Inter', sans-serif" }}>
+        <div className="messenger-page">
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-                <div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span>💬</span> Facebook Messenger CRM
+            <div className="messenger-header">
+                <div className="messenger-title-group">
+                    <h1 className="messenger-title">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
+                        Facebook Messenger CRM
                     </h1>
-                    <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.9rem' }}>
-                        Automated 4-tier n8n workflows with Gemini AI intent classification & Meta Graph API v19.0.
+                    <p className="messenger-subtitle">
+                        4-Tier n8n Telemetry · Gemini Intent Classification · Meta Graph API v19.0
                     </p>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className="messenger-actions">
                     {/* Facebook Page Integration Status */}
                     {connectedPage ? (
                         <div
                             onClick={() => setIsConnectModalOpen(true)}
-                            style={{
-                                background: '#1e293b',
-                                border: '1px solid #3b82f6',
-                                borderRadius: '8px',
-                                padding: '6px 14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                cursor: 'pointer'
-                            }}
+                            className="connected-page-pill"
                             title="Click to manage Facebook Page connection"
                         >
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+                            <span className="page-status-dot" />
                             <div>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>
+                                <div className="page-info-name">
                                     {connectedPage.page_name}
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: '#60a5fa' }}>
+                                <div className="page-info-id">
                                     ID: {connectedPage.page_id}
                                 </div>
                             </div>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>⚙️</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#85899d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 4 }}>
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
                         </div>
                     ) : (
                         <button
+                            type="button"
                             onClick={() => setIsConnectModalOpen(true)}
-                            style={{
-                                padding: '8px 16px',
-                                background: 'linear-gradient(135deg, #1d4ed8, #2563eb)',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: 700,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
+                            className="btn-msg-connect"
                         >
-                            <span>🔵</span> Connect Facebook Page
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                            </svg>
+                            Connect Facebook Page
                         </button>
                     )}
 
                     <button
+                        type="button"
                         onClick={() => loadAll(false)}
                         disabled={loading}
-                        style={{
-                            padding: '8px 16px',
-                            background: '#334155',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: 600
-                        }}
+                        className="btn-msg-refresh"
+                        title="Refresh Messenger pipeline data"
                     >
-                        {loading ? 'Refreshing...' : '🔄 Refresh Data'}
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"></path>
+                        </svg>
+                        {loading ? 'Refreshing...' : 'Refresh Data'}
                     </button>
                 </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #334155', marginBottom: '24px' }}>
+            <div className="messenger-tabs-bar">
                 <button
+                    type="button"
                     onClick={() => setActiveTab('hot')}
-                    style={{
-                        padding: '10px 18px',
-                        background: activeTab === 'hot' ? '#1e293b' : 'transparent',
-                        color: activeTab === 'hot' ? '#38bdf8' : '#94a3b8',
-                        border: 'none',
-                        borderBottom: activeTab === 'hot' ? '2px solid #38bdf8' : '2px solid transparent',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
+                    className={`msg-tab-btn ${activeTab === 'hot' ? 'active tab-hot' : ''}`}
                 >
-                    🔥 Hot Leads Queue ({drafts.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    Hot Leads Queue
+                    <span className="msg-tab-count">{drafts.length}</span>
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('campaigns')}
-                    style={{
-                        padding: '10px 18px',
-                        background: activeTab === 'campaigns' ? '#1e293b' : 'transparent',
-                        color: activeTab === 'campaigns' ? '#38bdf8' : '#94a3b8',
-                        border: 'none',
-                        borderBottom: activeTab === 'campaigns' ? '2px solid #38bdf8' : '2px solid transparent',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                    }}
+                    className={`msg-tab-btn ${activeTab === 'campaigns' ? 'active tab-campaigns' : ''}`}
                 >
-                    🚀 Campaigns (WF1)
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Campaigns (WF1)
+                    <span className="msg-tab-count">{campaigns.length}</span>
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('sensitive')}
-                    style={{
-                        padding: '10px 18px',
-                        background: activeTab === 'sensitive' ? '#1e293b' : 'transparent',
-                        color: activeTab === 'sensitive' ? '#ef4444' : '#94a3b8',
-                        border: 'none',
-                        borderBottom: activeTab === 'sensitive' ? '2px solid #ef4444' : '2px solid transparent',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                    }}
+                    className={`msg-tab-btn ${activeTab === 'sensitive' ? 'active tab-sensitive' : ''}`}
                 >
-                    🛡️ Sensitive Escalations ({calls.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    Sensitive Escalations
+                    <span className="msg-tab-count">{calls.length}</span>
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => setActiveTab('analytics')}
-                    style={{
-                        padding: '10px 18px',
-                        background: activeTab === 'analytics' ? '#1e293b' : 'transparent',
-                        color: activeTab === 'analytics' ? '#38bdf8' : '#94a3b8',
-                        border: 'none',
-                        borderBottom: activeTab === 'analytics' ? '2px solid #38bdf8' : '2px solid transparent',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                    }}
+                    className={`msg-tab-btn ${activeTab === 'analytics' ? 'active tab-analytics' : ''}`}
                 >
-                    📊 Leads Registry & Stats
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Leads Registry & Stats
                 </button>
             </div>
 

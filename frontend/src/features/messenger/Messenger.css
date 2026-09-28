@@ -1,0 +1,410 @@
+/* ==========================================================================
+   Facebook Messenger CRM — Google Stitch Minimalist Style
+   ========================================================================== */
+
+.messenger-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1380px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 12px 32px 12px;
+  box-sizing: border-box;
+}
+
+/* Header */
+.messenger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.messenger-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.messenger-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  letter-spacing: -0.01em;
+}
+
+.messenger-subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  color: #85899d;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.messenger-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Connected Page Pill */
+.connected-page-pill {
+  background: #151620;
+  border: 1px solid #242738;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.connected-page-pill:hover {
+  border-color: #5855d6;
+  background: #181926;
+}
+
+.page-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+.page-info-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.page-info-id {
+  font-size: 10.5px;
+  color: #818cf8;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Header Action Buttons */
+.btn-msg-connect {
+  height: 38px;
+  padding: 0 16px;
+  background: #5855d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+}
+
+.btn-msg-connect:hover {
+  background: #6c69f0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(88, 85, 214, 0.35);
+}
+
+.btn-msg-refresh {
+  height: 38px;
+  padding: 0 14px;
+  background: #151620;
+  border: 1px solid #242738;
+  color: #94a3b8;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+}
+
+.btn-msg-refresh:hover:not(:disabled) {
+  background: #1c1d27;
+  border-color: #383c54;
+  color: #f1f5f9;
+}
+
+/* Tabs Bar */
+.messenger-tabs-bar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #1f212d;
+  padding-bottom: 8px;
+  overflow-x: auto;
+}
+
+.msg-tab-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #85899d;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.msg-tab-btn:hover {
+  color: #f1f5f9;
+  background: #151620;
+}
+
+.msg-tab-btn.active {
+  color: #ffffff;
+  background: #181926;
+  border: 1px solid #282a3c;
+}
+
+.msg-tab-btn.active.tab-hot {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+}
+
+.msg-tab-btn.active.tab-campaigns {
+  border-color: rgba(88, 85, 214, 0.4);
+  color: #a5b4fc;
+}
+
+.msg-tab-btn.active.tab-sensitive {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.msg-tab-btn.active.tab-analytics {
+  border-color: rgba(88, 85, 214, 0.4);
+  color: #818cf8;
+}
+
+.msg-tab-count {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  background: #1c1d27;
+  border: 1px solid #2d3040;
+  color: inherit;
+}
+
+/* Card Containers */
+.messenger-card {
+  background: #111218;
+  border: 1px solid #1f212d;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+}
+
+.messenger-empty-card {
+  background: #111218;
+  border: 1px dashed #242738;
+  border-radius: 12px;
+  padding: 44px 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.messenger-empty-title {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 4px 0;
+}
+
+/* Hot Leads Draft Queue */
+.hot-draft-card {
+  background: #151620;
+  border: 1px solid #242738;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: all 0.15s ease;
+}
+
+.hot-draft-card:hover {
+  border-color: #2e3247;
+}
+
+.hot-draft-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hot-draft-lead-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hot-draft-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.hot-draft-psid {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  background: #1c1d27;
+  border: 1px solid #2d3040;
+  color: #a5b4fc;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.hot-inbound-box {
+  background: #0f1017;
+  border-left: 3px solid #5855d6;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.hot-inbound-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #818cf8;
+  margin-bottom: 4px;
+}
+
+.hot-inbound-text {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.hot-draft-textarea {
+  background: #0f1017;
+  border: 1px solid #242738;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #f1f5f9;
+  font-size: 12.5px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hot-draft-textarea:focus {
+  border-color: #5855d6;
+  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.22);
+}
+
+.btn-send-draft {
+  padding: 8px 18px;
+  background: #5855d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-send-draft:hover:not(:disabled) {
+  background: #6c69f0;
+}
+
+.btn-send-draft:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Escalation Cards */
+.escalation-card {
+  background: #151620;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 3px solid #ef4444;
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.btn-resolve-escalation {
+  padding: 7px 16px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn-resolve-escalation:hover:not(:disabled) {
+  background: #059669;
+}
+
+/* Analytics & Registry Table */
+.msg-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.msg-kpi-box {
+  background: #151620;
+  border: 1px solid #242738;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.msg-kpi-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #85899d;
+}
+
+.msg-kpi-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-top: 4px;
+}
