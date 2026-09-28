@@ -13,6 +13,7 @@
 }
 
 .auth-modal {
+  position: relative;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
@@ -20,6 +21,26 @@
   width: 100%;
   max-width: 440px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.auth-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.auth-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .auth-subtitle {

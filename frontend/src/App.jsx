@@ -19,9 +19,16 @@ import CompanySettings from './components/CompanySettings.jsx';
 import OnboardingSplash from './components/OnboardingSplash.jsx';
 import LeadFinder from './components/LeadFinder.jsx';
 import ModelsOnDemand from './components/ModelsOnDemand.jsx';
+import LandingPage from './components/LandingPage.jsx';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(() => {
+    return typeof window !== 'undefined' && (
+      window.location.search.includes('login') || 
+      window.location.hash === '#login'
+    );
+  });
   const [activeTab, setActiveTab] = useState('builder');
   const [apiStatus, setApiStatus] = useState('checking');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,10 +36,12 @@ function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    setShowAuthModal(false);
   };
 
   const handleLogout = () => {
     setUser(null);
+    setShowAuthModal(false);
     supabase.auth.signOut().catch(() => { });
   };
 
@@ -194,15 +203,26 @@ function App() {
 
   const activeNav = navItems.find(n => n.id === activeTab);
 
+  if (!user) {
+    return (
+      <>
+        <LandingPage onLoginClick={() => setShowAuthModal(true)} />
+        {showAuthModal && (
+          <AuthModal 
+            onLoginSuccess={handleLoginSuccess} 
+            onClose={() => setShowAuthModal(false)} 
+          />
+        )}
+      </>
+    );
+  }
+
   if (user && !isOnboarded) {
     return <OnboardingSplash user={user} onComplete={() => setIsOnboarded(true)} />;
   }
 
   return (
     <div className="app-shell">
-      {/* Show Supabase Auth Modal if not logged in */}
-      {!user && <AuthModal onLoginSuccess={handleLoginSuccess} />}
-
       {/* Mobile toggle */}
       <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle menu">
         ☰

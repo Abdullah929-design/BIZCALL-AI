@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import './AuthModal.css';
 
-const AuthModal = ({ onLoginSuccess }) => {
+const AuthModal = ({ onLoginSuccess, onClose }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,8 +58,18 @@ const handleAuth = async (e) => {
   }
 };
   return (
-    <div className="auth-overlay">
+    <div className="auth-overlay" onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
       <div className="auth-modal">
+        {onClose && (
+          <button 
+            type="button" 
+            className="auth-close-btn" 
+            onClick={onClose} 
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        )}
         <h2>{isSignUp ? '🚀 Create Your SaaS Account' : '🔑 Log In to BIZ CALL AI'}</h2>
         <p className="auth-subtitle">
           {isSignUp ? 'Build and launch custom Inbound & Outbound AI Voice Agents' : 'Manage your AI Voice Agents and live campaigns'}
