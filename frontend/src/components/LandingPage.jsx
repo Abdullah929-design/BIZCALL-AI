@@ -81,7 +81,7 @@ const LandingPage = ({ onLoginClick }) => {
             </div>
             {/* Bottom-Right Feature Note */}
             <div className="landing-bottom-right">
-                <span>Customized Automated lead scrapping</span>
+                <span>Customized Automated lead scraping</span>
             </div>
         </div>
     );
