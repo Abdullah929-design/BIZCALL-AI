@@ -1,5 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import './ModelsOnDemand.css';
+
+// Minimalist vector SVG stroke icons
+const CpuIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+        <rect x="9" y="9" width="6" height="6"/>
+        <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+        <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+        <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+        <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+    </svg>
+);
+
+const LayersIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+    </svg>
+);
+
+const BankIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="21" x2="21" y2="21"/>
+        <line x1="6" y1="10" x2="6" y2="18"/><line x1="10" y1="10" x2="10" y2="18"/>
+        <line x1="14" y1="10" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="18"/>
+        <polygon points="12 3 2 9 22 9 12 3"/>
+    </svg>
+);
+
+const TrendingUpIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+    </svg>
+);
+
+const ZapIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+);
+
+const ActivityIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+);
+
+const TargetIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+    </svg>
+);
+
+const LightbulbIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18h6"/><path d="M10 22h4"/>
+        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/>
+    </svg>
+);
+
+const DatabaseIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    </svg>
+);
+
+const TerminalIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="4 17 10 11 4 5"/>
+        <line x1="12" y1="19" x2="20" y2="19"/>
+    </svg>
+);
+
+const CheckCircleIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+);
+
+const AlertCircleIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+);
+
+const RefreshIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+);
+
+const ArrowRightIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+    </svg>
+);
 
 const ModelsOnDemand = () => {
     const [models, setModels] = useState([]);
@@ -66,215 +169,121 @@ const ModelsOnDemand = () => {
     };
 
     return (
-        <div style={{
-            maxWidth: '1280px',
-            margin: '0 auto',
-            padding: '24px 20px 60px',
-            fontFamily: "'Inter', sans-serif",
-            color: '#e2e8f0'
-        }}>
+        <div className="models-page">
             {/* Header / Hero */}
-            <div style={{
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '20px',
-                padding: '32px',
-                marginBottom: '28px',
-                backdropFilter: 'blur(16px)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
-                position: 'relative',
-                overflow: 'hidden'
-            }}>
-                <div style={{
-                    position: 'absolute',
-                    top: '-40px',
-                    right: '-40px',
-                    width: '240px',
-                    height: '240px',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
-                    pointerEvents: 'none'
-                }} />
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '2rem' }}>🧠</span>
-                            <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-                                Models on Demand
-                            </h1>
-                            <span style={{
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                color: '#34d399',
-                                border: '1px solid rgba(16, 185, 129, 0.3)',
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                                ZeroGPU & Cloud Engine Active
-                            </span>
-                        </div>
-                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', maxWidth: '780px', lineHeight: 1.6 }}>
-                            Deploy proprietary, domain-specialized Small Language Models (SLMs) fine-tuned on enterprise vertical data. 
-                            Features real-time multi-intent segmentation, semantic FAISS vector retrieval, and on-demand cloud inference.
-                        </p>
+            <div className="models-hero-card">
+                <div className="hero-left">
+                    <div className="hero-title-row">
+                        <h1 className="hero-title">
+                            <CpuIcon /> Models on Demand
+                        </h1>
+                        <span className="hero-engine-badge">
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                            ZeroGPU & Cloud Engine Active
+                        </span>
                     </div>
+                    <p className="hero-desc">
+                        Deploy proprietary, domain-specialized Small Language Models (SLMs) fine-tuned on enterprise vertical data. 
+                        Features multi-intent segmentation, semantic FAISS vector retrieval, and on-demand cloud inference.
+                    </p>
+                </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <div style={{
-                            background: 'rgba(255, 255, 255, 0.04)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            padding: '10px 18px',
-                            borderRadius: '12px',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa' }}>2 Billion</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Parameters</div>
-                        </div>
-                        <div style={{
-                            background: 'rgba(255, 255, 255, 0.04)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            padding: '10px 18px',
-                            borderRadius: '12px',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#34d399' }}>2 Models</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Production SLMs</div>
-                        </div>
+                <div className="hero-stats-row">
+                    <div className="hero-stat-pill">
+                        <div className="hero-stat-val">2.0B</div>
+                        <div className="hero-stat-sub">Parameters</div>
+                    </div>
+                    <div className="hero-stat-pill">
+                        <div className="hero-stat-val">2 Models</div>
+                        <div className="hero-stat-sub">Production SLMs</div>
                     </div>
                 </div>
             </div>
 
             {/* Model Selector Cards */}
-            <div style={{ marginBottom: '28px' }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>📦</span> Available Industry Models Catalog
+            <div>
+                <h2 className="catalog-section-title">
+                    <LayersIcon /> Available Industry Models Catalog
                 </h2>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+                <div className="catalog-grid">
                     {/* Model 1: Banking */}
                     <div 
                         onClick={() => setSelectedModel('banking-gemma-2b')}
-                        style={{
-                            background: selectedModel === 'banking-gemma-2b' 
-                                ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%)' 
-                                : 'rgba(30, 41, 59, 0.5)',
-                            border: selectedModel === 'banking-gemma-2b' ? '1.5px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.06)',
-                            borderRadius: '16px',
-                            padding: '20px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            position: 'relative'
-                        }}
+                        className={`model-catalog-card ${selectedModel === 'banking-gemma-2b' ? 'selected' : ''}`}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '1.5rem', background: 'rgba(59, 130, 246, 0.15)', padding: '8px', borderRadius: '10px' }}>🏦</span>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#fff' }}>BizCall Banking SLM</h3>
-                                    <span style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 500 }}>Gemma-2B LoRA • Safetensors</span>
+                        <div>
+                            <div className="model-card-top">
+                                <div className="model-icon-title">
+                                    <div className="model-icon-box">
+                                        <BankIcon />
+                                    </div>
+                                    <div>
+                                        <h3 className="model-card-name">BizCall Banking SLM</h3>
+                                        <span className="model-card-arch">Gemma-2B LoRA • Safetensors</span>
+                                    </div>
                                 </div>
+                                <span className="model-status-badge">
+                                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                                    Ready to Test
+                                </span>
                             </div>
-                            <span style={{
-                                background: 'rgba(16, 185, 129, 0.2)',
-                                color: '#34d399',
-                                border: '1px solid rgba(16, 185, 129, 0.3)',
-                                padding: '3px 10px',
-                                borderRadius: '8px',
-                                fontSize: '0.72rem',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px'
-                            }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                                Ready to Test
-                            </span>
+                            <p className="model-card-desc">
+                                Trained on verified banking datasets for account opening, card fraud freeze, loan compliance, and transactions.
+                            </p>
                         </div>
-                        <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5 }}>
-                            Trained on verified banking datasets for account opening, card fraud freeze, loan compliance, and transactions.
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Multi-Intent (DistilBERT)</span>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>FAISS RAG</span>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Nvidia A100</span>
+                        <div className="model-tags-row">
+                            <span className="model-tag">Multi-Intent (DistilBERT)</span>
+                            <span className="model-tag">FAISS RAG</span>
+                            <span className="model-tag">Nvidia A100</span>
                         </div>
                     </div>
 
-                    {/* Model 2: Marketing */}
+                    {/* Model 2: Marketing / Sales */}
                     <div 
                         onClick={() => setSelectedModel('sales-gemma-2b')}
-                        style={{
-                            background: selectedModel === 'sales-gemma-2b' 
-                                ? 'linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%)' 
-                                : 'rgba(30, 41, 59, 0.5)',
-                            border: selectedModel === 'sales-gemma-2b' ? '1.5px solid #ea580c' : '1px solid rgba(255, 255, 255, 0.06)',
-                            borderRadius: '16px',
-                            padding: '20px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                        }}
+                        className={`model-catalog-card ${selectedModel === 'sales-gemma-2b' ? 'selected sales' : ''}`}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '1.5rem', background: 'rgba(234, 88, 12, 0.15)', padding: '8px', borderRadius: '10px' }}>📈</span>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#fff' }}>BizCall Sales & Pitch Agent</h3>
-                                    <span style={{ fontSize: '0.75rem', color: '#fb923c', fontWeight: 500 }}>Gemma-2B Quantized • Q4_K_M</span>
+                        <div>
+                            <div className="model-card-top">
+                                <div className="model-icon-title">
+                                    <div className="model-icon-box" style={{ color: selectedModel === 'sales-gemma-2b' ? '#f59e0b' : '#fb923c' }}>
+                                        <TrendingUpIcon />
+                                    </div>
+                                    <div>
+                                        <h3 className="model-card-name">BizCall Sales & Pitch Agent</h3>
+                                        <span className="model-card-arch" style={{ color: '#fb923c' }}>Gemma-2B Quantized • Q4_K_M</span>
+                                    </div>
                                 </div>
+                                <span className="model-status-badge">
+                                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                                    Ready to Test
+                                </span>
                             </div>
-                            <span style={{
-                                background: 'rgba(16, 185, 129, 0.2)',
-                                color: '#34d399',
-                                border: '1px solid rgba(16, 185, 129, 0.3)',
-                                padding: '3px 10px',
-                                borderRadius: '8px',
-                                fontSize: '0.72rem',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px'
-                            }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                                Ready to Test
-                            </span>
+                            <p className="model-card-desc">
+                                Fine-tuned for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
+                            </p>
                         </div>
-                        <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.5 }}>
-                            Fine-tuned for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Cold Outreach</span>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>Pitch Generator</span>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', color: '#cbd5e1' }}>GGUF 4-Bit</span>
+                        <div className="model-tags-row">
+                            <span className="model-tag">Cold Outreach</span>
+                            <span className="model-tag">Pitch Generator</span>
+                            <span className="model-tag">GGUF 4-Bit</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Interactive Testing Sandbox */}
-            <div style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '20px',
-                padding: '28px',
-                backdropFilter: 'blur(16px)',
-                boxShadow: '0 15px 30px rgba(0, 0, 0, 0.2)',
-                marginBottom: '28px'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                    <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>⚡</span> Test Inference Sandbox
+            <div className="sandbox-card">
+                <div className="sandbox-header">
+                    <label className="sandbox-title">
+                        <ZapIcon /> Test Inference Sandbox
                     </label>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Try sample inquiries or type custom customer text</span>
+                    <span className="sandbox-sub">Try sample inquiries or enter custom customer text</span>
                 </div>
 
                 {/* Sample Prompt Chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                <div className="prompt-chips-row">
                     {activePrompts.map((p, idx) => (
                         <button
                             key={idx}
@@ -283,25 +292,7 @@ const ModelsOnDemand = () => {
                                 setQuery(p);
                                 handleRunInference(p);
                             }}
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.03)',
-                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                color: '#94a3b8',
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                fontSize: '0.78rem',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease',
-                                textAlign: 'left'
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#3b82f6';
-                                e.currentTarget.style.color = '#fff';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                                e.currentTarget.style.color = '#94a3b8';
-                            }}
+                            className="prompt-chip-btn"
                         >
                             "{p}"
                         </button>
@@ -309,7 +300,7 @@ const ModelsOnDemand = () => {
                 </div>
 
                 {/* Textarea & Submit */}
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div className="sandbox-input-row">
                     <textarea
                         value={query}
                         onChange={e => setQuery(e.target.value)}
@@ -318,54 +309,25 @@ const ModelsOnDemand = () => {
                                 ? "Type sales or outreach goal (e.g. Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic)..."
                                 : "Type customer inquiry here (e.g. How do I open a fixed deposit account and freeze my card)..."
                         }
-                        rows={3}
-                        style={{
-                            flex: '1 1 500px',
-                            background: 'rgba(30, 41, 59, 0.6)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            padding: '14px 16px',
-                            color: '#fff',
-                            fontSize: '0.9rem',
-                            resize: 'none',
-                            outline: 'none',
-                            fontFamily: 'inherit'
-                        }}
-                        onFocus={e => e.target.style.borderColor = selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#3b82f6'}
-                        onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                        rows={2}
+                        className="sandbox-textarea"
                     />
 
                     <button
                         type="button"
                         onClick={() => handleRunInference(query)}
                         disabled={loading || !query.trim()}
+                        className="btn-run-inference"
                         style={{
-                            background: loading 
-                                ? (selectedModel === 'sales-gemma-2b' ? 'rgba(234, 88, 12, 0.4)' : 'rgba(59, 130, 246, 0.4)') 
-                                : (selectedModel === 'sales-gemma-2b' ? 'linear-gradient(135deg, #ea580c, #c2410c)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)'),
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '12px',
-                            padding: '0 28px',
-                            fontSize: '0.95rem',
-                            fontWeight: 600,
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: selectedModel === 'sales-gemma-2b' 
-                                ? '0 8px 20px rgba(234, 88, 12, 0.3)' 
-                                : '0 8px 20px rgba(37, 99, 235, 0.3)',
-                            minHeight: '52px'
+                            background: selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#5855d6'
                         }}
                     >
                         {loading ? (
                             <>
                                 <span style={{
                                     display: 'inline-block',
-                                    width: '16px',
-                                    height: '16px',
+                                    width: '14px',
+                                    height: '14px',
                                     border: '2px solid rgba(255, 255, 255, 0.3)',
                                     borderTopColor: '#fff',
                                     borderRadius: '50%',
@@ -375,85 +337,46 @@ const ModelsOnDemand = () => {
                             </>
                         ) : (
                             <>
-                                <span>{selectedModel === 'sales-gemma-2b' ? '📈' : '🚀'}</span>
-                                {selectedModel === 'sales-gemma-2b' ? 'Generate Sales Pitch' : 'Run Model on Demand'}
+                                {selectedModel === 'sales-gemma-2b' ? <TrendingUpIcon /> : <ArrowRightIcon />}
+                                <span>{selectedModel === 'sales-gemma-2b' ? 'Generate Sales Pitch' : 'Run Model on Demand'}</span>
                             </>
                         )}
                     </button>
                 </div>
 
                 {error && (
-                    <div style={{
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius: '10px',
-                        color: '#f87171',
-                        fontSize: '0.85rem'
-                    }}>
-                        ❌ {error}
+                    <div className="sandbox-error-box">
+                        <AlertCircleIcon /> {error}
                     </div>
                 )}
             </div>
 
             {/* Inference Results 3-Tier Dashboard */}
             {result && (
-                <div style={{
-                    background: 'rgba(15, 23, 42, 0.8)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    borderRadius: '20px',
-                    padding: '28px',
-                    backdropFilter: 'blur(20px)',
-                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
-                    animation: 'fadeIn 0.3s ease'
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '1.4rem' }}>📊</span>
+                <div className="results-card">
+                    <div className="results-header">
+                        <div className="results-title-group">
+                            <ActivityIcon />
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#fff' }}>
+                                <h3 className="results-title">
                                     Proprietary Pipeline Analysis Result
                                 </h3>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                    Model: <strong style={{ color: '#60a5fa' }}>{result.model_name}</strong> • Hardware: <strong style={{ color: '#34d399' }}>{result.hardware}</strong>
-                                </span>
+                                <div className="results-meta">
+                                    Model: <strong style={{ color: '#818cf8' }}>{result.model_name}</strong> • Hardware: <strong style={{ color: '#34d399' }}>{result.hardware}</strong>
+                                </div>
                             </div>
                         </div>
 
-                        <div style={{
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '6px 14px',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
-                            color: '#34d399',
-                            fontWeight: 600
-                        }}>
-                            ⚡ Total Latency: {result.latency_ms}ms
+                        <div className="latency-pill">
+                            <ZapIcon /> Total Latency: {result.latency_ms}ms
                         </div>
                     </div>
 
                     {/* Pipeline Route Indicator */}
-                    <div style={{
-                        background: result.complexity === 'complex' 
-                            ? 'rgba(234, 88, 12, 0.12)' 
-                            : 'rgba(16, 185, 129, 0.12)',
-                        border: result.complexity === 'complex' 
-                            ? '1px solid rgba(234, 88, 12, 0.3)' 
-                            : '1px solid rgba(16, 185, 129, 0.3)',
-                        borderRadius: '10px',
-                        padding: '10px 16px',
-                        marginBottom: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                            <span>🔄</span>
-                            <span style={{ color: '#cbd5e1' }}>Pipeline Flow:</span>
+                    <div className={`pipeline-flow-banner ${result.model_id === 'sales-gemma-2b' ? 'sales' : ''}`}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <RefreshIcon />
+                            <span style={{ color: '#85899d' }}>Pipeline Flow:</span>
                             <strong style={{ color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : (result.complexity === 'complex' ? '#fb923c' : '#34d399') }}>
                                 {result.model_id === 'sales-gemma-2b'
                                     ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Gemma-2B Q4_K_M Engine)'
@@ -462,84 +385,60 @@ const ModelsOnDemand = () => {
                                         : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match')}
                             </strong>
                         </div>
-                        <span style={{
-                            fontSize: '0.72rem',
-                            background: 'rgba(255, 255, 255, 0.08)',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            color: '#e2e8f0',
-                            fontWeight: 600
-                        }}>
-                            Mode: {result.model_id === 'sales-gemma-2b' ? 'SALES / PITCH' : `Complexity: ${result.complexity?.toUpperCase()}`}
+                        <span className="pipeline-mode-badge">
+                            MODE: {result.model_id === 'sales-gemma-2b' ? 'SALES / PITCH' : `COMPLEXITY: ${result.complexity?.toUpperCase()}`}
                         </span>
                     </div>
 
                     {/* Diagnostic Grid: Sales vs Banking */}
                     {result.model_id === 'sales-gemma-2b' ? (
                         /* Sales & Pitch Diagnostic Strategy */
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                        <div className="diagnostic-grid">
                             {/* Panel 1: Campaign Target & Scenario */}
-                            <div style={{
-                                background: 'rgba(30, 41, 59, 0.5)',
-                                border: '1px solid rgba(234, 88, 12, 0.25)',
-                                borderRadius: '14px',
-                                padding: '18px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fb923c', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span>🎯</span> 1. Outreach Target & Campaign Objective
+                            <div className="diagnostic-panel" style={{ borderLeft: '3px solid #ea580c' }}>
+                                <div className="diagnostic-panel-title">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fb923c' }}>
+                                        <TargetIcon /> 1. Outreach Target & Campaign Objective
                                     </span>
-                                    <span style={{
-                                        fontSize: '0.7rem',
-                                        padding: '2px 8px',
-                                        borderRadius: '6px',
-                                        background: 'rgba(234, 88, 12, 0.2)',
-                                        color: '#fb923c',
-                                        fontWeight: 600
-                                    }}>
+                                    <span className="pipeline-mode-badge" style={{ color: '#fb923c', borderColor: 'rgba(234, 88, 12, 0.3)' }}>
                                         B2B OUTREACH
                                     </span>
                                 </div>
-                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                                <div style={{ background: '#101117', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1f212d' }}>
+                                    <div style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
                                         Target Goal & Prompt
                                     </div>
-                                    <div style={{ fontSize: '0.84rem', color: '#f1f5f9', fontStyle: 'italic', lineHeight: 1.45 }}>
+                                    <div style={{ fontSize: '12px', color: '#f1f5f9', fontStyle: 'italic', lineHeight: 1.45 }}>
                                         "{result.query}"
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Cold Pitch</span>
-                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Value Proposition</span>
-                                        <span style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fed7aa', border: '1px solid rgba(234, 88, 12, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Objection Preemption</span>
+                                        <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Cold Pitch</span>
+                                        <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Value Proposition</span>
+                                        <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Objection Preemption</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Panel 2: Pitch Strategy & Value Pillars */}
-                            <div style={{
-                                background: 'rgba(30, 41, 59, 0.5)',
-                                border: '1px solid rgba(16, 185, 129, 0.25)',
-                                borderRadius: '14px',
-                                padding: '18px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span>💡</span> 2. Pitch Strategy & Conversion Engine
+                            <div className="diagnostic-panel" style={{ borderLeft: '3px solid #10b981' }}>
+                                <div className="diagnostic-panel-title">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
+                                        <LightbulbIcon /> 2. Pitch Strategy & Conversion Engine
                                     </span>
-                                    <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
+                                    <span className="pipeline-mode-badge" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
                                         HIGH CONVERSION
                                     </span>
                                 </div>
-                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem', color: '#cbd5e1' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Clear ROI Hook:</strong> Solves missed customer inquiries and eliminates hold times
+                                <div style={{ background: '#101117', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1f212d' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11.5px', color: '#cbd5e1' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Clear ROI Hook:</strong> Solves missed customer inquiries and eliminates hold times</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Frictionless CTA:</strong> Low-friction 5-minute walkthrough or free trial invite
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Frictionless CTA:</strong> Low-friction 5-minute walkthrough or free pilot invite</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ color: '#34d399' }}>✓</span> <strong>Multi-Channel Ready:</strong> Usable in Retell Voice, Cold Email & Messenger CRM
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Multi-Channel Ready:</strong> Usable in Retell Voice, Cold Email & Messenger CRM</span>
                                         </div>
                                     </div>
                                 </div>
@@ -547,25 +446,16 @@ const ModelsOnDemand = () => {
                         </div>
                     ) : (
                         /* Banking 2-Column Multi-Intent & FAISS Grid */
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                        <div className="diagnostic-grid">
                             {/* Panel 1: Intent Decomposition */}
-                            <div style={{
-                                background: 'rgba(30, 41, 59, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                borderRadius: '14px',
-                                padding: '18px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span>🎯</span> 1. Multi-Intent Classifier (DistilBERT)
+                            <div className="diagnostic-panel">
+                                <div className="diagnostic-panel-title">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#818cf8' }}>
+                                        <TargetIcon /> 1. Multi-Intent Classifier (DistilBERT)
                                     </span>
-                                    <span style={{
-                                        fontSize: '0.7rem',
-                                        padding: '2px 8px',
-                                        borderRadius: '6px',
-                                        background: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                    <span className="pipeline-mode-badge" style={{
                                         color: result.complexity === 'complex' ? '#fb923c' : '#34d399',
-                                        fontWeight: 600
+                                        borderColor: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.3)' : 'rgba(16, 185, 129, 0.3)'
                                     }}>
                                         {result.complexity?.toUpperCase()}
                                     </span>
@@ -574,21 +464,13 @@ const ModelsOnDemand = () => {
                                 {result.intents && result.intents.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                         {result.intents.map((seg, sIdx) => (
-                                            <div key={sIdx} style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                                                <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginBottom: '6px', fontStyle: 'italic' }}>
+                                            <div key={sIdx} style={{ background: '#101117', padding: '9px 11px', borderRadius: '6px', border: '1px solid #1f212d' }}>
+                                                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '6px', fontStyle: 'italic' }}>
                                                     "{seg.segment}"
                                                 </div>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                     {seg.intents.map((item, iIdx) => (
-                                                        <span key={iIdx} style={{
-                                                            background: 'rgba(37, 99, 235, 0.25)',
-                                                            color: '#93c5fd',
-                                                            border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                            padding: '2px 8px',
-                                                            borderRadius: '6px',
-                                                            fontSize: '0.72rem',
-                                                            fontWeight: 600
-                                                        }}>
+                                                        <span key={iIdx} className="intent-chip">
                                                             {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
                                                         </span>
                                                     ))}
@@ -597,44 +479,39 @@ const ModelsOnDemand = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>General banking customer intent detected</div>
+                                    <div style={{ fontSize: '11.5px', color: '#64748b' }}>General banking customer intent detected</div>
                                 )}
                             </div>
 
                             {/* Panel 2: FAISS Vector RAG */}
-                            <div style={{
-                                background: 'rgba(30, 41, 59, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                borderRadius: '14px',
-                                padding: '18px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#a7f3d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span>📚</span> 2. FAISS Semantic Vector RAG
+                            <div className="diagnostic-panel">
+                                <div className="diagnostic-panel-title">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
+                                        <DatabaseIcon /> 2. FAISS Semantic Vector RAG
                                     </span>
                                     {result.faq_rag && (
-                                        <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>
+                                        <span className="pipeline-mode-badge" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
                                             Sim: {result.faq_rag.confidence}
                                         </span>
                                     )}
                                 </div>
 
                                 {result.faq_rag ? (
-                                    <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                    <div style={{ background: '#101117', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1f212d' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
-                                                Policy Intent: {result.faq_rag.intent}
+                                            <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600, fontFamily: 'DM Mono, monospace' }}>
+                                                Policy: {result.faq_rag.intent}
                                             </span>
-                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'capitalize' }}>
+                                            <span style={{ fontSize: '10px', color: '#85899d', textTransform: 'capitalize' }}>
                                                 Priority: {result.faq_rag.priority}
                                             </span>
                                         </div>
-                                        <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
+                                        <p style={{ fontSize: '12px', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
                                             {result.faq_rag.answer}
                                         </p>
                                     </div>
                                 ) : (
-                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', padding: '12px 0' }}>
+                                    <div style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', padding: '10px 0' }}>
                                         No exact FAQ policy threshold triggered. Routed directly to Model Reasoning layer.
                                     </div>
                                 )}
@@ -643,33 +520,27 @@ const ModelsOnDemand = () => {
                     )}
 
                     {/* Panel 3: Fine-Tuned Model Generated Output */}
-                    <div style={{
-                        background: result.model_id === 'sales-gemma-2b'
-                            ? 'linear-gradient(135deg, rgba(234, 88, 12, 0.2) 0%, rgba(15, 23, 42, 0.6) 100%)'
-                            : 'linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                        border: result.model_id === 'sales-gemma-2b' ? '1.5px solid rgba(234, 88, 12, 0.4)' : '1.5px solid rgba(59, 130, 246, 0.4)',
-                        borderRadius: '16px',
-                        padding: '20px'
+                    <div className="final-output-card" style={{
+                        borderLeftColor: result.model_id === 'sales-gemma-2b' ? '#ea580c' : '#5855d6'
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>{result.model_id === 'sales-gemma-2b' ? '📈' : '🤖'}</span> 
+                        <div className="final-output-header">
+                            <span className="final-output-title">
+                                <TerminalIcon />
                                 {result.model_id === 'sales-gemma-2b' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
                             </span>
-                            <span style={{ fontSize: '0.72rem', color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : '#60a5fa', fontWeight: 500 }}>
+                            <span style={{
+                                fontSize: '10.5px',
+                                fontFamily: 'DM Mono, monospace',
+                                color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : '#818cf8',
+                                background: '#151620',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                border: '1px solid #242738'
+                            }}>
                                 {result.model_id === 'sales-gemma-2b' ? 'Gemma-2B Q4_K_M GGUF' : 'Gemma-2B LoRA Adapter'}
                             </span>
                         </div>
-                        <div style={{
-                            background: 'rgba(0, 0, 0, 0.3)',
-                            borderRadius: '10px',
-                            padding: '16px',
-                            color: '#f8fafc',
-                            fontSize: '0.92rem',
-                            lineHeight: 1.6,
-                            whiteSpace: 'pre-line',
-                            border: '1px solid rgba(255, 255, 255, 0.05)'
-                        }}>
+                        <div className="final-output-body">
                             {result.model_response}
                         </div>
                     </div>
