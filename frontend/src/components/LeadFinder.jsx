@@ -1,530 +1,611 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { supabase } from '../services/supabaseClient';
+import './LeadFinder.css';
 
 export default function LeadFinder({ user }) {
-    const [keyword, setKeyword] = useState('Dental Clinic');
-    const [city, setCity] = useState('Miami');
-    const [loading, setLoading] = useState(false);
-    const [leads, setLeads] = useState([]);
-    const [selectedLeadIds, setSelectedLeadIds] = useState(new Set());
-    const [filterPhoneOnly, setFilterPhoneOnly] = useState(false);
-    const [filterEmailOnly, setFilterEmailOnly] = useState(false);
-    const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
-    const [employeeRange, setEmployeeRange] = useState('');
-    const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [keyword, setKeyword] = useState('Dental Clinic');
+  const [city, setCity] = useState('Miami');
+  const [loading, setLoading] = useState(false);
+  const [leads, setLeads] = useState([]);
+  const [selectedLeadIds, setSelectedLeadIds] = useState(new Set());
+  const [filterPhoneOnly, setFilterPhoneOnly] = useState(false);
+  const [filterEmailOnly, setFilterEmailOnly] = useState(false);
+  const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
+  const [employeeRange, setEmployeeRange] = useState('');
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(10);
 
-    // --- 1. Search Leads via Live Backend Scraper ---
-    const handleSearch = async (e) => {
-        if (e) e.preventDefault();
-        if (!keyword.trim() || !city.trim()) {
-            setStatusMsg({ text: 'Please provide both a business keyword and a city.', type: 'error' });
-            return;
-        }
+  // --- 1. Search Leads via Live Backend Scraper ---
+  const handleSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!keyword.trim() || !city.trim()) {
+      setStatusMsg({ text: 'Please provide both a business keyword and a city.', type: 'error' });
+      return;
+    }
 
-        setLoading(true);
-        setStatusMsg({ text: '🔍 Scraping real-time business directories and crawling websites for contacts...', type: 'info' });
+    setLoading(true);
+    setStatusMsg({ text: 'Scraping real-time business directories and crawling websites for contacts...', type: 'info' });
 
-        try {
-            const res = await axios.post('/api/scraper/search', {
-                keyword: keyword.trim(),
-                city: city.trim(),
-                employee_range: employeeRange || null,
-                crawl_emails: true
-            });
+    try {
+      const res = await axios.post('/api/scraper/search', {
+        keyword: keyword.trim(),
+        city: city.trim(),
+        employee_range: employeeRange || null,
+        crawl_emails: true,
+      });
 
-            if (res.data?.success) {
-                setLeads(res.data.leads || []);
-                setSelectedLeadIds(new Set());
-                setStatusMsg({
-                    text: `✅ Found ${res.data.count} live business leads in ${city}!`,
-                    type: 'success'
-                });
-            }
-        } catch (err) {
-            console.error('Scraper Error:', err);
-            setStatusMsg({
-                text: `❌ Scraping error: ${err.response?.data?.detail || err.message}`,
-                type: 'error'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // --- 2. Filter Leads on the fly ---
-    const displayedLeads = leads.filter(l => {
-        if (filterPhoneOnly && !l.phone) return false;
-        if (filterEmailOnly && !l.email) return false;
-        return true;
-    });
-
-    // --- 3. Selection Handlers ---
-    const toggleSelect = (id) => {
-        setSelectedLeadIds(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
+      if (res.data?.success) {
+        setLeads(res.data.leads || []);
+        setSelectedLeadIds(new Set());
+        setVisibleCount(10);
+        setStatusMsg({
+          text: `Found ${res.data.count} live business leads in ${city}.`,
+          type: 'success',
         });
-    };
+      }
+    } catch (err) {
+      console.error('Scraper Error:', err);
+      setStatusMsg({
+        text: `Scraping error: ${err.response?.data?.detail || err.message}`,
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const toggleSelectAll = () => {
-        if (selectedLeadIds.size === displayedLeads.length) {
-            setSelectedLeadIds(new Set());
-        } else {
-            setSelectedLeadIds(new Set(displayedLeads.map(l => l.id)));
-        }
-    };
+  // --- 2. Filter Leads on the fly ---
+  const displayedLeads = leads.filter((l) => {
+    if (filterPhoneOnly && !l.phone) return false;
+    if (filterEmailOnly && !l.email) return false;
+    return true;
+  });
 
-    // --- 4. Import to Google Sheets (Cold Email CRM) ---
-    const handleImportToSheets = async (targetLeads) => {
-        if (!targetLeads || targetLeads.length === 0) return;
-        setStatusMsg({ text: 'Syncing leads into your Google Sheets CRM...', type: 'info' });
+  const pagedLeads = displayedLeads.slice(0, visibleCount);
+  const hasMoreLeads = displayedLeads.length > visibleCount;
 
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
+  // --- 3. Selection Handlers ---
+  const toggleSelect = (id) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
-            const res = await axios.post(
-                '/api/scraper/import-to-sheets',
-                { leads: targetLeads },
-                { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-            );
+  const toggleSelectAll = () => {
+    if (selectedLeadIds.size === displayedLeads.length) {
+      setSelectedLeadIds(new Set());
+    } else {
+      setSelectedLeadIds(new Set(displayedLeads.map((l) => l.id)));
+    }
+  };
 
-            if (res.data?.success) {
-                setStatusMsg({
-                    text: `🎉 Successfully imported ${res.data.count} lead(s) into your Cold Email CRM as 'pending'!`,
-                    type: 'success'
-                });
-            }
-        } catch (err) {
-            console.error('Import Error:', err);
-            setStatusMsg({
-                text: `❌ Import failed: ${err.response?.data?.detail || err.message}`,
-                type: 'error'
-            });
-        }
-    };
+  // --- 4. Import to Google Sheets (Cold Email CRM) ---
+  const handleImportToSheets = async (targetLeads) => {
+    if (!targetLeads || targetLeads.length === 0) return;
+    setStatusMsg({ text: 'Syncing leads into your Cold Email CRM...', type: 'info' });
 
-    // --- 5. One-Click Voice Call (Retell AI) ---
-    const handleDirectCall = async (lead) => {
-        if (!lead.phone) {
-            setStatusMsg({ text: 'This lead has no phone number available.', type: 'error' });
-            return;
-        }
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-        setActionLoadingId(lead.id);
-        setStatusMsg({ text: `📞 Initiating AI voice call to ${lead.company} (${lead.phone})...`, type: 'info' });
+      const res = await axios.post(
+        '/api/scraper/import-to-sheets',
+        { leads: targetLeads },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
 
-        try {
-            const cfg = await axios.get('/api/health/config');
-            const fromNumber = cfg.data?.TWILIO_PHONE_NUMBER;
+      if (res.data?.success) {
+        setStatusMsg({
+          text: `Successfully imported ${res.data.count} lead(s) into Cold Email CRM as 'pending'.`,
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      console.error('Import Error:', err);
+      setStatusMsg({
+        text: `Import failed: ${err.response?.data?.detail || err.message}`,
+        type: 'error',
+      });
+    }
+  };
 
-            const res = await axios.post('/api/retell/create-phone-call', {
-                from_number: fromNumber || '+1234567890',
-                to_number: lead.phone,
-            });
+  // --- 5. One-Click Voice Call (Retell AI) ---
+  const handleDirectCall = async (lead) => {
+    if (!lead.phone) {
+      setStatusMsg({ text: 'This lead has no phone number available.', type: 'error' });
+      return;
+    }
 
-            if (res.data?.success || res.data?.call_id) {
-                setStatusMsg({
-                    text: `🎙️ Call dispatched successfully! Retell Call ID: ${res.data.call_id || 'Active'}`,
-                    type: 'success'
-                });
-            }
-        } catch (err) {
-            console.error('Call Error:', err);
-            setStatusMsg({
-                text: `❌ Call failed: ${err.response?.data?.detail || err.message}`,
-                type: 'error'
-            });
-        } finally {
-            setActionLoadingId(null);
-        }
-    };
+    setActionLoadingId(lead.id);
+    setStatusMsg({ text: `Initiating AI voice call to ${lead.company} (${lead.phone})...`, type: 'info' });
 
-    return (
-        <div style={{ padding: '24px', color: '#f8fafc', maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span>🔍</span> Real-Time B2B Lead Finder & Scraper
-                </h1>
-                <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.95rem' }}>
-                    Discover real registered businesses on demand, extract direct phone numbers & emails, and instantly dispatch calls or email campaigns.
-                </p>
-            </div>
+    try {
+      const cfg = await axios.get('/api/health/config');
+      const fromNumber = cfg.data?.TWILIO_PHONE_NUMBER;
 
-            {/* Search Bar & Filters Card */}
-            <div style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '12px',
-                padding: '20px',
-                marginBottom: '24px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
-            }}>
-                <form onSubmit={handleSearch} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
-                    <div style={{ flex: '1 1 240px' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                            Business Niche / Category
-                        </label>
-                        <input
-                            type="text"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            placeholder="e.g. Real Estate, Dental Clinic, SaaS"
-                            style={{
-                                width: '100%',
-                                padding: '10px 14px',
-                                background: '#0f172a',
-                                border: '1px solid #475569',
-                                borderRadius: '8px',
-                                color: '#fff',
-                                fontSize: '0.95rem',
-                                outline: 'none'
-                            }}
-                        />
-                    </div>
+      const res = await axios.post('/api/retell/create-phone-call', {
+        from_number: fromNumber || '+1234567890',
+        to_number: lead.phone,
+      });
 
-                    <div style={{ flex: '1 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                            Target City / Location
-                        </label>
-                        <input
-                            type="text"
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                            placeholder="e.g. Miami, Austin, Chicago"
-                            style={{
-                                width: '100%',
-                                padding: '10px 14px',
-                                background: '#0f172a',
-                                border: '1px solid #475569',
-                                borderRadius: '8px',
-                                color: '#fff',
-                                fontSize: '0.95rem',
-                                outline: 'none'
-                            }}
-                        />
-                    </div>
+      if (res.data?.success || res.data?.call_id) {
+        setStatusMsg({
+          text: `Call dispatched successfully! Retell Call ID: ${res.data.call_id || 'Active'}`,
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      console.error('Call Error:', err);
+      setStatusMsg({
+        text: `Call failed: ${err.response?.data?.detail || err.message}`,
+        type: 'error',
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
-                    <div style={{ flex: '0 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                            🏢 Company Size
-                        </label>
-                        <select
-                            value={employeeRange}
-                            onChange={(e) => setEmployeeRange(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '10px 14px',
-                                background: '#0f172a',
-                                border: '1px solid #475569',
-                                borderRadius: '8px',
-                                color: '#fff',
-                                fontSize: '0.95rem',
-                                outline: 'none',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <option value="">All Sizes (Any)</option>
-                            <option value="1,10">1 – 10 (Small / Local)</option>
-                            <option value="11,50">11 – 50 (Growing SMB)</option>
-                            <option value="51,200">51 – 200 (Mid-Market)</option>
-                            <option value="201,500">201 – 500 (Enterprise)</option>
-                            <option value="501,10000">500+ (Corporation)</option>
-                        </select>
-                    </div>
+  // --- 6. Export to CSV ---
+  const exportToCSV = () => {
+    if (displayedLeads.length === 0) return;
+    const headers = ['Company', 'Website', 'Phone', 'Email', 'City', 'Employees', 'Revenue'];
+    const rows = displayedLeads.map((l) => [
+      `"${(l.company || '').replace(/"/g, '""')}"`,
+      `"${(l.website || '').replace(/"/g, '""')}"`,
+      `"${(l.phone || '').replace(/"/g, '""')}"`,
+      `"${(l.email || '').replace(/"/g, '""')}"`,
+      `"${(l.city || city || '').replace(/"/g, '""')}"`,
+      `"${(l.employees || '').replace(/"/g, '""')}"`,
+      `"${(l.revenue || '').replace(/"/g, '""')}"`,
+    ]);
 
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `leads_${keyword.replace(/\s+/g, '_')}_${city}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            padding: '11px 24px',
-                            background: loading ? '#64748b' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            fontSize: '0.95rem',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        {loading ? 'Crawling...' : '🔎 Find Leads'}
-                    </button>
-                </form>
-
-                {/* Quick Filters */}
-                <div style={{ display: 'flex', gap: '20px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #334155' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: '#cbd5e1', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={filterPhoneOnly}
-                            onChange={(e) => setFilterPhoneOnly(e.target.checked)}
-                            style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
-                        />
-                        📞 Has Phone Number (Ready for Calling)
-                    </label>
-
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: '#cbd5e1', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={filterEmailOnly}
-                            onChange={(e) => setFilterEmailOnly(e.target.checked)}
-                            style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
-                        />
-                        📧 Has Email Address (Ready for Cold Email)
-                    </label>
-                </div>
-            </div>
-
-            {/* Status Alert */}
-            {statusMsg.text && (
-                <div style={{
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    marginBottom: '20px',
-                    fontSize: '0.9rem',
-                    background: statusMsg.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : statusMsg.type === 'success' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                    border: `1px solid ${statusMsg.type === 'error' ? '#ef4444' : statusMsg.type === 'success' ? '#22c55e' : '#3b82f6'}`,
-                    color: statusMsg.type === 'error' ? '#fca5a5' : statusMsg.type === 'success' ? '#86efac' : '#93c5fd'
-                }}>
-                    {statusMsg.text}
-                </div>
-            )}
-
-            {/* Action Bar for Bulk Selection */}
-            {displayedLeads.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                        Showing <strong>{displayedLeads.length}</strong> leads {selectedLeadIds.size > 0 && `(${selectedLeadIds.size} selected)`}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                            onClick={() => {
-                                const selected = displayedLeads.filter(l => selectedLeadIds.has(l.id));
-                                handleImportToSheets(selected);
-                            }}
-                            disabled={selectedLeadIds.size === 0}
-                            style={{
-                                padding: '8px 16px',
-                                background: selectedLeadIds.size === 0 ? '#334155' : '#10b981',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                cursor: selectedLeadIds.size === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            📧 Add Selected to Cold Email CRM
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Leads Table */}
-            <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                    <thead>
-                        <tr style={{ background: '#0f172a', borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                            <th style={{ padding: '14px 16px', width: '40px' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={displayedLeads.length > 0 && selectedLeadIds.size === displayedLeads.length}
-                                    onChange={toggleSelectAll}
-                                    style={{ accentColor: '#3b82f6' }}
-                                />
-                            </th>
-                            <th style={{ padding: '14px 16px' }}>Company / Business</th>
-                            <th style={{ padding: '14px 16px' }}>Contact Phone (E.164)</th>
-                            <th style={{ padding: '14px 16px' }}>Discovered Email</th>
-                            <th style={{ padding: '14px 16px' }}>Location</th>
-                            <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {displayedLeads.length === 0 ? (
-                            <tr>
-                                <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-                                    {loading ? 'Searching live web directories...' : 'No leads discovered yet. Enter a niche and city above to start scraping!'}
-                                </td>
-                            </tr>
-                        ) : (
-                            displayedLeads.map((lead) => (
-                                <tr key={lead.id} style={{ borderBottom: '1px solid #334155', transition: 'background 0.15s' }}>
-                                    {/* 1. Checkbox */}
-                                    <td style={{ padding: '14px 16px' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedLeadIds.has(lead.id)}
-                                            onChange={() => toggleSelect(lead.id)}
-                                            style={{ accentColor: '#3b82f6' }}
-                                        />
-                                    </td>
-
-                                    {/* 2. Company with Logo, LinkedIn, Employee Count & Revenue */}
-                                    <td style={{ padding: '14px 16px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            {lead.logo_url ? (
-                                                <img
-                                                    src={lead.logo_url}
-                                                    alt={lead.company}
-                                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                                    style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'contain', background: '#1e293b', border: '1px solid #334155' }}
-                                                />
-                                            ) : (
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>
-                                                    {lead.company.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 600, color: '#fff' }}>{lead.company}</span>
-                                                    {lead.linkedin_url && (
-                                                        <a
-                                                            href={lead.linkedin_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            title="View LinkedIn Profile"
-                                                            style={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                background: '#0a66c2',
-                                                                color: '#fff',
-                                                                padding: '1px 5px',
-                                                                borderRadius: '3px',
-                                                                fontSize: '0.65rem',
-                                                                fontWeight: 700,
-                                                                textDecoration: 'none'
-                                                            }}
-                                                        >
-                                                            in
-                                                        </a>
-                                                    )}
-                                                </div>
-
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', flexWrap: 'wrap' }}>
-                                                    {lead.website && (
-                                                        <a
-                                                            href={lead.website}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            style={{ fontSize: '0.75rem', color: '#38bdf8', textDecoration: 'none' }}
-                                                        >
-                                                            {lead.website.replace(/^https?:\/\//, '')}
-                                                        </a>
-                                                    )}
-                                                    {lead.employees && (
-                                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: '#1e293b', padding: '1px 6px', borderRadius: '4px' }}>
-                                                            👥 {lead.employees} team
-                                                        </span>
-                                                    )}
-                                                    {lead.revenue && (
-                                                        <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
-                                                            💰 {lead.revenue}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    {/* 3. Phone */}
-                                    <td style={{ padding: '14px 16px' }}>
-                                        {lead.phone ? (
-                                            <span style={{
-                                                padding: '3px 8px',
-                                                background: 'rgba(59, 130, 246, 0.2)',
-                                                color: '#60a5fa',
-                                                borderRadius: '4px',
-                                                fontSize: '0.8rem',
-                                                fontFamily: 'monospace'
-                                            }}>
-                                                {lead.phone}
-                                            </span>
-                                        ) : (
-                                            <span style={{ color: '#64748b', fontSize: '0.8rem' }}>No phone</span>
-                                        )}
-                                    </td>
-
-                                    {/* 4. Email */}
-                                    <td style={{ padding: '14px 16px' }}>
-                                        {lead.email ? (
-                                            <span style={{
-                                                padding: '3px 8px',
-                                                background: 'rgba(16, 185, 129, 0.2)',
-                                                color: '#34d399',
-                                                borderRadius: '4px',
-                                                fontSize: '0.8rem'
-                                            }}>
-                                                {lead.email}
-                                            </span>
-                                        ) : (
-                                            <span style={{ color: '#64748b', fontSize: '0.8rem' }}>No email</span>
-                                        )}
-                                    </td>
-
-                                    {/* 5. Location */}
-                                    <td style={{ padding: '14px 16px', color: '#cbd5e1' }}>
-                                        {lead.city || city}
-                                    </td>
-
-                                    {/* 6. Actions */}
-                                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            {lead.phone && (
-                                                <button
-                                                    onClick={() => handleDirectCall(lead)}
-                                                    disabled={actionLoadingId === lead.id}
-                                                    title="Call with Retell AI Voice"
-                                                    style={{
-                                                        padding: '6px 12px',
-                                                        background: '#2563eb',
-                                                        color: '#fff',
-                                                        border: 'none',
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    {actionLoadingId === lead.id ? 'Calling...' : '📞 Call'}
-                                                </button>
-                                            )}
-
-                                            <button
-                                                onClick={() => handleImportToSheets([lead])}
-                                                title="Add to Cold Email CRM"
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    background: '#059669',
-                                                    color: '#fff',
-                                                    border: 'none',
-                                                    borderRadius: '6px',
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 600,
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                📧 Add
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-
-                        )}
-                    </tbody>
-                </table>
-            </div>
+  return (
+    <div className="lead-finder-page">
+      {/* Search Header & Filter Controls Card */}
+      <div className="finder-card">
+        <div className="finder-card-header">
+          <div>
+            <h3 className="finder-card-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              Real-Time B2B Lead Finder & Scraper
+            </h3>
+            <p className="finder-card-desc">
+              Discover verified business entities on demand, extract direct phone lines & emails, and instantly dispatch AI calls or CRM campaigns.
+            </p>
+          </div>
+          <span className="finder-badge-count">{leads.length} LEADS DISCOVERED</span>
         </div>
-    );
+
+        <form onSubmit={handleSearch} className="finder-search-grid">
+          <div className="finder-form-group">
+            <div className="finder-label-row">
+              <label className="finder-label">BUSINESS NICHE / KEYWORD</label>
+              <span className="finder-label-tag">TARGET_INDUSTRY</span>
+            </div>
+            <input
+              type="text"
+              className="finder-input"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="e.g. Dental Clinic, Real Estate, Logistics"
+              required
+            />
+          </div>
+
+          <div className="finder-form-group">
+            <div className="finder-label-row">
+              <label className="finder-label">CITY / REGION</label>
+              <span className="finder-label-tag">GEO_LOC</span>
+            </div>
+            <input
+              type="text"
+              className="finder-input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. Miami, Austin, Chicago"
+              required
+            />
+          </div>
+
+          <div className="finder-form-group">
+            <div className="finder-label-row">
+              <label className="finder-label">COMPANY SIZE</label>
+              <span className="finder-label-tag">HEADCOUNT</span>
+            </div>
+            <select
+              className="finder-select"
+              value={employeeRange}
+              onChange={(e) => setEmployeeRange(e.target.value)}
+            >
+              <option value="">All Sizes (Any)</option>
+              <option value="1,10">1 – 10 (Local Boutique)</option>
+              <option value="11,50">11 – 50 (Growing SMB)</option>
+              <option value="51,200">51 – 200 (Mid-Market)</option>
+              <option value="201,500">201 – 500 (Enterprise)</option>
+              <option value="501,10000">500+ (Corporation)</option>
+            </select>
+          </div>
+
+          <button type="submit" disabled={loading} className="finder-search-btn">
+            {loading ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                </svg>
+                Crawling Directories...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Find Leads
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Quick Filter Chips */}
+        <div className="finder-filters-row">
+          <label className={`finder-filter-chip ${filterPhoneOnly ? 'active' : ''}`}>
+            <input
+              type="checkbox"
+              checked={filterPhoneOnly}
+              onChange={(e) => setFilterPhoneOnly(e.target.checked)}
+            />
+            <span className="finder-filter-check">
+              {filterPhoneOnly && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
+            </span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            Has Phone Number (Telephony Ready)
+          </label>
+
+          <label className={`finder-filter-chip ${filterEmailOnly ? 'active' : ''}`}>
+            <input
+              type="checkbox"
+              checked={filterEmailOnly}
+              onChange={(e) => setFilterEmailOnly(e.target.checked)}
+            />
+            <span className="finder-filter-check">
+              {filterEmailOnly && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
+            </span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            Has Email Address (Cold Email Ready)
+          </label>
+        </div>
+      </div>
+
+      {/* Status Banner */}
+      {statusMsg.text && (
+        <div className={`finder-status-banner ${statusMsg.type}`}>
+          {statusMsg.type === 'error' ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          ) : statusMsg.type === 'success' ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          )}
+          <span>{statusMsg.text}</span>
+        </div>
+      )}
+
+      {/* Results Card */}
+      <div className="finder-card">
+        {/* Bulk Action Toolbar */}
+        <div className="finder-toolbar">
+          <div className="finder-toolbar-left">
+            <span>
+              SHOWING <strong>{displayedLeads.length}</strong> LEADS
+            </span>
+            {selectedLeadIds.size > 0 && (
+              <span className="finder-badge-count" style={{ color: '#c7d2fe', borderColor: '#5855d6' }}>
+                {selectedLeadIds.size} SELECTED
+              </span>
+            )}
+          </div>
+
+          <div className="finder-toolbar-right">
+            <button
+              type="button"
+              className="btn-export-csv"
+              onClick={exportToCSV}
+              disabled={displayedLeads.length === 0}
+              title="Export discovered leads to CSV"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+
+            <button
+              type="button"
+              className="btn-crm-sync"
+              onClick={() => {
+                const selected = displayedLeads.filter((l) => selectedLeadIds.has(l.id));
+                handleImportToSheets(selected);
+              }}
+              disabled={selectedLeadIds.size === 0}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              Add Selected ({selectedLeadIds.size}) to CRM
+            </button>
+          </div>
+        </div>
+
+        {/* Leads Table */}
+        <div className="finder-table-container">
+          <table className="finder-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    className="finder-checkbox"
+                    checked={displayedLeads.length > 0 && selectedLeadIds.size === displayedLeads.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th>COMPANY / BUSINESS</th>
+                <th>PHONE (E.164)</th>
+                <th>DISCOVERED EMAIL</th>
+                <th>LOCATION</th>
+                <th style={{ textAlign: 'right' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedLeads.length === 0 ? (
+                <tr>
+                  <td colSpan="6">
+                    <div className="finder-empty-state">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"></path>
+                      </svg>
+                      <div className="finder-empty-title">
+                        {loading ? 'Crawling live business registries...' : 'No leads discovered yet'}
+                      </div>
+                      <p className="finder-empty-desc">
+                        {loading
+                          ? 'Extracting contact profiles, verifying MX records and parsing phone numbers.'
+                          : 'Enter your target business niche and city in the search bar above to crawl verified B2B leads in real time.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                pagedLeads.map((lead) => {
+                  const isSelected = selectedLeadIds.has(lead.id);
+                  return (
+                    <tr key={lead.id} className={isSelected ? 'row-selected' : ''}>
+                      {/* 1. Selection Checkbox */}
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          className="finder-checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(lead.id)}
+                        />
+                      </td>
+
+                      {/* 2. Company Info with Logo / LinkedIn / Team Size / Revenue */}
+                      <td>
+                        <div className="company-cell">
+                          {lead.logo_url ? (
+                            <img
+                              src={lead.logo_url}
+                              alt={lead.company}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                              className="company-logo"
+                            />
+                          ) : (
+                            <div className="company-avatar-fallback">
+                              {(lead.company || 'C').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="company-info">
+                            <div className="company-name-row">
+                              <span className="company-name" title={lead.company}>
+                                {lead.company}
+                              </span>
+                              {lead.linkedin_url && (
+                                <a
+                                  href={lead.linkedin_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title="View LinkedIn Profile"
+                                  className="badge-linkedin"
+                                >
+                                  in
+                                </a>
+                              )}
+                            </div>
+
+                            <div className="company-meta-row">
+                              {lead.website && (
+                                <a
+                                  href={lead.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="company-website-link"
+                                >
+                                  <span>{lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                  </svg>
+                                </a>
+                              )}
+                              {lead.employees && (
+                                <span className="pill-team">
+                                  {lead.employees} team
+                                </span>
+                              )}
+                              {lead.revenue && (
+                                <span className="pill-rev">
+                                  {lead.revenue}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 3. Phone */}
+                      <td>
+                        {lead.phone ? (
+                          <span className="contact-mono-pill phone">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            {lead.phone}
+                          </span>
+                        ) : (
+                          <span className="contact-empty">No phone</span>
+                        )}
+                      </td>
+
+                      {/* 4. Email */}
+                      <td>
+                        {lead.email ? (
+                          <span className="contact-mono-pill email">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                              <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            {lead.email}
+                          </span>
+                        ) : (
+                          <span className="contact-empty">No email</span>
+                        )}
+                      </td>
+
+                      {/* 5. Location */}
+                      <td>
+                        <span className="location-tag">
+                          {lead.city || city}
+                        </span>
+                      </td>
+
+                      {/* 6. Actions */}
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="row-actions-group">
+                          {lead.phone && (
+                            <button
+                              type="button"
+                              onClick={() => handleDirectCall(lead)}
+                              disabled={actionLoadingId === lead.id}
+                              title="Call directly with Retell AI Voice"
+                              className="btn-row-action call"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                              </svg>
+                              {actionLoadingId === lead.id ? 'Calling...' : 'Call'}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleImportToSheets([lead])}
+                            title="Add lead to Cold Email CRM"
+                            className="btn-row-action crm"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            CRM
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Progressive Show More Controls */}
+        {displayedLeads.length > 0 && (
+          <div className="finder-show-more-row">
+            {hasMoreLeads ? (
+              <button
+                type="button"
+                className="finder-more-btn"
+                onClick={() => setVisibleCount((prev) => prev + 10)}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                Show More Leads ({displayedLeads.length - visibleCount} remaining)
+              </button>
+            ) : (
+              displayedLeads.length > 10 && (
+                <button
+                  type="button"
+                  className="finder-less-btn"
+                  onClick={() => setVisibleCount(10)}
+                >
+                  Show Less (Reset to 10)
+                </button>
+              )
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
