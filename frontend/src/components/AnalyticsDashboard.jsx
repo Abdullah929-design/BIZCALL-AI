@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import './AnalyticsDashboard.css';
 
 /* ─── Mock Fallback Records for UI testing when DB is empty ─────────────────── */
 const MOCK_FALLBACK_CALLS = [
@@ -62,6 +63,9 @@ const AnalyticsDashboard = ({ user }) => {
   const [selectedCall, setSelectedCall] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  // Pagination requirement: max 10 first, and 5 more on each button click
+  const [visibleCount, setVisibleCount] = useState(10);
+
   const fetchCalls = async () => {
     try {
       // 1. Fetch user's private agent IDs from Supabase
@@ -120,7 +124,6 @@ const AnalyticsDashboard = ({ user }) => {
     }
   };
 
-
   useEffect(() => {
     fetchCalls();
 
@@ -137,7 +140,11 @@ const AnalyticsDashboard = ({ user }) => {
   const outboundCount = calls.filter(c => c.direction === 'outbound').length;
   const completedCount = calls.filter(c => c.status === 'completed').length;
 
-  const positiveCalls = calls.filter(c => (c.sentiment || '').toLowerCase().includes('postive') || (c.sentiment || '').toLowerCase().includes('pos') || (c.customer_satisfaction || '').toLowerCase().includes('high') || (c.customer_satisfaction || '').toLowerCase().includes('excel')).length;
+  const positiveCalls = calls.filter(c => 
+    (c.sentiment || '').toLowerCase().includes('pos') || 
+    (c.customer_satisfaction || '').toLowerCase().includes('high') || 
+    (c.customer_satisfaction || '').toLowerCase().includes('excel')
+  ).length;
   const positiveRatio = totalCalls > 0 ? Math.round((positiveCalls / totalCalls) * 100) : 100;
 
   const avgDurationSeconds = totalCalls > 0
@@ -145,9 +152,9 @@ const AnalyticsDashboard = ({ user }) => {
     : 0;
 
   const formatDuration = (seconds) => {
-    if (!seconds) return '0s';
+    if (!seconds && seconds !== 0) return '0s';
     const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const s = Math.floor(seconds % 60);
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   };
 
@@ -176,374 +183,441 @@ const AnalyticsDashboard = ({ user }) => {
     return true;
   });
 
-  return (
-    <div style={{
-      height: '100%', overflowY: 'auto', padding: '24px 28px',
-      background: 'transparent', color: '#edeae2',
-      fontFamily: "'Inter', sans-serif", fontWeight: 300,
-    }}>
+  // Paginated calls: max 10 first, and 5 more on each button click
+  const pagedCalls = filteredCalls.slice(0, visibleCount);
+  const hasMoreCalls = filteredCalls.length > visibleCount;
 
+  return (
+    <div className="analytics-page">
       {/* ── Top Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 600, fontFamily: "'Cormorant Garamond', serif", letterSpacing: '0.02em' }}>
-            📊 Post-Call Intelligence & Analytics
+      <div className="analytics-header">
+        <div className="analytics-title-group">
+          <h1 className="analytics-title">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            Post-Call Intelligence & Analytics
           </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'rgba(237,234,226,0.5)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Live Call History · Audio Recordings · Key Findings · Customer Satisfaction (CSAT)
+          <p className="analytics-subtitle">
+            Live Telephony History · Audio Playback · AI Findings · CSAT Telemetry
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="analytics-actions">
           <button
+            type="button"
             onClick={() => setAutoRefresh(!autoRefresh)}
-            style={{
-              padding: '6px 14px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 500,
-              cursor: 'pointer', fontFamily: 'inherit',
-              background: autoRefresh ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.05)',
-              border: autoRefresh ? '1px solid rgba(74,222,128,0.3)' : '1px solid rgba(255,255,255,0.1)',
-              color: autoRefresh ? '#4ade80' : 'rgba(237,234,226,0.5)',
-              display: 'flex', alignItems: 'center', gap: 6
-            }}
+            className={`btn-sync-toggle ${autoRefresh ? 'active' : ''}`}
+            title="Toggle background auto-sync"
           >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: autoRefresh ? '#4ade80' : '#888' }} />
+            <span className="sync-dot" />
             {autoRefresh ? 'Live Auto-Sync ON' : 'Auto-Sync Paused'}
           </button>
 
           <button
+            type="button"
             onClick={fetchCalls}
-            style={{
-              padding: '6px 14px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 500,
-              cursor: 'pointer', fontFamily: 'inherit',
-              background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
-              color: '#818cf8', display: 'flex', alignItems: 'center', gap: 4
-            }}
+            className="btn-analytics-refresh"
+            title="Refresh records from database"
           >
-            🔄 Refresh
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"></path>
+            </svg>
+            Refresh
           </button>
         </div>
       </div>
 
       {/* ── KPI Summary Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div style={{
-          background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 14, padding: '18px 20px', position: 'relative'
-        }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>📞 Total Calls Processed</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#c9a84c', fontFamily: "'Cormorant Garamond', serif" }}>
-            {totalCalls}
+      <div className="analytics-kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">Total Calls</span>
+            <div className="kpi-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+              </svg>
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(237,234,226,0.4)', marginTop: 4 }}>
+          <div className="kpi-value">{totalCalls}</div>
+          <div className="kpi-subtext">
             {inboundCount} Inbound · {outboundCount} Outbound
           </div>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 14, padding: '18px 20px', position: 'relative'
-        }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>⭐ CSAT & Positive Sentiment</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#4ade80', fontFamily: "'Cormorant Garamond', serif" }}>
-            {positiveRatio}%
+        <div className="kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">CSAT & Positive</span>
+            <div className="kpi-icon" style={{ color: '#34d399' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(237,234,226,0.4)', marginTop: 4 }}>
-            Based on post-call sentiment analysis
-          </div>
-        </div>
-
-        <div style={{
-          background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 14, padding: '18px 20px', position: 'relative'
-        }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>⏱️ Avg Handle Time</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#60a5fa', fontFamily: "'Cormorant Garamond', serif" }}>
-            {formatDuration(avgDurationSeconds)}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(237,234,226,0.4)', marginTop: 4 }}>
-            Average call talk time
+          <div className="kpi-value" style={{ color: '#34d399' }}>{positiveRatio}%</div>
+          <div className="kpi-subtext">
+            Post-call sentiment score
           </div>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 14, padding: '18px 20px', position: 'relative'
-        }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>✅ Completed Calls</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#a78bfa', fontFamily: "'Cormorant Garamond', serif" }}>
-            {completedCount} / {totalCalls}
+        <div className="kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">Avg Handle Time</span>
+            <div className="kpi-icon" style={{ color: '#60a5fa' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'rgba(237,234,226,0.4)', marginTop: 4 }}>
-            100% Retell API resolution rate
+          <div className="kpi-value" style={{ color: '#60a5fa' }}>{formatDuration(avgDurationSeconds)}</div>
+          <div className="kpi-subtext">
+            Average active call duration
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">Completed Calls</span>
+            <div className="kpi-icon" style={{ color: '#c084fc' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div className="kpi-value" style={{ color: '#c084fc' }}>{completedCount} / {totalCalls}</div>
+          <div className="kpi-subtext">
+            Retell telephony resolution rate
           </div>
         </div>
       </div>
 
       {/* ── Call History Controls & Filters ── */}
-      <div style={{
-        background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 14, padding: '16px 20px', marginBottom: 20,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12
-      }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: '0.8rem', color: 'rgba(237,234,226,0.5)', fontWeight: 500 }}>Filter Calls:</span>
-          {['all', 'inbound', 'outbound'].map(dir => (
-            <button
-              key={dir}
-              onClick={() => setFilterDirection(dir)}
-              style={{
-                padding: '5px 12px', borderRadius: 16, fontSize: '0.72rem', fontWeight: 500,
-                cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize',
-                background: filterDirection === dir ? 'rgba(201,168,76,0.18)' : 'transparent',
-                border: filterDirection === dir ? '1px solid rgba(201,168,76,0.4)' : '1px solid rgba(255,255,255,0.1)',
-                color: filterDirection === dir ? '#c9a84c' : 'rgba(237,234,226,0.5)',
-              }}
-            >
-              {dir === 'inbound' ? '📥 Inbound Calls' : dir === 'outbound' ? '📤 Outbound Calls' : '🌐 All Calls'}
-            </button>
-          ))}
+      <div className="analytics-filter-card">
+        <div className="filter-pills-group">
+          <span className="filter-group-label">FILTER:</span>
+          <button
+            type="button"
+            className={`filter-pill-btn ${filterDirection === 'all' ? 'active' : ''}`}
+            onClick={() => { setFilterDirection('all'); setVisibleCount(10); }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            All Calls
+          </button>
+          <button
+            type="button"
+            className={`filter-pill-btn ${filterDirection === 'inbound' ? 'active' : ''}`}
+            onClick={() => { setFilterDirection('inbound'); setVisibleCount(10); }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            Inbound Calls
+          </button>
+          <button
+            type="button"
+            className={`filter-pill-btn ${filterDirection === 'outbound' ? 'active' : ''}`}
+            onClick={() => { setFilterDirection('outbound'); setVisibleCount(10); }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            Outbound Calls
+          </button>
         </div>
 
-        <div style={{ flex: '1 1 240px', maxWidth: '360px' }}>
-          <input
-            type="text"
-            placeholder="Search by Call ID, Phone Number, or Summary..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: '0.82rem', fontFamily: 'inherit'
-            }}
-          />
-        </div>
+        <input
+          type="text"
+          className="analytics-search-input"
+          placeholder="Search by Call ID, number, or summary..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(10); }}
+        />
       </div>
 
       {/* ── Call Records Table ── */}
-      <div style={{
-        background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 14, overflow: 'hidden'
-      }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>📋 Received & Dialed Call Log Records</h3>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Click any row to open Audio Player & Key Findings</span>
+      <div className="analytics-records-card">
+        <div className="records-card-header">
+          <div>
+            <h3 className="records-card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Received & Dialed Call Log Records
+            </h3>
+            <p className="records-card-sub">
+              Click any call row to open the live audio recording player, AI summary, and transcript.
+            </p>
+          </div>
+          <span className="badge-counter">
+            SHOWING {pagedCalls.length} OF {filteredCalls.length}
+          </span>
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            🔄 Loading live call records from Supabase...
+          <div className="empty-records-state">
+            Loading live call telemetry from Supabase...
           </div>
         ) : filteredCalls.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+          <div className="empty-records-state">
             No call records match your current filter.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-              <thead>
-                <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>Call ID</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>Type</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>From (Caller)</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>To (Target)</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>Duration</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>CSAT / Sentiment</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8' }}>Time</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center', color: '#94a3b8' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCalls.map((call, idx) => (
-                  <tr
-                    key={call.call_id || idx}
-                    onClick={() => setSelectedCall(call)}
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      cursor: 'pointer',
-                      background: selectedCall?.call_id === call.call_id ? 'rgba(99,102,241,0.12)' : 'transparent',
-                      transition: 'background 0.15s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedCall?.call_id !== call.call_id) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedCall?.call_id !== call.call_id) e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    <td style={{ padding: '14px 16px', fontFamily: 'monospace', color: '#60a5fa', fontSize: '0.78rem' }}>
-                      {call.call_id?.slice(0, 16)}...
-                    </td>
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 500,
-                        background: call.direction === 'inbound' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                        color: call.direction === 'inbound' ? '#818cf8' : '#34d399'
-                      }}>
-                        {call.direction === 'inbound' ? '📥 Inbound' : '📤 Outbound'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: '#f1f5f9' }}>
-                      {call.from_number || 'Web Browser'}
-                    </td>
-                    <td style={{ padding: '14px 16px', color: '#f1f5f9' }}>
-                      {call.to_number || 'BIZ CALL Agent'}
-                    </td>
-                    <td style={{ padding: '14px 16px', color: '#cbd5e1', fontFamily: 'monospace' }}>
-                      {formatDuration(call.duration)}
-                    </td>
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        padding: '3px 8px', borderRadius: 8, fontSize: '0.72rem',
-                        background: (call.sentiment || '').toLowerCase().includes('pos') || (call.customer_satisfaction || '').toLowerCase().includes('high') || (call.customer_satisfaction || '').toLowerCase().includes('excel')
-                          ? 'rgba(74,222,128,0.15)'
-                          : (call.sentiment || '').toLowerCase().includes('neg')
-                            ? 'rgba(248,113,113,0.15)'
-                            : 'rgba(251,191,36,0.15)',
-                        color: (call.sentiment || '').toLowerCase().includes('pos') || (call.customer_satisfaction || '').toLowerCase().includes('high') || (call.customer_satisfaction || '').toLowerCase().includes('excel')
-                          ? '#4ade80'
-                          : (call.sentiment || '').toLowerCase().includes('neg')
-                            ? '#f87171'
-                            : '#fbbf24'
-                      }}>
-                        {call.customer_satisfaction || call.sentiment || 'Satisfied'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: '#94a3b8', fontSize: '0.75rem' }}>
-                      {formatTime(call.created_at)}
-                    </td>
-                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedCall(call); }}
-                        style={{
-                          padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem',
-                          background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)',
-                          color: '#818cf8', cursor: 'pointer'
-                        }}
-                      >
-                        🔍 View Details
-                      </button>
-                    </td>
+          <>
+            <div className="records-table-container">
+              <table className="records-table">
+                <thead>
+                  <tr>
+                    <th>CALL ID</th>
+                    <th>TYPE</th>
+                    <th>FROM (CALLER)</th>
+                    <th>TO (TARGET)</th>
+                    <th>DURATION</th>
+                    <th>CSAT / SENTIMENT</th>
+                    <th>TIMESTAMP</th>
+                    <th style={{ textAlign: 'center' }}>ACTION</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedCalls.map((call, idx) => (
+                    <tr
+                      key={call.call_id || idx}
+                      onClick={() => setSelectedCall(call)}
+                      className={selectedCall?.call_id === call.call_id ? 'row-active' : ''}
+                    >
+                      <td>
+                        <span className="call-id-mono">
+                          {call.call_id ? `${call.call_id.slice(0, 14)}…` : '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`direction-tag ${call.direction}`}>
+                          {call.direction === 'inbound' ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <polyline points="19 12 12 19 5 12"></polyline>
+                            </svg>
+                          ) : (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="19" x2="12" y2="5"></line>
+                              <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
+                          )}
+                          {call.direction}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="number-mono">
+                          {call.from_number || 'Web Browser'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="number-mono">
+                          {call.to_number || 'BIZ CALL Agent'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="duration-mono">{formatDuration(call.duration)}</span>
+                      </td>
+                      <td>
+                        {(() => {
+                          const sent = (call.sentiment || '').toLowerCase();
+                          const csat = (call.customer_satisfaction || '').toLowerCase();
+                          const isPos = sent.includes('pos') || csat.includes('high') || csat.includes('excel');
+                          const isNeg = sent.includes('neg');
+                          const cls = isPos ? 'positive' : isNeg ? 'negative' : 'neutral';
+                          return (
+                            <span className={`sentiment-pill ${cls}`}>
+                              {call.customer_satisfaction || call.sentiment || 'Neutral'}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td>
+                        <span className="time-tag">{formatTime(call.created_at)}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCall(call);
+                          }}
+                          className="btn-view-details"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── Progressive Show More Controls (Max 10 first, +5 each click) ── */}
+            <div className="records-pagination-row">
+              {hasMoreCalls ? (
+                <button
+                  type="button"
+                  className="btn-show-more"
+                  onClick={() => setVisibleCount((prev) => prev + 5)}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                  Show More (+5) · {filteredCalls.length - visibleCount} remaining
+                </button>
+              ) : (
+                filteredCalls.length > 10 && (
+                  <button
+                    type="button"
+                    className="btn-show-less"
+                    onClick={() => setVisibleCount(10)}
+                  >
+                    Show Less (Reset to 10)
+                  </button>
+                )
+              )}
+            </div>
+          </>
         )}
       </div>
 
       {/* ── Call Detail & Audio Player Modal / Drawer ── */}
       {selectedCall && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
-        }}>
-          <div style={{
-            width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto',
-            background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '16px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            color: '#f8fafc'
-          }}>
+        <div className="modal-overlay" onClick={() => setSelectedCall(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: '16px', marginBottom: '20px' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff' }}>
-                    📞 Call Inspection Record
-                  </h2>
-                  <span style={{
-                    padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600,
-                    background: selectedCall.direction === 'inbound' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                    color: selectedCall.direction === 'inbound' ? '#818cf8' : '#34d399'
-                  }}>
-                    {selectedCall.direction?.toUpperCase()}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
-                  ID: <code style={{ color: '#60a5fa' }}>{selectedCall.call_id}</code>
-                </div>
+            <div className="modal-header">
+              <div className="modal-title-row">
+                <h2 className="modal-title">Call Inspection Record</h2>
+                <span className={`direction-tag ${selectedCall.direction}`}>
+                  {selectedCall.direction?.toUpperCase()}
+                </span>
+                <span className="call-id-mono" style={{ fontSize: '12px' }}>
+                  {selectedCall.call_id}
+                </span>
               </div>
 
               <button
+                type="button"
+                className="modal-close-btn"
                 onClick={() => setSelectedCall(null)}
-                style={{
-                  background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer'
-                }}
+                title="Close modal"
               >
-                ✕
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
 
             {/* Audio Recording Player Section */}
-            <div style={{
-              background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px', padding: '16px', marginBottom: '20px'
-            }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#38bdf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                🔊 Call Audio Recording Player
+            <div className="audio-player-card">
+              <div className="audio-player-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                Call Audio Recording Player
               </div>
 
               {selectedCall.recording_url ? (
                 <div>
-                  <audio controls style={{ width: '100%', marginTop: '6px' }}>
+                  <audio controls className="audio-element">
                     <source src={selectedCall.recording_url} type="audio/mp3" />
                     Your browser does not support the audio element.
                   </audio>
-                  <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#94a3b8', textAlign: 'right' }}>
-                    <a href={selectedCall.recording_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
-                      ⬇️ Download MP3 Recording
+                  <div className="audio-download-row">
+                    <a
+                      href={selectedCall.recording_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="audio-download-link"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      Download MP3 Recording
                     </a>
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', padding: '10px 0' }}>
-                  ℹ️ Audio recording URL is generated automatically on completed voice calls.
+                <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', padding: '6px 0' }}>
+                  Audio recording URL is generated automatically on completed voice calls.
                 </div>
               )}
             </div>
 
             {/* Call Overview Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Caller Number (From)</div>
-                <div style={{ fontWeight: 600, color: '#fff', marginTop: '2px' }}>{selectedCall.from_number || 'Web Browser'}</div>
+            <div className="modal-stats-grid">
+              <div className="modal-stat-box">
+                <div className="modal-stat-label">Caller (From)</div>
+                <div className="modal-stat-val">{selectedCall.from_number || 'Web Browser'}</div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Destination (To)</div>
-                <div style={{ fontWeight: 600, color: '#fff', marginTop: '2px' }}>{selectedCall.to_number || 'BIZ CALL System'}</div>
+              <div className="modal-stat-box">
+                <div className="modal-stat-label">Destination (To)</div>
+                <div className="modal-stat-val">{selectedCall.to_number || 'BIZ CALL System'}</div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Call Duration</div>
-                <div style={{ fontWeight: 600, color: '#60a5fa', marginTop: '2px' }}>{formatDuration(selectedCall.duration)}</div>
+              <div className="modal-stat-box">
+                <div className="modal-stat-label">Duration</div>
+                <div className="modal-stat-val" style={{ color: '#60a5fa' }}>
+                  {formatDuration(selectedCall.duration)}
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Customer Satisfaction (CSAT)</div>
-                <div style={{ fontWeight: 600, color: '#4ade80', marginTop: '2px' }}>
+              <div className="modal-stat-box">
+                <div className="modal-stat-label">CSAT / Sentiment</div>
+                <div className="modal-stat-val" style={{ color: '#34d399' }}>
                   {selectedCall.customer_satisfaction || selectedCall.sentiment || 'Satisfied (4.5/5)'}
                 </div>
               </div>
             </div>
 
             {/* AI Key Findings & Summary */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#c9a84c', marginBottom: '8px' }}>
-                💡 AI Key Findings & Executive Summary
+            <div className="modal-summary-box">
+              <div className="modal-summary-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                AI Key Findings & Executive Summary
               </div>
-              <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.5', color: '#cbd5e1' }}>
+              <p className="modal-summary-text">
                 {selectedCall.summary || 'AI Post-Call Analysis Summary: Call completed successfully. Customer inquiry resolved by automated AI voice agent.'}
               </p>
             </div>
 
             {/* Full Conversation Transcript */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.9)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#818cf8', marginBottom: '12px' }}>
-                💬 Full Call Conversation Transcript
+            <div className="modal-transcript-box">
+              <div className="modal-transcript-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Full Conversation Transcript
               </div>
 
               {selectedCall.transcript ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                <div className="transcript-bubbles-list">
                   {typeof selectedCall.transcript === 'string' ? (
                     selectedCall.transcript.split('\n').map((line, idx) => {
                       if (!line.trim()) return null;
@@ -551,14 +625,7 @@ const AnalyticsDashboard = ({ user }) => {
                       return (
                         <div
                           key={idx}
-                          style={{
-                            padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem',
-                            background: isAgent ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
-                            border: `1px solid ${isAgent ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.08)'}`,
-                            color: isAgent ? '#c4b5fd' : '#e2e8f0',
-                            alignSelf: isAgent ? 'flex-start' : 'flex-end',
-                            maxWidth: '90%'
-                          }}
+                          className={`transcript-bubble ${isAgent ? 'agent' : 'customer'}`}
                         >
                           {line}
                         </div>
@@ -570,51 +637,38 @@ const AnalyticsDashboard = ({ user }) => {
                       return (
                         <div
                           key={idx}
-                          style={{
-                            padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem',
-                            background: isAgent ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
-                            border: `1px solid ${isAgent ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.08)'}`,
-                            color: isAgent ? '#c4b5fd' : '#e2e8f0',
-                            alignSelf: isAgent ? 'flex-start' : 'flex-end',
-                            maxWidth: '90%'
-                          }}
+                          className={`transcript-bubble ${isAgent ? 'agent' : 'customer'}`}
                         >
-                          <strong>{isAgent ? '🤖 Agent' : '👤 Customer'}:</strong> {item.content || item.words || item.text || JSON.stringify(item)}
+                          <strong>{isAgent ? 'Agent' : 'Customer'}:</strong> {item.content || item.words || item.text || JSON.stringify(item)}
                         </div>
                       );
                     })
                   ) : (
-                    <div style={{ fontSize: '0.8rem', color: '#e2e8f0' }}>
+                    <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                       {String(selectedCall.transcript)}
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Transcript details are processed automatically upon call completion. Click Refresh to check for Retell AI updates.
+                <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                  Transcript details are processed automatically upon call completion. Click Refresh to check for updates.
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div style={{ textAlign: 'right', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="modal-footer">
               <button
+                type="button"
+                className="btn-modal-close"
                 onClick={() => setSelectedCall(null)}
-                style={{
-                  padding: '8px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem'
-                }}
               >
                 Close Inspector
               </button>
             </div>
-
           </div>
         </div>
       )}
-
-      {/* Bottom Spacer */}
-      <div style={{ height: 24 }} />
     </div>
   );
 };
