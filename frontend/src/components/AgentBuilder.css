@@ -1,0 +1,463 @@
+/* ==========================================================================
+   Agent Builder — Google Stitch Minimalist Clean Design System
+   ========================================================================== */
+
+.stitch-builder-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr);
+  gap: 24px;
+  max-width: 1380px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 12px 32px 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1100px) {
+  .stitch-builder-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card Shell */
+.stitch-card {
+  background: #111218;
+  border: 1px solid #1f212d;
+  border-radius: 12px;
+  padding: 26px 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.stitch-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.stitch-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 22px 0;
+}
+
+/* Route Selector Buttons */
+.stitch-route-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .stitch-route-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stitch-route-card {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid #232636;
+  background: #151620;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.stitch-route-card:hover {
+  border-color: #2e3247;
+  background: #181926;
+}
+
+.stitch-route-card.active {
+  background: #5855d6;
+  border-color: #6e6bf4;
+  box-shadow: 0 4px 16px rgba(88, 85, 214, 0.4);
+}
+
+.stitch-route-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #a5b4fc;
+  margin-top: 2px;
+}
+
+.stitch-route-card.active .stitch-route-icon {
+  color: #ffffff;
+}
+
+.stitch-route-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 56px;
+}
+
+.stitch-route-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.25;
+}
+
+.stitch-route-card.active .stitch-route-title {
+  color: #ffffff;
+}
+
+.stitch-route-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.stitch-route-card.active .stitch-route-desc {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.stitch-route-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  color: #52566c;
+  text-transform: uppercase;
+}
+
+.stitch-route-card.active .stitch-route-tag {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Form Groups */
+.stitch-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stitch-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stitch-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stitch-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #85899d;
+  margin: 0;
+}
+
+.stitch-label-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: #52566c;
+  letter-spacing: 0.04em;
+}
+
+.stitch-input,
+.stitch-textarea,
+.stitch-select {
+  background: #151620;
+  border: 1px solid #242738;
+  border-radius: 8px;
+  padding: 11px 14px;
+  color: #f1f5f9;
+  font-size: 13.5px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.stitch-input:focus,
+.stitch-textarea:focus,
+.stitch-select:focus {
+  outline: none;
+  border-color: #5855d6;
+  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.25);
+}
+
+.stitch-input::placeholder,
+.stitch-textarea::placeholder {
+  color: #475569;
+}
+
+.stitch-textarea {
+  resize: vertical;
+  min-height: 94px;
+  line-height: 1.5;
+}
+
+.stitch-select {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2385899d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+
+.stitch-select option {
+  background: #151620;
+  color: #f1f5f9;
+}
+
+/* Deploy Button */
+.stitch-deploy-btn {
+  width: 100%;
+  height: 44px;
+  background: #5855d6;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stitch-deploy-btn:hover:not(:disabled) {
+  background: #6c69f0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(88, 85, 214, 0.35);
+}
+
+.stitch-deploy-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Status Banner */
+.stitch-status-banner {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: rgba(88, 85, 214, 0.12);
+  border: 1px solid rgba(88, 85, 214, 0.28);
+  border-radius: 8px;
+  color: #a5b4fc;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Right Panel: Deployed Agents */
+.stitch-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.stitch-panel-title {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.stitch-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #1c1d27;
+  border: 1px solid #2d3040;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.stitch-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stitch-agent-card {
+  background: #151620;
+  border: 1px solid #242738;
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.stitch-agent-card:hover {
+  border-color: #2f334a;
+}
+
+.stitch-agent-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.stitch-agent-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.stitch-trash-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.stitch-trash-btn:hover {
+  color: #f87171;
+}
+
+.stitch-type-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.stitch-type-badge.inbound {
+  background: rgba(92, 92, 252, 0.16);
+  color: #818cf8;
+  border: 1px solid rgba(92, 92, 252, 0.3);
+}
+
+.stitch-type-badge.outbound {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.stitch-agent-id-row {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 8px;
+  word-break: break-all;
+}
+
+.stitch-agent-id-val {
+  color: #85899d;
+}
+
+.stitch-test-btn {
+  width: 100%;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #1c1e2a;
+  border: 1px solid #2d3042;
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: all 0.2s ease;
+}
+
+.stitch-test-btn:hover {
+  background: #252838;
+  border-color: #3b3f56;
+}
+
+.stitch-test-btn.active-call {
+  background: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+/* Empty Placeholder */
+.stitch-empty-slot {
+  border: 1px dashed #242738;
+  border-radius: 8px;
+  padding: 28px 16px;
+  text-align: center;
+  color: #52566c;
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+/* Telemetry Section */
+.stitch-telemetry-box {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #1f212d;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.stitch-telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.stitch-telemetry-label {
+  color: #64748b;
+}
+
+.stitch-telemetry-val {
+  color: #94a3b8;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+}
+
+.stitch-telemetry-val.bold {
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.stitch-telemetry-val.cyan {
+  color: #38bdf8;
+  font-weight: 600;
+}
