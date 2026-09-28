@@ -21,6 +21,9 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
     const [launching, setLaunching] = useState(false);
     const [statusAlert, setStatusAlert] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+    // Progressive pagination for Campaign History: max 5 first, +5 each click
+    const [visibleCampaignsCount, setVisibleCampaignsCount] = useState(5);
+
     // Split discovered leads by active 24h window and deduplicate by PSID
     const { eligibleLeads, expiredLeads, uniqueEligiblePsids } = useMemo(() => {
         const eligible: MessengerLead[] = [];
@@ -129,7 +132,7 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
             });
 
             setStatusAlert({
-                text: `🎉 Campaign launched successfully! WF1 is dispatching messages to ${parsedLeads.length} lead(s).${enable23hFollowUp ? ' 23-hour automated follow-up (WF3) is armed.' : ''}`,
+                text: `Campaign launched successfully! WF1 is dispatching messages to ${parsedLeads.length} lead(s).${enable23hFollowUp ? ' 23-hour automated follow-up (WF3) is armed.' : ''}`,
                 type: 'success'
             });
 
@@ -149,36 +152,42 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
         }
     };
 
+    const visibleCampaigns = campaigns.slice(0, visibleCampaignsCount);
+    const hasMoreCampaigns = campaigns.length > visibleCampaignsCount;
+
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '24px' }}>
-            {/* Launch Form */}
-            <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.25fr) minmax(320px, 1fr)', gap: '20px' }}>
+            {/* Launch Form Card */}
+            <div style={{ background: '#111218', border: '1px solid #1f212d', borderRadius: '12px', padding: '22px 24px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ color: '#fff', fontSize: '1.15rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🚀</span> Launch Messenger Campaign (WF1)
+                    <h3 style={{ color: '#f8fafc', fontSize: '15px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Launch Messenger Campaign (WF1)
                     </h3>
-                    <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                        Meta 24h Policy Guard
+                    <span style={{ fontSize: '10.5px', padding: '2px 8px', borderRadius: '6px', background: 'rgba(88, 85, 214, 0.15)', color: '#a5b4fc', border: '1px solid rgba(88, 85, 214, 0.3)', fontFamily: 'DM Mono, monospace' }}>
+                        META_24H_GUARD
                     </span>
                 </div>
 
                 {statusAlert && (
                     <div style={{
-                        padding: '12px 16px',
+                        padding: '10px 14px',
                         borderRadius: '8px',
                         marginBottom: '16px',
-                        background: statusAlert.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        border: `1px solid ${statusAlert.type === 'success' ? '#10b981' : '#ef4444'}`,
-                        color: statusAlert.type === 'success' ? '#34d399' : '#f87171',
-                        fontSize: '0.9rem'
+                        background: statusAlert.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                        border: `1px solid ${statusAlert.type === 'success' ? 'rgba(16, 185, 129, 0.28)' : 'rgba(239, 68, 68, 0.28)'}`,
+                        color: statusAlert.type === 'success' ? '#6ee7b7' : '#fca5a5',
+                        fontSize: '12px'
                     }}>
                         {statusAlert.text}
                     </div>
                 )}
 
-                <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                        <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#85899d', marginBottom: '6px' }}>
                             Campaign Name (Optional)
                         </label>
                         <input
@@ -186,12 +195,12 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. Active Leads Outreach"
-                            style={{ width: '100%', padding: '10px 14px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '9px 12px', background: '#151620', border: '1px solid #242738', borderRadius: '8px', color: '#f1f5f9', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                         />
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                        <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#85899d', marginBottom: '6px' }}>
                             Message Body
                         </label>
                         <textarea
@@ -199,14 +208,14 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                             value={messageBody}
                             onChange={(e) => setMessageBody(e.target.value)}
                             placeholder="Hi! We noticed you reached out to our page. Are you still interested in our services?"
-                            style={{ width: '100%', padding: '10px 14px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: '#fff', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '9px 12px', background: '#151620', border: '1px solid #242738', borderRadius: '8px', color: '#f1f5f9', fontSize: '13px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', resize: 'vertical' }}
                         />
                     </div>
 
                     {/* Recipients Section */}
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>
+                            <label style={{ fontSize: '10.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#85899d' }}>
                                 Target Recipients
                             </label>
                             <div style={{ display: 'flex', gap: '6px' }}>
@@ -215,11 +224,11 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                     onClick={() => setRecipientMode('picker')}
                                     style={{
                                         padding: '3px 8px',
-                                        fontSize: '0.75rem',
+                                        fontSize: '11px',
                                         borderRadius: '6px',
-                                        border: 'none',
-                                        background: recipientMode === 'picker' ? '#0284c7' : '#334155',
-                                        color: '#fff',
+                                        border: '1px solid #242738',
+                                        background: recipientMode === 'picker' ? '#5855d6' : '#151620',
+                                        color: recipientMode === 'picker' ? '#fff' : '#94a3b8',
                                         cursor: 'pointer'
                                     }}
                                 >
@@ -230,11 +239,11 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                     onClick={() => setRecipientMode('manual')}
                                     style={{
                                         padding: '3px 8px',
-                                        fontSize: '0.75rem',
+                                        fontSize: '11px',
                                         borderRadius: '6px',
-                                        border: 'none',
-                                        background: recipientMode === 'manual' ? '#0284c7' : '#334155',
-                                        color: '#fff',
+                                        border: '1px solid #242738',
+                                        background: recipientMode === 'manual' ? '#5855d6' : '#151620',
+                                        color: recipientMode === 'manual' ? '#fff' : '#94a3b8',
                                         cursor: 'pointer'
                                     }}
                                 >
@@ -244,9 +253,9 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                         </div>
 
                         {recipientMode === 'picker' ? (
-                            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '12px', maxHeight: '220px', overflowY: 'auto' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #1e293b' }}>
-                                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                            <div style={{ background: '#0f1017', border: '1px solid #1f212d', borderRadius: '8px', padding: '12px', maxHeight: '220px', overflowY: 'auto' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid #191a24' }}>
+                                    <span style={{ fontSize: '11px', color: '#85899d', fontFamily: 'DM Mono, monospace' }}>
                                         {uniqueEligiblePsids.size === 0 ? 'No leads currently in active 24h window' : `${selectedPsids.size} of ${uniqueEligiblePsids.size} active lead(s) selected`}
                                     </span>
                                     {uniqueEligiblePsids.size > 0 && (
@@ -256,8 +265,8 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
-                                                color: '#38bdf8',
-                                                fontSize: '0.75rem',
+                                                color: '#818cf8',
+                                                fontSize: '11px',
                                                 fontWeight: 600,
                                                 cursor: 'pointer',
                                                 padding: 0
@@ -269,14 +278,14 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                 </div>
 
                                 {eligibleLeads.length === 0 ? (
-                                    <div style={{ padding: '16px 8px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                                    <div style={{ padding: '16px 8px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
                                         No leads have messaged your page in the last 24 hours.<br />
-                                        <span style={{ fontSize: '0.75rem', color: '#475569' }}>
-                                            Meta restricts marketing messages once the 24-hour window expires until the user messages back.
+                                        <span style={{ fontSize: '11px', color: '#52566c' }}>
+                                            Meta restricts outbound messages once the 24-hour window expires until the user messages back.
                                         </span>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         {eligibleLeads.map(l => (
                                             <label
                                                 key={l.id}
@@ -286,8 +295,8 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                                     justifyContent: 'space-between',
                                                     padding: '8px 10px',
                                                     borderRadius: '6px',
-                                                    background: selectedPsids.has(l.psid) ? 'rgba(2, 132, 199, 0.15)' : '#1e293b',
-                                                    border: `1px solid ${selectedPsids.has(l.psid) ? '#0284c7' : '#334155'}`,
+                                                    background: selectedPsids.has(l.psid) ? 'rgba(88, 85, 214, 0.12)' : '#151620',
+                                                    border: `1px solid ${selectedPsids.has(l.psid) ? '#5855d6' : '#242738'}`,
                                                     cursor: 'pointer'
                                                 }}
                                             >
@@ -296,11 +305,11 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                                         type="checkbox"
                                                         checked={selectedPsids.has(l.psid)}
                                                         onChange={() => toggleLead(l.psid)}
-                                                        style={{ accentColor: '#0284c7' }}
+                                                        style={{ accentColor: '#5855d6' }}
                                                     />
                                                     <div>
-                                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{l.name}</div>
-                                                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace' }}>PSID: {l.psid}</div>
+                                                        <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f8fafc' }}>{l.name}</div>
+                                                        <div style={{ fontSize: '11px', color: '#85899d', fontFamily: 'DM Mono, monospace' }}>PSID: {l.psid}</div>
                                                     </div>
                                                 </div>
                                                 <WindowTimerBadge lastMessagedAt={l.lead_last_messaged_at} followUpSentAt={l.follow_up_sent_at} compact />
@@ -310,21 +319,21 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                 )}
 
                                 {expiredLeads.length > 0 && (
-                                    <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #334155' }}>
-                                        <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '6px' }}>
-                                            🔒 {expiredLeads.length} lead(s) locked (24-hour window expired):
+                                    <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #242738' }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
+                                            {expiredLeads.length} lead(s) locked (24-hour window expired):
                                         </div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                             {expiredLeads.map(l => (
                                                 <span
                                                     key={l.id}
                                                     style={{
-                                                        padding: '3px 8px',
-                                                        borderRadius: '6px',
-                                                        background: '#1e293b',
-                                                        fontSize: '0.7rem',
+                                                        padding: '2px 7px',
+                                                        borderRadius: '4px',
+                                                        background: '#151620',
+                                                        fontSize: '10.5px',
                                                         color: '#64748b',
-                                                        border: '1px solid #334155'
+                                                        border: '1px solid #242738'
                                                     }}
                                                     title="Cannot message: 24h window closed"
                                                 >
@@ -337,7 +346,7 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                             </div>
                         ) : (
                             <div>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '11px', color: '#85899d', display: 'block', marginBottom: '6px' }}>
                                     Format: One per line as <code>PSID, Full Name</code>. Lead must have messaged your page previously.
                                 </span>
                                 <textarea
@@ -345,7 +354,7 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                                     value={leadsText}
                                     onChange={(e) => setLeadsText(e.target.value)}
                                     placeholder={"789123456789, John Doe\n987654321012, Sarah Connor"}
-                                    style={{ width: '100%', padding: '10px 14px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: '#fff', outline: 'none', fontFamily: 'monospace', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                    style={{ width: '100%', padding: '9px 12px', background: '#151620', border: '1px solid #242738', borderRadius: '8px', color: '#f1f5f9', outline: 'none', fontFamily: 'DM Mono, monospace', fontSize: '12px', boxSizing: 'border-box' }}
                                 />
                             </div>
                         )}
@@ -353,26 +362,26 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
 
                     {/* Option A: 23-Hour Automated Follow-Up Toggle */}
                     <div style={{
-                        background: '#0f172a',
-                        border: '1px solid #334155',
+                        background: '#0f1017',
+                        border: '1px solid #1f212d',
                         borderRadius: '8px',
-                        padding: '14px 16px',
+                        padding: '12px 14px',
                         display: 'flex',
                         alignItems: 'flex-start',
-                        gap: '12px'
+                        gap: '10px'
                     }}>
                         <input
                             type="checkbox"
                             id="enable-followup-toggle"
                             checked={enable23hFollowUp}
                             onChange={(e) => setEnable23hFollowUp(e.target.checked)}
-                            style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: '#0284c7', cursor: 'pointer' }}
+                            style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#5855d6', cursor: 'pointer' }}
                         />
                         <label htmlFor="enable-followup-toggle" style={{ cursor: 'pointer', flex: 1 }}>
-                            <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span>⏰</span> Automated 23-Hour Window Reminder (WF3)
+                            <div style={{ color: '#f8fafc', fontSize: '12.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                Automated 23-Hour Window Reminder (WF3)
                             </div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: '4px', lineHeight: 1.4 }}>
+                            <div style={{ color: '#85899d', fontSize: '11px', marginTop: '2px', lineHeight: 1.4 }}>
                                 If the lead has not replied, WF3 will automatically generate & send 1 gentle reminder at the 23rd hour — right before Meta's 24-hour limit permanently closes the conversation.
                             </div>
                         </label>
@@ -382,49 +391,125 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                         type="submit"
                         disabled={launching || (recipientMode === 'picker' && selectedPsids.size === 0)}
                         style={{
-                            padding: '12px',
-                            background: launching || (recipientMode === 'picker' && selectedPsids.size === 0) ? '#475569' : 'linear-gradient(135deg, #0284c7, #0369a1)',
+                            height: '40px',
+                            background: launching || (recipientMode === 'picker' && selectedPsids.size === 0) ? '#1f212d' : '#5855d6',
                             color: '#fff',
                             border: 'none',
                             borderRadius: '8px',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             cursor: launching || (recipientMode === 'picker' && selectedPsids.size === 0) ? 'not-allowed' : 'pointer',
-                            fontSize: '0.95rem'
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease'
                         }}
                     >
-                        {launching ? 'Launching via WF1...' : `🚀 Launch Campaign (${recipientMode === 'picker' ? selectedPsids.size : 'Manual'} Leads)`}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        {launching ? 'Launching via WF1...' : `Launch Campaign (${recipientMode === 'picker' ? selectedPsids.size : 'Manual'} Leads)`}
                     </button>
                 </form>
             </div>
 
-            {/* Campaign History List */}
-            <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
-                <h3 style={{ color: '#fff', fontSize: '1.15rem', marginBottom: '16px' }}>📋 Campaign History</h3>
+            {/* Campaign History List Card */}
+            <div style={{ background: '#111218', border: '1px solid #1f212d', borderRadius: '12px', padding: '22px 24px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ color: '#f8fafc', fontSize: '15px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        Campaign History
+                    </h3>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#1c1d27', border: '1px solid #2d3040', color: '#94a3b8', fontFamily: 'DM Mono, monospace' }}>
+                        SHOWING {visibleCampaigns.length} OF {campaigns.length}
+                    </span>
+                </div>
+
                 {campaigns.length === 0 ? (
-                    <div style={{ color: '#64748b', textAlign: 'center', padding: '40px 0' }}>
+                    <div style={{ color: '#64748b', textAlign: 'center', padding: '40px 0', fontSize: '12.5px' }}>
                         No campaigns launched yet.
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {campaigns.map(c => (
-                            <div key={c.id} style={{ background: '#0f172a', padding: '14px 16px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontWeight: 600, color: '#fff' }}>{c.name || 'Messenger Campaign'}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                        ID: {c.id.slice(0, 8)}... | {new Date(c.created_at).toLocaleDateString()}
-                                    </div>
-                                    {c.follow_up_delay_mins && c.follow_up_delay_mins > 0 && (
-                                        <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: '4px' }}>
-                                            ⏰ 23h Follow-up Armed
+                    <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {visibleCampaigns.map(c => (
+                                <div key={c.id} style={{ background: '#151620', padding: '12px 14px', borderRadius: '8px', border: '1px solid #242738', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '13px' }}>{c.name || 'Messenger Campaign'}</div>
+                                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', fontFamily: 'DM Mono, monospace' }}>
+                                            ID: {c.id.slice(0, 8)}… · {new Date(c.created_at).toLocaleDateString()}
                                         </div>
-                                    )}
+                                        {c.follow_up_delay_mins && c.follow_up_delay_mins > 0 && (
+                                            <div style={{ fontSize: '11px', color: '#818cf8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                23h Follow-up Armed
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.04em', background: c.status === 'active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(88, 85, 214, 0.15)', color: c.status === 'active' ? '#34d399' : '#a5b4fc', border: `1px solid ${c.status === 'active' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(88, 85, 214, 0.3)'}` }}>
+                                        {c.status.toUpperCase()}
+                                    </span>
                                 </div>
-                                <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, background: c.status === 'active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)', color: c.status === 'active' ? '#34d399' : '#60a5fa' }}>
-                                    {c.status.toUpperCase()}
-                                </span>
+                            ))}
+                        </div>
+
+                        {/* Pagination Controls: 5 first, +5 each click */}
+                        {campaigns.length > 5 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #1f212d' }}>
+                                {hasMoreCampaigns ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibleCampaignsCount(prev => prev + 5)}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '7px 16px',
+                                            background: '#151620',
+                                            border: '1px solid #242738',
+                                            borderRadius: '8px',
+                                            color: '#f1f5f9',
+                                            fontSize: '12px',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        Show More Campaigns (+5) · {campaigns.length - visibleCampaignsCount} remaining
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibleCampaignsCount(5)}
+                                        style={{
+                                            padding: '6px 14px',
+                                            background: 'transparent',
+                                            border: '1px solid #242738',
+                                            borderRadius: '8px',
+                                            color: '#85899d',
+                                            fontSize: '11.5px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Show Less (Reset to 5)
+                                    </button>
+                                )}
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
