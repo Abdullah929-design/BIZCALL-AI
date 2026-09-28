@@ -10,6 +10,7 @@ import { NeutralQueuePanel } from '../components/NeutralQueuePanel';
 import { FailedLeadsPanel } from '../components/FailedLeadsPanel';
 import { LeadModal } from '../components/LeadModal';
 import { CsvImportModal } from '../components/CsvImportModal';
+import '../ColdEmail.css';
 
 export const ColdEmailDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'hot' | 'all' | 'neutral' | 'failed'>('hot');
@@ -57,15 +58,9 @@ export const ColdEmailDashboard: React.FC = () => {
     };
 
     const handleBatchTriggered = () => {
-        // Immediate refresh
         loadAllData(true);
-        // Staged refreshes after n8n delivers email and writes 'sent' to Google Sheets
-        setTimeout(() => {
-            loadAllData(true);
-        }, 3500);
-        setTimeout(() => {
-            loadAllData(true);
-        }, 7500);
+        setTimeout(() => loadAllData(true), 3500);
+        setTimeout(() => loadAllData(true), 7500);
     };
 
     const handleReplySuccess = (lead?: ColdEmailLead | null) => {
@@ -88,7 +83,6 @@ export const ColdEmailDashboard: React.FC = () => {
         setTimeout(() => loadAllData(), 2500);
     };
 
-
     useEffect(() => {
         loadAllData();
     }, []);
@@ -107,47 +101,61 @@ export const ColdEmailDashboard: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '24px 28px', color: '#edeae2', fontFamily: "'Inter', sans-serif" }}>
+        <div className="cold-email-page">
             {/* Top Banner Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 600, fontFamily: "'Cormorant Garamond', serif" }}>
-                        📧 Cold Email Automation
+            <div className="cold-email-header">
+                <div className="cold-email-title-group">
+                    <h1 className="cold-email-title">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        Cold Email Automation
                     </h1>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'rgba(237,234,226,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        n8n Automation · Brevo Outbound · AI Sentiment Classification
+                    <p className="cold-email-subtitle">
+                        n8n Outbound Pipeline · Brevo Telemetry · AI Sentiment Classification
                     </p>
                 </div>
 
-                {/* Action button */}
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                {/* Actions */}
+                <div className="cold-email-actions">
                     <button
+                        type="button"
                         onClick={() => { setEditingLead(null); setIsLeadModalOpen(true); }}
-                        style={{
-                            padding: '10px 16px', background: '#4ade80', color: '#09090b', border: 'none',
-                            borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem'
-                        }}
+                        className="btn-ce-emerald"
                     >
-                        ➕ Add Lead
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Lead
                     </button>
+
                     <button
+                        type="button"
                         onClick={() => setIsCsvModalOpen(true)}
-                        style={{
-                            padding: '10px 16px', background: '#6366f1', color: '#fff', border: 'none',
-                            borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem'
-                        }}
+                        className="btn-ce-primary"
                     >
-                        📥 Import CSV
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Import CSV
                     </button>
+
                     <button
+                        type="button"
                         onClick={() => loadAllData(true)}
-                        style={{
-                            padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: '0.85rem'
-                        }}
+                        className="btn-ce-ghost"
+                        title="Force sync data from Google Sheets"
                     >
-                        🔄 Refresh Sheets
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"></path>
+                        </svg>
+                        Refresh Sheets
                     </button>
+
                     <SendBatchButton
                         onBatchStarted={handleBatchTriggered}
                         pendingCount={allLeads.filter(l => (l.status || '').toLowerCase() === 'pending').length}
@@ -156,53 +164,69 @@ export const ColdEmailDashboard: React.FC = () => {
             </div>
 
             {/* Sub-tab Navigation */}
-            <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 20 }}>
+            <div className="cold-email-tabs-bar">
                 <button
+                    type="button"
                     onClick={() => setActiveTab('hot')}
-                    style={{
-                        padding: '10px 16px', background: 'none', border: 'none',
-                        borderBottom: activeTab === 'hot' ? '2px solid #4ade80' : '2px solid transparent',
-                        color: activeTab === 'hot' ? '#4ade80' : '#94a3b8', fontWeight: 600, cursor: 'pointer'
-                    }}
+                    className={`tab-nav-btn ${activeTab === 'hot' ? 'active tab-hot' : ''}`}
                 >
-                    🔥 Hot Leads ({hotLeads.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    Hot Leads
+                    <span className="tab-count-pill">{hotLeads.length}</span>
                 </button>
+
                 <button
+                    type="button"
                     onClick={() => setActiveTab('neutral')}
-                    style={{
-                        padding: '10px 16px', background: 'none', border: 'none',
-                        borderBottom: activeTab === 'neutral' ? '2px solid #818cf8' : '2px solid transparent',
-                        color: activeTab === 'neutral' ? '#818cf8' : '#94a3b8', fontWeight: 600, cursor: 'pointer'
-                    }}
+                    className={`tab-nav-btn ${activeTab === 'neutral' ? 'active tab-neutral' : ''}`}
                 >
-                    💬 Neutral Queue ({neutralLeads.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Neutral Queue
+                    <span className="tab-count-pill">{neutralLeads.length}</span>
                 </button>
+
                 <button
+                    type="button"
                     onClick={() => setActiveTab('all')}
-                    style={{
-                        padding: '10px 16px', background: 'none', border: 'none',
-                        borderBottom: activeTab === 'all' ? '2px solid #6366f1' : '2px solid transparent',
-                        color: activeTab === 'all' ? '#6366f1' : '#94a3b8', fontWeight: 600, cursor: 'pointer'
-                    }}
+                    className={`tab-nav-btn ${activeTab === 'all' ? 'active tab-all' : ''}`}
                 >
-                    📋 All Leads ({allLeads.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                    All Leads
+                    <span className="tab-count-pill">{allLeads.length}</span>
                 </button>
+
                 <button
+                    type="button"
                     onClick={() => setActiveTab('failed')}
-                    style={{
-                        padding: '10px 16px', background: 'none', border: 'none',
-                        borderBottom: activeTab === 'failed' ? '2px solid #ef4444' : '2px solid transparent',
-                        color: activeTab === 'failed' ? '#ef4444' : '#94a3b8', fontWeight: 600, cursor: 'pointer'
-                    }}
+                    className={`tab-nav-btn ${activeTab === 'failed' ? 'active tab-failed' : ''}`}
                 >
-                    ⚠️ Failed / Bounced ({failedLeads.length})
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Failed / Bounced
+                    <span className="tab-count-pill">{failedLeads.length}</span>
                 </button>
             </div>
 
-            {/* Content Panels */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}>
+            {/* Content Panels Card */}
+            <div className="cold-email-panel-card">
                 {loading ? (
-                    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading leads from Google Sheet...</div>
+                    <div className="panel-loading-state">
+                        Synchronizing cold email pipeline from Google Sheets...
+                    </div>
                 ) : (
                     <>
                         {activeTab === 'hot' && (

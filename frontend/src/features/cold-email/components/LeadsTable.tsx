@@ -21,114 +21,113 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 }) => {
     if (leads.length === 0) {
         return (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'rgba(237,234,226,0.4)', fontSize: '0.85rem' }}>
+            <div className="panel-empty-state">
                 No leads found in this queue.
             </div>
         );
     }
 
     return (
-        <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+        <div className="ce-table-container">
+            <table className="ce-table">
                 <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(237,234,226,0.5)' }}>
-                        <th style={{ padding: '14px 16px' }}>Name</th>
-                        <th style={{ padding: '14px 16px' }}>Email</th>
-                        <th style={{ padding: '14px 16px' }}>Company</th>
-                        <th style={{ padding: '14px 16px' }}>Status</th>
-                        <th style={{ padding: '14px 16px' }}>Sent At</th>
-                        <th style={{ padding: '14px 16px' }}>Replied At</th>
-                        {leads.some(l => l.reply_content) && <th style={{ padding: '14px 16px' }}>Latest Reply</th>}
-                        {(showReplyButton || showControls) && <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>}
+                    <tr>
+                        <th>NAME</th>
+                        <th>EMAIL</th>
+                        <th>COMPANY</th>
+                        <th>STATUS</th>
+                        <th>SENT AT</th>
+                        <th>REPLIED AT</th>
+                        {leads.some(l => l.reply_content) && <th>LATEST REPLY</th>}
+                        {(showReplyButton || showControls) && <th style={{ textAlign: 'right' }}>ACTIONS</th>}
                     </tr>
                 </thead>
                 <tbody>
-                    {leads.map((lead, idx) => (
-                        <tr
-                            key={idx}
-                            style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.04)',
-                                background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'
-                            }}
-                        >
-                            <td style={{ padding: '12px 16px', fontWeight: 600, color: '#fff' }}>
-                                {lead.name || '—'}
-                            </td>
-                            <td style={{ padding: '12px 16px', color: '#94a3b8' }}>
-                                {lead.email}
-                            </td>
-                            <td style={{ padding: '12px 16px', color: '#cbd5e1' }}>
-                                {lead.company || '—'}
-                            </td>
-                            <td style={{ padding: '12px 16px' }}>
-                                <span style={{
-                                    padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 500,
-                                    background: lead.status?.toLowerCase().includes('hot') ? 'rgba(74,222,128,0.15)' :
-                                        lead.status?.toLowerCase().includes('failed') ? 'rgba(239,68,68,0.15)' :
-                                            lead.status?.toLowerCase().includes('sent') ? 'rgba(99,102,241,0.15)' :
-                                                'rgba(255,255,255,0.05)',
-                                    color: lead.status?.toLowerCase().includes('hot') ? '#4ade80' :
-                                        lead.status?.toLowerCase().includes('failed') ? '#ef4444' :
-                                            lead.status?.toLowerCase().includes('sent') ? '#818cf8' :
-                                                '#cbd5e1'
-                                }}>
-                                    {lead.status || 'Pending'}
-                                </span>
-                            </td>
-                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.75rem' }}>
-                                {lead.sent_at || '—'}
-                            </td>
-                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.75rem' }}>
-                                {lead.replied_at || '—'}
-                            </td>
-                            {leads.some(l => l.reply_content) && (
-                                <td style={{ padding: '12px 16px', color: '#e2e8f0', maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {lead.reply_content || '—'}
+                    {leads.map((lead, idx) => {
+                        const statusLower = (lead.status || '').toLowerCase();
+                        const statusClass = statusLower.includes('hot')
+                            ? 'hot'
+                            : statusLower.includes('failed')
+                            ? 'failed'
+                            : statusLower.includes('sent')
+                            ? 'sent'
+                            : 'pending';
+
+                        return (
+                            <tr key={idx}>
+                                <td style={{ fontWeight: 600, color: '#f8fafc' }}>
+                                    {lead.name || '—'}
                                 </td>
-                            )}
-                            {(showReplyButton || showControls) && (
-                                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                    <div style={{ display: 'inline-flex', gap: 8, justifyContent: 'flex-end' }}>
-                                        {showControls && onEdit && (
-                                            <button
-                                                onClick={() => onEdit(lead)}
-                                                title="Edit Lead"
-                                                style={{
-                                                    padding: '5px 10px', background: 'rgba(255,255,255,0.06)', color: '#cbd5e1',
-                                                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, fontSize: '0.75rem', cursor: 'pointer'
-                                                }}
-                                            >
-                                                ✏️ Edit
-                                            </button>
-                                        )}
-                                        {showControls && onDelete && (
-                                            <button
-                                                onClick={() => onDelete(lead)}
-                                                title="Delete Lead"
-                                                style={{
-                                                    padding: '5px 10px', background: 'rgba(239,68,68,0.12)', color: '#ef4444',
-                                                    border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, fontSize: '0.75rem', cursor: 'pointer'
-                                                }}
-                                            >
-                                                🗑️
-                                            </button>
-                                        )}
-                                        {showReplyButton && onReply && (
-                                            <button
-                                                onClick={() => onReply(lead)}
-                                                style={{
-                                                    padding: '6px 14px', background: '#6366f1', color: '#fff',
-                                                    border: 'none', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                                                }}
-                                            >
-                                                Reply
-                                            </button>
-                                        )}
-                                    </div>
+                                <td>
+                                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '11.5px', color: '#94a3b8' }}>
+                                        {lead.email}
+                                    </span>
                                 </td>
-                            )}
-                        </tr>
-                    ))}
+                                <td style={{ color: '#cbd5e1' }}>
+                                    {lead.company || '—'}
+                                </td>
+                                <td>
+                                    <span className={`ce-status-pill ${statusClass}`}>
+                                        {lead.status || 'Pending'}
+                                    </span>
+                                </td>
+                                <td style={{ color: '#85899d', fontSize: '11px', fontFamily: 'DM Mono, monospace' }}>
+                                    {lead.sent_at || '—'}
+                                </td>
+                                <td style={{ color: '#85899d', fontSize: '11px', fontFamily: 'DM Mono, monospace' }}>
+                                    {lead.replied_at || '—'}
+                                </td>
+                                {leads.some(l => l.reply_content) && (
+                                    <td style={{ color: '#cbd5e1', maxWidth: 240, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {lead.reply_content || '—'}
+                                    </td>
+                                )}
+                                {(showReplyButton || showControls) && (
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end' }}>
+                                            {showControls && onEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEdit(lead)}
+                                                    title="Edit Lead"
+                                                    className="btn-table-edit"
+                                                >
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                    </svg>
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {showControls && onDelete && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onDelete(lead)}
+                                                    title="Delete Lead"
+                                                    className="btn-table-del"
+                                                >
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                            {showReplyButton && onReply && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onReply(lead)}
+                                                    className="btn-ce-primary"
+                                                    style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
+                                                >
+                                                    Reply
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
+                            </tr>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

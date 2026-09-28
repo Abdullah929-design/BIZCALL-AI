@@ -13,24 +13,27 @@ export const SendBatchButton: React.FC<SendBatchButtonProps> = ({ onBatchStarted
     return (
         <>
             <button
+                type="button"
                 onClick={() => setIsModalOpen(true)}
-                style={{
-                    padding: '10px 18px',
-                    background: '#6366f1',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    transition: 'all 0.2s',
-                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)'
-                }}
+                className="btn-ce-primary"
+                title="Launch n8n automated cold email batch"
             >
-                🚀 Launch Campaign
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Launch Campaign
+                {typeof pendingCount === 'number' && pendingCount > 0 && (
+                    <span style={{
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        fontSize: '11px',
+                        fontFamily: 'DM Mono, monospace',
+                        fontWeight: 700
+                    }}>
+                        {pendingCount}
+                    </span>
+                )}
             </button>
 
             <MassCampaignModal

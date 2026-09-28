@@ -10,117 +10,107 @@ interface NeutralQueuePanelProps {
 export const NeutralQueuePanel: React.FC<NeutralQueuePanelProps> = ({ leads, onReply }) => {
     if (leads.length === 0) {
         return (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'rgba(237,234,226,0.4)', fontSize: '0.85rem' }}>
-                No neutral replies in queue. Ambiguous or general inquiries requiring review will appear here.
+            <div className="panel-empty-state">
+                No neutral replies in queue. Ambiguous responses, general inquiries, and requests for details requiring human review will appear here.
             </div>
         );
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 16 }}>
+        <div className="prospect-card-list">
             {leads.map((lead, idx) => {
                 const isReplied = Boolean(lead.replied_at || lead.actioned_at || lead.human_action?.toLowerCase().includes('replied') || lead.status?.toLowerCase() === 'replied');
 
                 return (
-                <div
-                    key={idx}
-                    style={{
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: isReplied ? '1px solid rgba(74, 222, 128, 0.2)' : '1px solid rgba(129, 140, 248, 0.25)',
-                        borderRadius: 12,
-                        padding: 20
-                    }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
-                                    {lead.name || 'Prospect'}
-                                </span>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({lead.email})</span>
-                                {lead.company && (
-                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#cbd5e1' }}>
-                                        🏢 {lead.company}
+                    <div
+                        key={idx}
+                        className={`prospect-card ${isReplied ? 'is-replied' : 'is-pending'}`}
+                    >
+                        <div className="prospect-card-top">
+                            <div className="prospect-info-left">
+                                <div className="prospect-name-row">
+                                    <span className="prospect-name">
+                                        {lead.name || 'Prospect'}
                                     </span>
-                                )}
+                                    <span className="prospect-email">({lead.email})</span>
+                                    {lead.company && (
+                                        <span className="prospect-company-tag">
+                                            {lead.company}
+                                        </span>
+                                    )}
 
-                                {/* Replied / Pending Status Flag */}
-                                {isReplied ? (
-                                    <span style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem',
-                                        fontWeight: 600, color: '#4ade80', background: 'rgba(74, 222, 128, 0.12)',
-                                        border: '1px solid rgba(74, 222, 128, 0.25)', padding: '2px 8px', borderRadius: 6
-                                    }}>
-                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }}></span>
-                                        Replied
-                                    </span>
-                                ) : (
-                                    <span style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem',
-                                        fontWeight: 600, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)',
-                                        border: '1px solid rgba(245, 158, 11, 0.25)', padding: '2px 8px', borderRadius: 6
-                                    }}>
-                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span>
-                                        Pending
-                                    </span>
+                                    {/* Replied / Pending Status Flag */}
+                                    {isReplied ? (
+                                        <span className="status-badge-replied">
+                                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399' }} />
+                                            Replied
+                                        </span>
+                                    ) : (
+                                        <span className="status-badge-pending">
+                                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
+                                            Needs Review
+                                        </span>
+                                    )}
+                                </div>
+
+                                {lead.reply_summary && (
+                                    <div className="prospect-summary-box neutral">
+                                        {lead.reply_summary}
+                                    </div>
                                 )}
                             </div>
-                            {lead.reply_summary && (
-                                <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: '#818cf8' }}>
-                                    💬 {lead.reply_summary}
-                                </p>
-                            )}
-                        </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {isReplied ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                                        {lead.actioned_at || lead.replied_at ? `Sent ${lead.actioned_at || lead.replied_at}` : 'Reply sent'}
-                                    </span>
+                            <div className="prospect-actions-right">
+                                {isReplied ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: '11px', color: '#85899d' }}>
+                                            {lead.actioned_at || lead.replied_at ? `Sent ${lead.actioned_at || lead.replied_at}` : 'Reply sent'}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => onReply(lead)}
+                                            className="btn-prospect-again"
+                                        >
+                                            Reply Again
+                                        </button>
+                                    </div>
+                                ) : (
                                     <button
+                                        type="button"
                                         onClick={() => onReply(lead)}
-                                        style={{
-                                            padding: '6px 12px', background: 'rgba(255,255,255,0.06)', color: '#edeae2',
-                                            border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, fontSize: '0.75rem', cursor: 'pointer'
-                                        }}
+                                        className="btn-prospect-reply"
+                                        style={{ background: '#5855d6' }}
                                     >
-                                        Reply Again
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                            <polyline points="22,6 12,13 2,6"></polyline>
+                                        </svg>
+                                        Review & Reply
                                     </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => onReply(lead)}
-                                    style={{
-                                        padding: '8px 18px', background: '#6366f1', color: '#fff',
-                                        border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer'
-                                    }}
-                                >
-                                    ✉️ Review & Reply
-                                </button>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Incoming reply snippet or AI draft preview if available */}
-                    {(lead.reply_content || lead.draft_reply) && (
-                        <div style={{
-                            marginTop: 12, background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255,255,255,0.05)',
-                            borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: '#cbd5e1'
-                        }}>
-                            {lead.reply_content && (
-                                <p style={{ margin: '0 0 6px', fontStyle: 'italic' }}>
-                                    <strong>Incoming:</strong> "{lead.reply_content}"
+                        {/* AI Draft preview box */}
+                        {lead.draft_reply && (
+                            <div style={{
+                                marginTop: 12,
+                                background: '#111218',
+                                border: '1px solid #1f212d',
+                                borderRadius: 8,
+                                padding: '10px 14px',
+                                fontSize: '12px',
+                                color: '#cbd5e1'
+                            }}>
+                                <div style={{ fontSize: '10px', color: '#85899d', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontFamily: 'DM Mono, monospace' }}>
+                                    AI SUGGESTED DRAFT
+                                </div>
+                                <p style={{ margin: 0, whiteSpace: 'pre-wrap', fontStyle: 'italic', fontFamily: 'DM Mono, monospace', fontSize: '11.5px' }}>
+                                    "{lead.draft_reply}"
                                 </p>
-                            )}
-                            {lead.draft_reply && (
-                                <p style={{ margin: 0, color: '#818cf8' }}>
-                                    <strong>AI Draft:</strong> "{lead.draft_reply}"
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        )}
+                    </div>
                 );
             })}
         </div>
