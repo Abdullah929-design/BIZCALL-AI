@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import './LandingPage.css';
 import brainLogo from '../assets/brain-logo.svg';
 
-// Minimalist arrow icon matching the reference style
+// Minimalist arrow icon
 const ArrowUpRight = () => (
     <svg className="landing-arrow-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="7" y1="17" x2="17" y2="7" />
@@ -10,19 +10,27 @@ const ArrowUpRight = () => (
     </svg>
 );
 
+const FEATURES = [
+    'Voice calling automation',
+    'Lead scraping',
+    'Email outbound and inbox manager',
+    'Social media automation',
+    'Customized LLM services',
+];
+
+const LLM_DETAILS = [
+    { label: 'Trained on', value: 'Your offers' },
+    { label: 'Tone', value: 'Your brand voice' },
+    { label: 'Used in', value: 'Calls, email, posts' },
+    { label: 'Setup', value: 'Custom-built' },
+];
+
 const LandingPage = ({ onLoginClick }) => {
     const videoRef = useRef(null);
 
-    const handleVideoEnded = () => {
-        if (videoRef.current) {
-            // Keep video paused on the last frame as the static background
-            videoRef.current.pause();
-        }
-    };
-
     return (
         <div className="landing-container">
-            {/* Full-Screen Edge-to-Edge Background Video (Loop Enabled) */}
+            {/* Full-screen background video */}
             <video
                 ref={videoRef}
                 className="landing-bg-video"
@@ -43,49 +51,68 @@ const LandingPage = ({ onLoginClick }) => {
                 />
             </video>
 
-            {/* Subtle atmospheric vignette */}
             <div className="landing-overlay" />
 
-            {/* Top Navbar Sitting Directly on Top of the Video */}
+            {/* Navbar */}
             <header className="landing-navbar">
-                {/* Left section of navbar */}
                 <div className="landing-nav-left">
                     <img src={brainLogo} alt="BizCall AI Logo" className="landing-brand-logo" />
                     <span className="landing-brand-text">BIZCALL AI</span>
                 </div>
-
-                {/* Right section with Login button sitting directly on the video */}
                 <div className="landing-nav-right">
-                    <button
-                        type="button"
-                        className="landing-login-btn"
-                        onClick={onLoginClick}
-                    >
+                    <button type="button" className="landing-login-btn" onClick={onLoginClick}>
                         <span>LOG IN</span>
                         <ArrowUpRight />
                     </button>
                 </div>
             </header>
 
-            {/* Middle-Left Animated Headline */}
-            <div className="landing-hero-headline">
-                <h1>Voice Calling Automation <br></br> Platform</h1>
-            </div>
-            {/* Middle-Right Animated Headline */}
-            <div className="landing-hero-headline-right">
-                <h1>Social Media Marketing <br></br> Automation</h1>
-            </div>
-            {/* Bottom-Left Feature Note */}
-            <div className="landing-bottom-left">
-                <span>With customized LLM services</span>
-            </div>
-            {/* Bottom-Right Feature Note */}
-            <div className="landing-bottom-right">
-                <span>Customized Automated lead scraping</span>
-            </div>
+            {/* Left block: eyebrow, headline, intro, feature list */}
+            <section className="landing-left">
+                <p className="landing-eyebrow">AI automation platform</p>
+                <h1 className="landing-headline">
+                    Automate every call, lead and campaign.
+                </h1>
+                <p className="landing-intro">
+                    Voice calling, lead scraping, email outreach and social media, run from
+                    one platform with LLMs customized for your business.
+                </p>
+
+                <div className="landing-features">
+                    <p className="landing-features-title">Features</p>
+                    <ol className="landing-features-list">
+                        {FEATURES.map((item, i) => (
+                            <li key={item}>
+                                <span className="landing-features-num">{String(i + 1).padStart(2, '0')}</span>
+                                <span>{item}</span>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            </section>
+
+            {/* Right block: rule, label row, subheading, detail grid */}
+            <aside className="landing-right">
+                <div className="landing-right-label">
+                    <span>Bizcall AI</span>
+                    <span>Custom LLM</span>
+                </div>
+                <h2 className="landing-right-heading">Language models built for your business.</h2>
+                <p className="landing-right-body">
+                    We tune models to your offers, scripts and brand voice so every call,
+                    email and post sounds like you.
+                </p>
+                <dl className="landing-grid">
+                    {LLM_DETAILS.map(({ label, value }) => (
+                        <div className="landing-grid-cell" key={label}>
+                            <dt>{label}</dt>
+                            <dd>{value}</dd>
+                        </div>
+                    ))}
+                </dl>
+            </aside>
         </div>
     );
 };
-
 
 export default LandingPage;
