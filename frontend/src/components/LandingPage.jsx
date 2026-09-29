@@ -18,6 +18,23 @@ const FEATURES = [
     'Customized LLM services',
 ];
 
+// "mark" is a placeholder monogram; swap for real logo SVGs when you have them
+const TECH = [
+    { label: 'Calling', name: 'Twilio', mark: 'Tw' },
+    { label: 'AI models', name: 'NVIDIA', mark: 'Nv' },
+    { label: 'Models', name: 'Hugging Face', mark: 'Hf' },
+    { label: 'Voice agents', name: 'Retell AI', mark: 'Re' },
+    { label: 'Local LLMs', name: 'Ollama', mark: 'Ol' },
+    { label: 'Language models', name: 'Gemma', mark: 'Ge' },
+    { label: 'Email', name: 'Gmail API', mark: 'Gm' },
+    { label: 'Social media', name: 'Meta API', mark: 'Me' },
+    { label: 'Email campaigns', name: 'Brevo', mark: 'Br' },
+    { label: 'Database', name: 'Supabase', mark: 'Su' },
+    { label: 'Fast inference', name: 'GroqCloud', mark: 'Gq' },
+    { label: 'Datasets', name: 'Kaggle', mark: 'Ka' },
+    { label: 'Cloud', name: 'Oracle', mark: 'Or' },
+];
+
 const LLM_DETAILS = [
     { label: 'Trained on', value: 'Your offers' },
     { label: 'Tone', value: 'Your brand voice' },
@@ -53,6 +70,23 @@ const LandingPage = ({ onLoginClick }) => {
 
             <div className="landing-overlay" />
 
+            {/* Narrow "powered by" ticker, scrolls left to right */}
+            <div className="landing-ticker" role="region" aria-label="Technologies powering Bizcall AI">
+                <div className="landing-ticker-track">
+                    {[...TECH, ...TECH].map((tech, i) => (
+                        <span
+                            className="landing-ticker-item"
+                            key={`${tech.name}-${i}`}
+                            aria-hidden={i >= TECH.length ? 'true' : undefined}
+                        >
+                            <span className="landing-ticker-label">{tech.label} powered by</span>
+                            <span className="landing-ticker-name">{tech.name}</span>
+                            <span className="landing-ticker-mark" aria-hidden="true">{tech.mark}</span>
+                        </span>
+                    ))}
+                </div>
+            </div>
+
             {/* Navbar */}
             <header className="landing-navbar">
                 <div className="landing-nav-left">
@@ -69,7 +103,7 @@ const LandingPage = ({ onLoginClick }) => {
 
             {/* Left block: eyebrow, headline, intro, feature list */}
             <section className="landing-left">
-                <p className="landing-eyebrow">AI automation platform</p>
+
                 <h1 className="landing-headline">
                     Automate every call, lead and campaign.
                 </h1>

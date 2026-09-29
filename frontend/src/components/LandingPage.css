@@ -48,18 +48,95 @@
 }
 
 /* ==========================================================================
+   Powered-by ticker (narrow, sits over the top edge of the video)
+   ========================================================================== */
+
+.landing-ticker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 12;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
+
+.landing-ticker-track {
+  display: flex;
+  width: max-content;
+  /* Moves left to right: the track starts shifted back by one full set and slides forward */
+  animation: landingTickerRight 55s linear infinite;
+  will-change: transform;
+}
+
+.landing-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 30px;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.landing-ticker-label {
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.landing-ticker-name {
+  color: #f1f5f9;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* Placeholder symbol: swap for real logos when available */
+.landing-ticker-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(147, 197, 253, 0.6);
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #bfdbfe;
+}
+
+@keyframes landingTickerRight {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
    Navbar
    ========================================================================== */
 
 .landing-navbar {
   position: absolute;
-  top: 0;
+  top: 30px;
   left: 0;
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 36px 54px;
+  padding: 28px 54px;
   box-sizing: border-box;
   z-index: 10;
 }
@@ -331,6 +408,10 @@
   .landing-right {
     animation: none;
   }
+
+  .landing-ticker-track {
+    animation: none;
+  }
 }
 
 /* ==========================================================================
@@ -349,7 +430,7 @@
 
 @media (max-width: 768px) {
   .landing-navbar {
-    padding: 24px;
+    padding: 20px 24px;
   }
 
   .landing-login-btn {
