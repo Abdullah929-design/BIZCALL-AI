@@ -9,7 +9,6 @@
 **BizCall AI** is a multi-tenant enterprise voice and outreach automation platform. It blends sub-second conversational Voice AI (Retell AI & WebRTC), proprietary Small Language Models (fine-tuned Gemma-2B & DistilBERT with FAISS RAG), B2B Google Maps lead scraping, multi-channel Messenger CRM (Groq LLaMA-3), and automated Cold Email pipelines (Oracle Cloud n8n, Brevo, and Gemini sentiment analysis).
 
 Designed with a **Google Stitch Dark Minimalist UI** (`#090a0f` void aesthetic, `Space Grotesk`, `Plus Jakarta Sans`, and `DM Mono` typography).
-
 ---
 
 ## Architecture & System Overview
@@ -43,6 +42,10 @@ Designed with a **Google Stitch Dark Minimalist UI** (`#090a0f` void aesthetic, 
 ## Core Features & Workspaces
 
 ### 1. Cinematic Fullscreen Landing Page
+
+<img width="2560" height="1600" alt="landing" src="https://github.com/user-attachments/assets/6617e2d8-d8f4-4cd9-833f-fde9930fb521" />
+
+
 * **Edge-to-Edge Ambient Video**: Features an interactive, looping crystal monolith background video (`100vw × 100vh`) with atmospheric dark gradients and zero player chrome.
 * **Top Navigation Bar**: White vector brain emblem logo, `Space Grotesk` branding, and a sleek `LOG IN ↗` button sitting directly on the video.
 * **Animated Typography**:
@@ -57,6 +60,9 @@ Designed with a **Google Stitch Dark Minimalist UI** (`#090a0f` void aesthetic, 
 * **Onboarding Wizard**: Unonboarded tenants are routed through a configuration workflow (`OnboardingSplash.jsx`) to establish company profile, industry, and default agent parameters.
 
 ### 3. Inbound / Outbound Agent Builder
+
+<img width="2560" height="1600" alt="retel" src="https://github.com/user-attachments/assets/3f98ae6d-c814-4353-9f0e-92016468a160" />
+
 * **Custom AI Voice Persona**: Configure agent names, language models, system prompts, conversational temperature, voice speed, and interruption sensitivity.
 * **Live In-Browser Simulation**: Test voice responses with real-time feedback before deploying to production phone lines.
 * **Multi-Channel Fallbacks**: Automatically configure fallback actions for voicemail detection, call transfers, and post-call webhook dispatch.
@@ -68,12 +74,20 @@ Designed with a **Google Stitch Dark Minimalist UI** (`#090a0f` void aesthetic, 
 * **Progressive Call Logs**: Display recent call history (initial 5 records + progressive "+5 show more" pagination) with duration, sentiment, and recording playback.
 
 ### 5. Lead Finder & Business Scraper
+
+<img width="2560" height="1600" alt="scrapper" src="https://github.com/user-attachments/assets/ccd463d4-7cbc-4dbd-854d-ec272ad35b1e" />
+
+
 * **B2B Discovery**: Search local business leads across any industry and city (Google Maps & Apollo API).
 * **Contact Enrichment**: Extracts company name, phone numbers, addresses, ratings, and websites.
 * **CSV Export & Campaign Sync**: One-click CSV export and direct push to Cold Email and Messenger CRM queues.
 * **Progressive Lead Table**: Streamlined grid with initial 10 leads + progressive "+10 show more" pagination.
 
 ### 6. Cold Email Automation Pipeline
+
+<img width="2560" height="1600" alt="email" src="https://github.com/user-attachments/assets/c784ce94-88b9-4765-bf3c-a14872acf52b" />
+
+
 * **3-Tier n8n Architecture (Oracle Cloud VM)**:
   * *Workflow 1*: Cold Email Batch Sending (`POST /webhook/send-batch`) via Brevo.
   * *Workflow 2*: Gmail Reply Polling & AI Sentiment Analysis (Google Gemini categorizes replies into `Hot Leads`, `Neutral Queue`, and `Failed Leads`).
@@ -82,11 +96,19 @@ Designed with a **Google Stitch Dark Minimalist UI** (`#090a0f` void aesthetic, 
 * **Rate Limiting & Debounce**: Server-enforced cooldowns prevent duplicate batch dispatches.
 
 ### 7. Messenger CRM & Inbound Router
+
+<img width="2560" height="1600" alt="messenger" src="https://github.com/user-attachments/assets/ffe2e284-18b6-4b89-aec7-80ed1508ef65" />
+
+
 * **Meta Webhook Routing**: Inbound Facebook Messenger messages parsed and routed through Groq LLaMA-3.
 * **24-Hour Policy Compliance**: Integrated window timer countdown badges ensure responses comply with Meta messaging policies.
 * **Campaign History & Escalation Queue**: Tracks marketing campaigns with progressive "+5 show more" pagination, flags hot leads, and notifies human agents for complex escalations.
 
 ### 8. Models on Demand (Proprietary SLM Engine)
+
+<img width="2560" height="1600" alt="finetuned" src="https://github.com/user-attachments/assets/4aa7d0d6-398e-4a7f-a282-5d7301794e86" />
+
+
 * **Domain-Specialized Small Language Models (2 Billion Parameters)**:
   1. **BizCall Banking SLM**: DistilBERT multi-intent decomposition + FAISS semantic vector RAG + fine-tuned Gemma-2B LoRA running on Nvidia A100 / CPU fallback.
   2. **BizCall Sales & Pitch Agent**: Quantized Gemma-2B Q4_K_M GGUF engine tuned for cold outreach, objection preemption, and high-converting B2B copy.
