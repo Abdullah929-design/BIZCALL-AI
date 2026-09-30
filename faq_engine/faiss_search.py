@@ -8,7 +8,10 @@ from sentence_transformers import SentenceTransformer
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-SIMILARITY_THRESHOLD = 0.65
+# Calibrated for sentence-transformers/all-MiniLM-L6-v2:
+# 0.55 captures valid semantic paraphrases (e.g. unauthorized charge disputes ~0.62)
+# while safely filtering out irrelevant/out-of-domain queries (<0.35)
+SIMILARITY_THRESHOLD = 0.55
 
 model = SentenceTransformer(MODEL_NAME)
 
