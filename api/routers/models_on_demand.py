@@ -22,12 +22,19 @@ GROQ_CLOUD_LAYER_API_KEY = os.getenv("GROQ_CLOUD_LAYER_API_KEY")
 GROQ_CLOUD_LAYER_MODEL = os.getenv("GROQ_CLOUD_LAYER_MODEL", "openai/gpt-oss-20b")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-def refine_with_groq_cloud(query: str, raw_response: str, domain_context: str = "banking") -> tuple[str, bool]:
+def refine_with_groq_cloud(
+    query: str, 
+    raw_response: str, 
+    domain_context: str = "banking",
+    rag_context: str = ""
+) -> tuple[str, bool]:
     """
     Enhances raw local/HF domain SLM output via Groq Cloud Layer (openai/gpt-oss-20b).
     Strictly non-dependent: If Groq experiences network failure, token limit, 
     or latency timeouts, it safely falls back to the exact raw_response with zero disruption.
     Optimized for minimum Groq token consumption.
+    When rag_context is provided, Groq acts as a strict zero-hallucination grounder,
+    harmonizing the SLM draft with the verified banking policy.
     """
     if not raw_response or len(raw_response.strip()) < 15:
         return raw_response, False
@@ -44,13 +51,32 @@ def refine_with_groq_cloud(query: str, raw_response: str, domain_context: str = 
             "and eliminate repetitive sentences. Keep the response complete, punchy, and under 280 words. "
             "Never leave the response truncated mid-sentence. Output only the refined text directly."
         )
+        user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
     else:
-        system_instruction = (
-            "You are a banking AI refinement layer. Polish the response for accuracy, professional tone, "
-            "and clear step-by-step guidance. Keep the response concise and complete (under 250 words, "
-            "4-5 key steps max, no oversized tables). Never leave the response truncated mid-sentence. "
-            "Output only the refined text directly."
-        )
+        if rag_context and len(rag_context.strip()) > 10:
+            system_instruction = (
+                "You are an authoritative banking AI synthesis and verification layer. "
+                "You are provided with a customer inquiry, an authoritative Verified Banking Policy (Ground Truth from RAG), "
+                "and an initial SLM domain model draft. "
+                "Harmonize both into a single, cohesive, highly professional response. "
+                "CRITICAL CONSTRAINT (ZERO HALLUCINATION): Strictly adhere to the Verified Banking Policy for all factual steps, "
+                "rules, timelines, and security instructions. Eliminate any ungrounded claims in the SLM draft. "
+                "Maintain clear actionable steps, an empathetic tone, and keep the answer concise (under 250 words). "
+                "Output only the refined response directly without meta-commentary."
+            )
+            user_content = (
+                f"Customer Inquiry: {query.strip()}\n\n"
+                f"Verified Bank Policy (RAG Ground Truth):\n{rag_context.strip()}\n\n"
+                f"Domain SLM Draft Response:\n{raw_response.strip()}"
+            )
+        else:
+            system_instruction = (
+                "You are a banking AI refinement layer. Polish the response for accuracy, professional tone, "
+                "and clear step-by-step guidance. Keep the response concise and complete (under 250 words, "
+                "4-5 key steps max, no oversized tables). Never leave the response truncated mid-sentence. "
+                "Output only the refined text directly."
+            )
+            user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -61,7 +87,7 @@ def refine_with_groq_cloud(query: str, raw_response: str, domain_context: str = 
         "model": model_name,
         "messages": [
             {"role": "system", "content": system_instruction},
-            {"role": "user", "content": f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"}
+            {"role": "user", "content": user_content}
         ],
         "max_tokens": 950,
         "temperature": 0.2
@@ -537,22 +563,33 @@ async def run_model_inference(req: ModelInferenceRequest):
             model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
 
     # Step 4: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
-    # Polishes factual guidance, grammar, and security instructions with zero hard dependency
-    refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="banking")
+    # Channel both RAG ground-truth policy + SLM draft to Groq for zero-hallucination factual synthesis
+    rag_ctx = faq_match["answer"] if (faq_match and faq_match.get("answer")) else ""
+    refined_output, was_refined = refine_with_groq_cloud(
+        query, 
+        model_output, 
+        domain_context="banking",
+        rag_context=rag_ctx
+    )
     if was_refined:
         model_output = refined_output
 
     latency_ms = int((time.time() - start_time) * 1000)
+
+    hardware_label = "Nvidia A100 ZeroGPU"
+    if was_refined:
+        hardware_label = "Nvidia A100 ZeroGPU + Groq Cloud Layer (RAG-Fused)" if rag_ctx else "Nvidia A100 ZeroGPU + Groq Cloud Layer"
 
     return {
         "success": True,
         "query": query,
         "model_id": req.model_id,
         "model_name": "BizCall Banking & Financial SLM (Gemma-2B LoRA)",
-        "hardware": "Nvidia A100 ZeroGPU + Groq Cloud Layer" if was_refined else "Nvidia A100 ZeroGPU",
+        "hardware": hardware_label,
         "pipeline_type": "banking_services",
         "cloud_layer_active": was_refined,
         "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
+        "rag_fused": bool(was_refined and rag_ctx),
         "intents": intent_results,
         "complexity": complexity,
         "faq_rag": faq_match,

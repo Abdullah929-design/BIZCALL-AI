@@ -436,6 +436,11 @@
   border-left-color: #f59e0b;
 }
 
+.pipeline-flow-banner.rag-fused {
+  border-left-color: #38bdf8;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, #151620 100%);
+}
+
 .pipeline-mode-badge {
   font-size: 10px;
   font-family: 'DM Mono', monospace;

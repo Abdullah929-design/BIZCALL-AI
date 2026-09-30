@@ -373,20 +373,22 @@ const ModelsOnDemand = () => {
                     </div>
 
                     {/* Pipeline Route Indicator */}
-                    <div className={`pipeline-flow-banner ${result.model_id === 'sales-gemma-2b' ? 'sales' : ''}`}>
+                    <div className={`pipeline-flow-banner ${result.model_id === 'sales-gemma-2b' ? 'sales' : (result.rag_fused ? 'rag-fused' : '')}`}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <RefreshIcon />
                             <span style={{ color: '#85899d' }}>Pipeline Flow:</span>
-                            <strong style={{ color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : (result.complexity === 'complex' ? '#fb923c' : '#34d399') }}>
+                            <strong style={{ color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : (result.rag_fused ? '#38bdf8' : (result.complexity === 'complex' ? '#fb923c' : '#34d399')) }}>
                                 {result.model_id === 'sales-gemma-2b'
                                     ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Gemma-2B Q4_K_M Engine)'
-                                    : (result.complexity === 'complex' 
-                                        ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context' 
-                                        : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match')}
+                                    : (result.rag_fused
+                                        ? 'Dual-Stream Knowledge Fusion ➔ SLM Domain Reasoning + RAG Ground Truth Fused via Groq Layer'
+                                        : (result.complexity === 'complex' 
+                                            ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context' 
+                                            : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match'))}
                             </strong>
                         </div>
-                        <span className="pipeline-mode-badge">
-                            MODE: {result.model_id === 'sales-gemma-2b' ? 'SALES / PITCH' : `COMPLEXITY: ${result.complexity?.toUpperCase()}`}
+                        <span className="pipeline-mode-badge" style={result.rag_fused ? { color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' } : {}}>
+                            MODE: {result.model_id === 'sales-gemma-2b' ? 'SALES / PITCH' : (result.rag_fused ? 'ZERO-HALLUCINATION FUSION' : `COMPLEXITY: ${result.complexity?.toUpperCase()}`)}
                         </span>
                     </div>
 
