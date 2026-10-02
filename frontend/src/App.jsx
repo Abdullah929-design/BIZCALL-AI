@@ -299,7 +299,7 @@ function App() {
           </div>
         </div>
 
-        <div className="app-content">
+        <div className={`app-content ${activeTab === 'builder' ? 'builder-tab-active' : ''}`}>
           {activeTab === 'lead-finder' && (
             <LeadFinder user={user} onInitiateOutboundCall={handleInitiateOutboundCall} />
           )}

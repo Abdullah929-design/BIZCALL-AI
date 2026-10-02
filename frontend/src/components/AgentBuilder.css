@@ -1,15 +1,48 @@
 /* ==========================================================================
-   Agent Builder — Google Stitch Minimalist Clean Design System
+   Agent Builder — Google Stitch Glassmorphism & Video Background System
    ========================================================================== */
 
+.agent-builder-page-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  padding: 24px 28px 48px 28px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.builder-bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: brightness(0.88) contrast(1.15) saturate(1.2);
+}
+
+.builder-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 50% 15%, rgba(12, 16, 32, 0.22) 0%, rgba(6, 8, 16, 0.58) 85%),
+    linear-gradient(180deg, rgba(8, 10, 20, 0.25) 0%, rgba(5, 6, 12, 0.65) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
 .stitch-builder-container {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr);
   gap: 24px;
   max-width: 1380px;
   width: 100%;
   margin: 0 auto;
-  padding: 8px 12px 32px 12px;
   box-sizing: border-box;
 }
 
@@ -19,16 +52,41 @@
   }
 }
 
-/* Card Shell */
+/* Card Shell — Glassmorphic See-Through Design */
 .stitch-card {
-  background: #111218;
-  border: 1px solid #1f212d;
-  border-radius: 12px;
+  position: relative;
+  background: rgba(12, 16, 32, 0.35) !important;
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
   padding: 26px 28px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 
+    0 20px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 35px rgba(99, 102, 241, 0.15);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+
+.stitch-corner-crystal {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.55));
+}
+
+.stitch-corner-crystal.top-left {
+  top: 10px;
+  left: 10px;
+}
+
+.stitch-corner-crystal.top-right {
+  top: 10px;
+  right: 10px;
 }
 
 .stitch-title {
@@ -64,8 +122,9 @@
   padding: 16px 18px;
   border-radius: 10px;
   cursor: pointer;
-  border: 1px solid #232636;
-  background: #151620;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 22, 35, 0.65);
+  backdrop-filter: blur(10px);
   text-align: left;
   display: flex;
   align-items: flex-start;
@@ -75,14 +134,14 @@
 }
 
 .stitch-route-card:hover {
-  border-color: #2e3247;
-  background: #181926;
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(24, 28, 44, 0.75);
 }
 
 .stitch-route-card.active {
   background: #5855d6;
-  border-color: #6e6bf4;
-  box-shadow: 0 4px 16px rgba(88, 85, 214, 0.4);
+  border-color: #7b78f8;
+  box-shadow: 0 4px 22px rgba(88, 85, 214, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .stitch-route-icon {
@@ -182,8 +241,9 @@
 .stitch-input,
 .stitch-textarea,
 .stitch-select {
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(13, 16, 27, 0.7) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px;
   padding: 11px 14px;
   color: #f1f5f9;
@@ -191,15 +251,31 @@
   font-family: inherit;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .stitch-input:focus,
-.stitch-textarea:focus,
 .stitch-select:focus {
   outline: none;
-  border-color: #5855d6;
-  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.25);
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.35), inset 0 0 6px rgba(99, 102, 241, 0.12) !important;
+}
+
+.stitch-textarea {
+  background: rgba(13, 16, 27, 0.72) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.22), inset 0 0 10px rgba(99, 102, 241, 0.06);
+  resize: vertical;
+  min-height: 94px;
+  line-height: 1.5;
+}
+
+.stitch-textarea:focus {
+  outline: none;
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 22px rgba(99, 102, 241, 0.45), inset 0 0 8px rgba(99, 102, 241, 0.15) !important;
 }
 
 .stitch-input::placeholder,
@@ -207,11 +283,6 @@
   color: #475569;
 }
 
-.stitch-textarea {
-  resize: vertical;
-  min-height: 94px;
-  line-height: 1.5;
-}
 
 .stitch-select {
   appearance: none;
@@ -306,15 +377,43 @@
 }
 
 .stitch-agent-card {
-  background: #151620;
-  border: 1px solid #242738;
+  position: relative;
+  background: rgba(17, 21, 36, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3.5px solid #38bdf8;
+  box-shadow: -3px 0 14px rgba(56, 189, 248, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   padding: 16px;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+}
+
+.stitch-agent-card.inbound {
+  border-left-color: #38bdf8;
+  box-shadow: -3px 0 14px rgba(56, 189, 248, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.stitch-agent-card.outbound {
+  border-left-color: #34d399;
+  box-shadow: -3px 0 14px rgba(52, 211, 153, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .stitch-agent-card:hover {
-  border-color: #2f334a;
+  border-color: rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
+  box-shadow: -4px 0 20px rgba(56, 189, 248, 0.5), 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.stitch-agent-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stitch-agent-sparkline {
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
+  pointer-events: none;
 }
 
 .stitch-agent-top {
@@ -432,9 +531,11 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  margin-top: 14px;
+  margin: 0;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
+
 
 .stitch-test-btn:hover {
   background: #252838;
@@ -504,6 +605,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 14px;
+  align-items: stretch;
 }
 
 .stitch-edit-context-btn {
@@ -520,8 +622,11 @@
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
+  margin: 0;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
+
 
 .stitch-edit-context-btn:hover {
   background: rgba(99, 102, 241, 0.22);

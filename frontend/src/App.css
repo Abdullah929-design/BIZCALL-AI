@@ -343,6 +343,13 @@ body {
   background: var(--bg-void);
 }
 
+.app-content.builder-tab-active {
+  background: transparent;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+
 /* Mobile Toggle */
 .sidebar-toggle {
   display: none;

@@ -21,6 +21,31 @@ const looksLikeMissingAgentsTable = (error) => {
   );
 };
 
+const CrystalShard = ({ position = 'top-left' }) => (
+  <div className={`stitch-corner-crystal ${position}`} aria-hidden="true">
+    <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
+      <path d="M4 4 L 42 12 L 28 38 L 8 42 Z" fill="url(#crystGrad1)" opacity="0.45" />
+      <path d="M4 4 L 28 18 L 12 36 Z" fill="url(#crystGrad2)" opacity="0.65" />
+      <path d="M28 18 L 42 12 L 32 34 Z" fill="url(#crystGrad3)" opacity="0.8" />
+      <path d="M4 4 L 42 12 L 32 34 L 12 36 Z" stroke="rgba(186, 230, 253, 0.9)" strokeWidth="1.2" />
+      <defs>
+        <linearGradient id="crystGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#1e1b4b" />
+        </linearGradient>
+        <linearGradient id="crystGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#bae6fd" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+        <linearGradient id="crystGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+);
+
 const AgentBuilder = ({ user }) => {
   const [callType, setCallType] = useState('inbound'); // inbound vs outbound
   const [agentName, setAgentName] = useState('Customer Support Desk');
@@ -34,7 +59,14 @@ const AgentBuilder = ({ user }) => {
   const [activeCallAgentId, setActiveCallAgentId] = useState(null);
   const [activeCallStatus, setActiveCallStatus] = useState('');
   const retellClientRef = useRef(null);
+  const bgVideoRef = useRef(null);
   const [myAgents, setMyAgents] = useState([]);
+
+  useEffect(() => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.play().catch(() => {});
+    }
+  }, []);
 
   const currentUserId = user?.id || user?.email || 'demo_user';
 
@@ -290,11 +322,36 @@ const AgentBuilder = ({ user }) => {
   };
 
   return (
-    <div className="stitch-builder-container">
-      {/* Left Column: Agent Builder */}
-      <div className="stitch-card">
-        <h2 className="stitch-title">Agent Builder</h2>
-        <p className="stitch-subtitle">Set up and deploy your voice agent</p>
+    <div className="agent-builder-page-wrapper">
+      {/* Background Video identical to Landing Page */}
+      <video
+        ref={bgVideoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        className="builder-bg-video"
+        src="https://res.cloudinary.com/dv7fu8gwf/video/upload/Crystal_levitating_up_and_down_20260928230831_dyw0df.mp4"
+      >
+        <iframe
+          src="https://player.cloudinary.com/embed/?cloud_name=dv7fu8gwf&public_id=Crystal_levitating_up_and_down_20260928230831_dyw0df"
+          className="builder-bg-video"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowFullScreen
+          frameBorder="0"
+          title="Background Video"
+        />
+      </video>
+      <div className="builder-bg-overlay" />
+
+      <div className="stitch-builder-container">
+        {/* Left Column: Agent Builder */}
+        <div className="stitch-card builder-left-card">
+          <CrystalShard position="top-left" />
+          <CrystalShard position="top-right" />
+          <h2 className="stitch-title">Agent Builder</h2>
+          <p className="stitch-subtitle">Set up and deploy your voice agent</p>
 
         {/* Route Selector Cards */}
         <div className="stitch-route-grid">
@@ -435,22 +492,34 @@ const AgentBuilder = ({ user }) => {
             </div>
           ) : (
             myAgents.map((ag, idx) => (
-              <div key={ag.agent_id || idx} className="stitch-agent-card">
+              <div key={ag.agent_id || idx} className={`stitch-agent-card ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
                 <div className="stitch-agent-top">
                   <div className="stitch-agent-name" title={ag.agent_name}>
                     {ag.agent_name}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteAgent(ag.agent_id)}
-                    className="stitch-trash-btn"
-                    title="Delete Agent"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <div className="stitch-agent-top-right">
+                    <svg className="stitch-agent-sparkline" width="56" height="22" viewBox="0 0 56 22" fill="none" aria-hidden="true">
+                      <path d="M2 14 C 10 18, 16 6, 26 14 C 36 20, 44 4, 52 6" stroke="url(#sparkGrad)" strokeWidth="2.5" strokeLinecap="round" />
+                      <circle cx="52" cy="6" r="2.5" fill="#38bdf8" />
+                      <defs>
+                        <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#818cf8" />
+                          <stop offset="100%" stopColor="#38bdf8" />
+                        </linearGradient>
+                      </defs>
                     </svg>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAgent(ag.agent_id)}
+                      className="stitch-trash-btn"
+                      title="Delete Agent"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -684,6 +753,7 @@ const AgentBuilder = ({ user }) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
