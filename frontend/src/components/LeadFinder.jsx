@@ -3,7 +3,7 @@ import axios from 'axios';
 import { supabase } from '../services/supabaseClient';
 import './LeadFinder.css';
 
-export default function LeadFinder({ user }) {
+export default function LeadFinder({ user, onInitiateOutboundCall }) {
   const [keyword, setKeyword] = useState('Dental Clinic');
   const [city, setCity] = useState('Miami');
   const [loading, setLoading] = useState(false);
@@ -115,39 +115,28 @@ export default function LeadFinder({ user }) {
     }
   };
 
-  // --- 5. One-Click Voice Call (Retell AI) ---
-  const handleDirectCall = async (lead) => {
+  // --- 5. One-Click Voice Call: Navigates to Outbound Dialer with Pre-filled Lead Info ---
+  const handleInitiateCallFromScraper = (lead) => {
     if (!lead.phone) {
-      setStatusMsg({ text: 'This lead has no phone number available.', type: 'error' });
+      setStatusMsg({ text: 'This lead has no phone number available to call.', type: 'error' });
       return;
     }
 
-    setActionLoadingId(lead.id);
-    setStatusMsg({ text: `Initiating AI voice call to ${lead.company} (${lead.phone})...`, type: 'info' });
-
-    try {
-      const cfg = await axios.get('/api/health/config');
-      const fromNumber = cfg.data?.TWILIO_PHONE_NUMBER;
-
-      const res = await axios.post('/api/retell/create-phone-call', {
-        from_number: fromNumber || '+1234567890',
-        to_number: lead.phone,
+    if (onInitiateOutboundCall) {
+      onInitiateOutboundCall({
+        toNumber: lead.phone,
+        companyName: lead.company,
+        dynamicVariables: {
+          customer_name: lead.company || 'Business Owner',
+          company_name: lead.company || '',
+          city: lead.city || city || '',
+          website: lead.website || '',
+          employee_count: lead.employees || '',
+          niche_category: keyword || '',
+        }
       });
-
-      if (res.data?.success || res.data?.call_id) {
-        setStatusMsg({
-          text: `Call dispatched successfully! Retell Call ID: ${res.data.call_id || 'Active'}`,
-          type: 'success',
-        });
-      }
-    } catch (err) {
-      console.error('Call Error:', err);
-      setStatusMsg({
-        text: `Call failed: ${err.response?.data?.detail || err.message}`,
-        type: 'error',
-      });
-    } finally {
-      setActionLoadingId(null);
+    } else {
+      setStatusMsg({ text: `Selected lead: ${lead.company} (${lead.phone}). Open Retell Live Calls to dial.`, type: 'info' });
     }
   };
 
@@ -544,15 +533,14 @@ export default function LeadFinder({ user }) {
                           {lead.phone && (
                             <button
                               type="button"
-                              onClick={() => handleDirectCall(lead)}
-                              disabled={actionLoadingId === lead.id}
-                              title="Call directly with Retell AI Voice"
+                              onClick={() => handleInitiateCallFromScraper(lead)}
+                              title="Open in Retell Outbound Dialer to customize and call"
                               className="btn-row-action call"
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                               </svg>
-                              {actionLoadingId === lead.id ? 'Calling...' : 'Call'}
+                              Call
                             </button>
                           )}
 

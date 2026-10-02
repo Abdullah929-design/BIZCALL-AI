@@ -30,9 +30,15 @@ function App() {
     );
   });
   const [activeTab, setActiveTab] = useState('builder');
+  const [prefilledCallData, setPrefilledCallData] = useState(null);
   const [apiStatus, setApiStatus] = useState('checking');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(true);
+
+  const handleInitiateOutboundCall = (callData) => {
+    setPrefilledCallData(callData);
+    setActiveTab('live-calls');
+  };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -294,10 +300,18 @@ function App() {
         </div>
 
         <div className="app-content">
-          {activeTab === 'lead-finder' && <LeadFinder user={user} />}
+          {activeTab === 'lead-finder' && (
+            <LeadFinder user={user} onInitiateOutboundCall={handleInitiateOutboundCall} />
+          )}
           {activeTab === 'builder' && <AgentBuilder user={user} />}
           {activeTab === 'retell' && <WebCallDemo />}
-          {activeTab === 'live-calls' && <RetellLiveCalls user={user} />}
+          {activeTab === 'live-calls' && (
+            <RetellLiveCalls
+              user={user}
+              prefilledCallData={prefilledCallData}
+              onClearPrefilledData={() => setPrefilledCallData(null)}
+            />
+          )}
           {activeTab === 'banking' && <BankingChat />}
           {activeTab === 'marketing' && <MarketingChat />}
           {activeTab === 'voice' && <TwilioCallDemo />}

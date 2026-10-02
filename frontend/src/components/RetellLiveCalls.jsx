@@ -86,7 +86,7 @@ const CallSlot = ({ call, direction, onHangup }) => {
   );
 };
 
-const RetellLiveCalls = ({ user }) => {
+const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
   const userId = user?.id || user?.email || 'demo_user';
 
   const [agents, setAgents] = useState([]);
@@ -102,6 +102,71 @@ const RetellLiveCalls = ({ user }) => {
   const [dynamicVarsText, setDynamicVarsText] = useState('{}');
   const [statusMsg, setStatusMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Dynamic Variables Visual Builder State
+  const [varMode, setVarMode] = useState('visual'); // 'visual' | 'json'
+  const [variableRows, setVariableRows] = useState([
+    { id: 1, key: 'customer_name', value: '' },
+    { id: 2, key: 'company_name', value: '' }
+  ]);
+  const [copiedKey, setCopiedKey] = useState(null);
+
+  const updateJsonFromRows = (rows) => {
+    const obj = {};
+    rows.forEach((r) => {
+      const k = r.key.trim();
+      if (k) obj[k] = r.value;
+    });
+    setDynamicVarsText(JSON.stringify(obj, null, 2));
+  };
+
+  const handleAddVariableRow = (suggestedKey = '', suggestedVal = '') => {
+    const newRow = { id: Date.now() + Math.random(), key: suggestedKey, value: suggestedVal };
+    const next = [...variableRows, newRow];
+    setVariableRows(next);
+    updateJsonFromRows(next);
+  };
+
+  const handleUpdateVariableRow = (id, field, val) => {
+    const next = variableRows.map((r) => (r.id === id ? { ...r, [field]: val } : r));
+    setVariableRows(next);
+    updateJsonFromRows(next);
+  };
+
+  const handleRemoveVariableRow = (id) => {
+    const next = variableRows.filter((r) => r.id !== id);
+    setVariableRows(next);
+    updateJsonFromRows(next);
+  };
+
+  const handleClearAllVariables = () => {
+    setVariableRows([]);
+    setDynamicVarsText('{}');
+  };
+
+  const handleCopyPromptTag = (key) => {
+    const cleanKey = key.trim();
+    if (!cleanKey) return;
+    const tag = `{{${cleanKey}}}`;
+    navigator.clipboard.writeText(tag).catch(() => {});
+    setCopiedKey(cleanKey);
+    setTimeout(() => setCopiedKey(null), 1800);
+  };
+
+  const handleJsonChange = (text) => {
+    setDynamicVarsText(text);
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const rows = Object.entries(parsed).map(([k, v], idx) => ({
+          id: Date.now() + idx,
+          key: k,
+          value: String(v ?? '')
+        }));
+        setVariableRows(rows);
+      }
+    } catch {}
+  };
 
   // Separate pools for outbound calling and inbound routing
   const outboundAgents = agents.filter((a) => a.call_type === 'outbound');
@@ -169,6 +234,36 @@ const RetellLiveCalls = ({ user }) => {
     };
     load();
   }, [userId]);
+
+  // Handoff from LeadFinder (or any other scraper/CRM source)
+  useEffect(() => {
+    if (!prefilledCallData || !prefilledCallData.toNumber) return;
+
+    setToNumber(prefilledCallData.toNumber);
+    setCallMode('phone');
+
+    if (prefilledCallData.dynamicVariables && typeof prefilledCallData.dynamicVariables === 'object') {
+      const rows = Object.entries(prefilledCallData.dynamicVariables)
+        .filter(([k, v]) => Boolean(k && String(v).trim()))
+        .map(([k, v], idx) => ({
+          id: Date.now() + idx,
+          key: k,
+          value: String(v ?? '')
+        }));
+
+      if (rows.length > 0) {
+        setVariableRows(rows);
+        const obj = {};
+        rows.forEach((r) => { obj[r.key] = r.value; });
+        setDynamicVarsText(JSON.stringify(obj, null, 2));
+      }
+    }
+
+    setStatusMsg(`🎯 Pre-filled lead: ${prefilledCallData.companyName || prefilledCallData.toNumber}. Customize variables below and initiate call.`);
+    if (onClearPrefilledData) {
+      onClearPrefilledData();
+    }
+  }, [prefilledCallData, onClearPrefilledData]);
 
   const applyCallToSlots = useCallback((call) => {
     const isTerminal = ['completed', 'failed', 'ended'].includes(call.status);
@@ -304,11 +399,18 @@ const RetellLiveCalls = ({ user }) => {
     }
 
     let dynamicVariables = {};
-    try {
-      dynamicVariables = dynamicVarsText.trim() ? JSON.parse(dynamicVarsText) : {};
-    } catch {
-      setStatusMsg('⚠️ Dynamic variables must be valid JSON.');
-      return;
+    if (varMode === 'visual') {
+      variableRows.forEach((r) => {
+        const k = r.key.trim();
+        if (k) dynamicVariables[k] = r.value;
+      });
+    } else {
+      try {
+        dynamicVariables = dynamicVarsText.trim() ? JSON.parse(dynamicVarsText) : {};
+      } catch {
+        setStatusMsg('⚠️ Dynamic variables must be valid JSON.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -627,18 +729,176 @@ const RetellLiveCalls = ({ user }) => {
               </div>
             )}
 
-            <div className="live-form-group">
+            {/* Dynamic Variables & Strategy Injection Builder */}
+            <div className="live-form-group var-builder-group">
               <div className="live-label-row">
-                <label className="live-label">DYNAMIC VARIABLES</label>
-                <span className="live-label-tag">JSON_PAYLOAD</span>
+                <div className="var-header-left">
+                  <label className="live-label">DYNAMIC VARIABLES & STRATEGY</label>
+                  <span className="live-label-tag">
+                    {varMode === 'visual' ? `${variableRows.filter(r => r.key.trim()).length} ACTIVE` : 'RAW_JSON'}
+                  </span>
+                </div>
+                <div className="var-header-actions">
+                  <div className="var-mode-switch">
+                    <button
+                      type="button"
+                      className={`var-mode-btn ${varMode === 'visual' ? 'active' : ''}`}
+                      onClick={() => setVarMode('visual')}
+                    >
+                      Visual Fields
+                    </button>
+                    <button
+                      type="button"
+                      className={`var-mode-btn ${varMode === 'json' ? 'active' : ''}`}
+                      onClick={() => setVarMode('json')}
+                    >
+                      Raw JSON
+                    </button>
+                  </div>
+                  {variableRows.length > 0 && (
+                    <button
+                      type="button"
+                      className="var-clear-btn"
+                      onClick={handleClearAllVariables}
+                      title="Clear all variables"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
-              <textarea
-                rows={2}
-                className="live-textarea"
-                value={dynamicVarsText}
-                onChange={(e) => setDynamicVarsText(e.target.value)}
-                placeholder='{"customer_name": "Alex"}'
-              />
+
+              {/* Quick Presets Bar */}
+              <div className="var-quick-presets">
+                <span className="var-preset-label">Quick Add:</span>
+                {[
+                  { k: 'customer_name', label: '+ customer_name' },
+                  { k: 'company_name', label: '+ company_name' },
+                  { k: 'city', label: '+ city' },
+                  { k: 'website', label: '+ website' },
+                  { k: 'offer_discount', label: '+ offer_discount' },
+                  { k: 'appointment_time', label: '+ appointment_time' }
+                ].map((preset) => (
+                  <button
+                    key={preset.k}
+                    type="button"
+                    className="var-preset-chip"
+                    onClick={() => {
+                      if (!variableRows.some((r) => r.key.trim() === preset.k)) {
+                        handleAddVariableRow(preset.k, '');
+                      }
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Strategy / Injection guidance */}
+              <div className="var-guide-banner">
+                <div className="var-guide-icon">💡</div>
+                <div className="var-guide-text">
+                  Write <code>{"{{variable_name}}"}</code> inside your Agent prompt (e.g. <em>&quot;You are speaking with {"{{customer_name}}"} from {"{{company_name}}"}&quot;</em>). Click any tag below to copy it!
+                </div>
+              </div>
+
+              {varMode === 'visual' ? (
+                <div className="var-builder-box">
+                  {variableRows.length === 0 ? (
+                    <div className="var-empty-box">
+                      <span>No dynamic variables defined yet.</span>
+                      <button
+                        type="button"
+                        className="var-add-row-btn secondary"
+                        onClick={() => handleAddVariableRow('customer_name', '')}
+                      >
+                        + Add First Variable
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="var-rows-list">
+                      {variableRows.map((row) => {
+                        const cleanKey = row.key.trim();
+                        const isCopied = copiedKey === cleanKey && cleanKey.length > 0;
+                        return (
+                          <div key={row.id} className="var-row-item">
+                            <div className="var-col-key">
+                              <input
+                                type="text"
+                                className="live-input var-input-key"
+                                placeholder="variable_name"
+                                value={row.key}
+                                onChange={(e) =>
+                                  handleUpdateVariableRow(
+                                    row.id,
+                                    'key',
+                                    e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                                  )
+                                }
+                              />
+                            </div>
+                            <span className="var-row-sep">=</span>
+                            <div className="var-col-val">
+                              <input
+                                type="text"
+                                className="live-input var-input-val"
+                                placeholder="Value (e.g. Dr. Alex)"
+                                value={row.value}
+                                onChange={(e) => handleUpdateVariableRow(row.id, 'value', e.target.value)}
+                              />
+                            </div>
+                            <div className="var-col-tag">
+                              {cleanKey ? (
+                                <button
+                                  type="button"
+                                  className={`var-copy-tag-btn ${isCopied ? 'copied' : ''}`}
+                                  onClick={() => handleCopyPromptTag(cleanKey)}
+                                  title="Click to copy prompt injection tag"
+                                >
+                                  {isCopied ? 'Copied! ✓' : `{{${cleanKey}}}`}
+                                </button>
+                              ) : (
+                                <span className="var-tag-placeholder">{"{{name}}"}</span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="var-row-delete-btn"
+                              onClick={() => handleRemoveVariableRow(row.id)}
+                              title="Delete variable"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="var-add-row-btn"
+                    onClick={() => handleAddVariableRow('', '')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Custom Variable
+                  </button>
+                </div>
+              ) : (
+                <textarea
+                  rows={4}
+                  className="live-textarea var-json-textarea"
+                  value={dynamicVarsText}
+                  onChange={(e) => handleJsonChange(e.target.value)}
+                  placeholder='{\n  "customer_name": "Alex",\n  "company_name": "Acme Corp"\n}'
+                />
+              )}
             </div>
 
             {isCalling ? (

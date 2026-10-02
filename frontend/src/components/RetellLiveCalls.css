@@ -804,3 +804,331 @@
   border-radius: 6px;
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
+
+/* ========================================================
+   DYNAMIC VARIABLES & STRATEGY INJECTION BUILDER STYLES
+   ======================================================== */
+
+.var-builder-group {
+  margin-top: 6px;
+  background: #11131c;
+  border: 1px solid #1f2334;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.var-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.var-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.var-mode-switch {
+  display: flex;
+  background: #0b0d14;
+  border: 1px solid #232738;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.var-mode-btn {
+  background: transparent;
+  border: none;
+  color: #7b8196;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-mode-btn:hover {
+  color: #cbd5e1;
+}
+
+.var-mode-btn.active {
+  background: #1e2235;
+  color: #818cf8;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.var-clear-btn {
+  background: transparent;
+  border: 1px solid #2a2e42;
+  color: #94a3b8;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Quick Add Presets Bar */
+.var-quick-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 8px 0;
+}
+
+.var-preset-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.var-preset-chip {
+  background: #161826;
+  border: 1px dashed #2d334d;
+  color: #94a3b8;
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-preset-chip:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+/* Strategy Guidance Banner */
+.var-guide-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  color: #c7d2fe;
+  line-height: 1.45;
+}
+
+.var-guide-banner code {
+  font-family: 'DM Mono', monospace;
+  background: rgba(99, 102, 241, 0.25);
+  color: #e0e7ff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.var-guide-banner em {
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+.var-guide-icon {
+  font-size: 13px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Variable Box Container */
+.var-builder-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.var-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #0d0f17;
+  border: 1px dashed #232738;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.var-rows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.var-row-item {
+  display: grid;
+  grid-template-columns: 140px 14px 1fr auto 28px;
+  align-items: center;
+  gap: 6px;
+  background: #0d0f17;
+  border: 1px solid #1e2235;
+  border-radius: 6px;
+  padding: 6px 8px;
+  transition: border-color 0.15s ease;
+}
+
+.var-row-item:hover {
+  border-color: #2d334d;
+}
+
+.var-col-key {
+  position: relative;
+}
+
+.var-input-key {
+  font-family: 'DM Mono', monospace;
+  font-size: 11.5px !important;
+  color: #a5b4fc !important;
+  background: #141724 !important;
+  border-color: #262b40 !important;
+  padding: 5px 8px !important;
+  height: 30px !important;
+}
+
+.var-input-key:focus {
+  border-color: #6366f1 !important;
+}
+
+.var-row-sep {
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+  font-size: 13px;
+  user-select: none;
+}
+
+.var-col-val {
+  position: relative;
+}
+
+.var-input-val {
+  font-size: 12px !important;
+  color: #e2e8f0 !important;
+  background: #141724 !important;
+  border-color: #262b40 !important;
+  padding: 5px 8px !important;
+  height: 30px !important;
+}
+
+.var-input-val:focus {
+  border-color: #6366f1 !important;
+}
+
+.var-col-tag {
+  display: flex;
+  align-items: center;
+}
+
+.var-copy-tag-btn {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.var-copy-tag-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #e0e7ff;
+  transform: translateY(-1px);
+}
+
+.var-copy-tag-btn.copied {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.var-tag-placeholder {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #475569;
+  padding: 4px 6px;
+}
+
+.var-row-delete-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-row-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.var-add-row-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #141724;
+  border: 1px solid #272d42;
+  color: #818cf8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 4px;
+}
+
+.var-add-row-btn:hover {
+  background: #1a1e30;
+  border-color: #4338ca;
+  color: #a5b4fc;
+}
+
+.var-add-row-btn.secondary {
+  align-self: center;
+  background: #1c2136;
+  border-color: #4f46e5;
+  color: #e0e7ff;
+}
+
+.var-json-textarea {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+  color: #a5b4fc !important;
+  background: #0d0f17 !important;
+  border-color: #1f2334 !important;
+}
+
+.var-json-textarea:focus {
+  border-color: #6366f1 !important;
+}
