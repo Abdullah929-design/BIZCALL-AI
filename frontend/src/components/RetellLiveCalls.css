@@ -688,3 +688,119 @@
   font-size: 13px;
   margin: 0;
 }
+
+/* ==========================================================================
+   Active Inbound Live Agent Control Card
+   ========================================================================== */
+.active-inbound-card {
+  background: #101117;
+  border: 1px solid #1f2233;
+  border-left: 3px solid #10b981;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.05);
+}
+
+.active-inbound-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.active-inbound-title-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inbound-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 1.4s infinite;
+}
+
+.active-inbound-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f1f5f9;
+  text-transform: uppercase;
+}
+
+.inbound-phone-tag {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  background: #161824;
+  border: 1px solid #282c3f;
+  color: #34d399;
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.inbound-status-pill {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #161824;
+  color: #64748b;
+  border: 1px solid #282c3f;
+}
+
+.inbound-status-pill.live {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.active-inbound-desc {
+  font-size: 11px;
+  color: #85899d;
+  line-height: 1.4;
+}
+
+.active-inbound-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.active-inbound-select {
+  flex: 1;
+  background: #161722;
+  border: 1px solid #282c3f;
+  color: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.active-inbound-select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.active-inbound-confirmed-badge {
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(16, 185, 129, 0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}

@@ -214,6 +214,74 @@ async def get_config():
         "has_api_key": bool(RETELL_API_KEY)
     }
 
+class SetActiveInboundAgentRequest(BaseModel):
+    agent_id: str
+    phone_number: Optional[str] = None
+
+@router.get("/active-inbound-agent")
+async def get_active_inbound_agent():
+    """Retrieve the currently active live inbound agent and bound phone number."""
+    client = get_retell_client()
+    active_agent_id = os.getenv("RETELL_AGENT_ID")
+    bound_phone = os.getenv("TWILIO_PHONE_NUMBER")
+    
+    try:
+        numbers_resp = client.phone_number.list()
+        items = numbers_resp if isinstance(numbers_resp, list) else (
+            numbers_resp[1] if isinstance(numbers_resp, tuple) else getattr(numbers_resp, "items", [])
+        )
+        if items:
+            first_phone = items[0]
+            bound_phone = getattr(first_phone, "phone_number", bound_phone)
+            inbound_agents = getattr(first_phone, "inbound_agents", []) or []
+            if inbound_agents:
+                active_agent_id = getattr(inbound_agents[0], "agent_id", active_agent_id)
+    except Exception as e:
+        print(f"[retell active-inbound-agent] could not fetch live phone number list: {e}")
+        
+    return {
+        "success": True,
+        "phone_number": bound_phone,
+        "agent_id": active_agent_id
+    }
+
+@router.post("/set-active-inbound-agent")
+async def set_active_inbound_agent(req: SetActiveInboundAgentRequest):
+    """Binds the selected inbound agent to the live Retell phone number so it handles 100% of live inbound calls."""
+    client = get_retell_client()
+    target_phone = req.phone_number
+    
+    try:
+        if not target_phone:
+            numbers_resp = client.phone_number.list()
+            items = numbers_resp if isinstance(numbers_resp, list) else (
+                numbers_resp[1] if isinstance(numbers_resp, tuple) else getattr(numbers_resp, "items", [])
+            )
+            if items:
+                target_phone = getattr(items[0], "phone_number", None)
+            
+        if not target_phone:
+            target_phone = os.getenv("TWILIO_PHONE_NUMBER")
+            
+        if target_phone:
+            client.phone_number.update(
+                target_phone,
+                inbound_agents=[{"agent_id": req.agent_id, "weight": 1.0}]
+            )
+            print(f"[Retell Live Phone Updated] Phone {target_phone} bound to inbound agent {req.agent_id}")
+            
+        os.environ["RETELL_AGENT_ID"] = req.agent_id
+        
+        return {
+            "success": True,
+            "phone_number": target_phone,
+            "agent_id": req.agent_id,
+            "message": f"Inbound agent {req.agent_id} marked LIVE for {target_phone or 'all inbound calls'}"
+        }
+    except Exception as e:
+        print(f"[Retell Set Active Inbound Error]: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update active inbound agent: {str(e)}")
+
 @router.delete("/delete-agent/{agent_id}")
 async def delete_agent(agent_id: str):
     """Delete the custom agent from Retell AI servers."""

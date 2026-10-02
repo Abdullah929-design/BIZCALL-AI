@@ -373,6 +373,39 @@
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.stitch-live-inbound-badge {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.stitch-set-live-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  background: #161824;
+  color: #94a3b8;
+  border: 1px solid #282c3f;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.stitch-set-live-btn:hover {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
 .stitch-agent-id-row {
   font-family: 'DM Mono', monospace;
   font-size: 11px;

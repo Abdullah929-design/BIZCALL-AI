@@ -96,9 +96,16 @@ const RetellLiveCalls = ({ user }) => {
   const [toNumber, setToNumber] = useState('');
   const [fromNumber, setFromNumber] = useState('');
   const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [activeInboundAgentId, setActiveInboundAgentId] = useState('');
+  const [activeInboundPhone, setActiveInboundPhone] = useState('');
+  const [settingLiveInbound, setSettingLiveInbound] = useState(false);
   const [dynamicVarsText, setDynamicVarsText] = useState('{}');
   const [statusMsg, setStatusMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Separate pools for outbound calling and inbound routing
+  const outboundAgents = agents.filter((a) => a.call_type === 'outbound');
+  const inboundAgents = agents.filter((a) => a.call_type === 'inbound');
 
   const [inboundSlots, setInboundSlots] = useState(emptySlots());
   const [outboundSlots, setOutboundSlots] = useState(emptySlots());
@@ -125,8 +132,17 @@ const RetellLiveCalls = ({ user }) => {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      setAgents(agentData || []);
-      if (agentData && agentData.length > 0) setSelectedAgentId(agentData[0].agent_id);
+      
+      const loadedAgents = agentData || [];
+      setAgents(loadedAgents);
+
+      // Default the outbound dialer strictly to an outbound agent
+      const outb = loadedAgents.filter((a) => a.call_type === 'outbound');
+      if (outb.length > 0) {
+        setSelectedAgentId(outb[0].agent_id);
+      } else {
+        setSelectedAgentId('');
+      }
 
       const { data: leadData } = await supabase
         .from('simulated_leads')
@@ -139,6 +155,17 @@ const RetellLiveCalls = ({ user }) => {
         const cfg = await axios.get('/api/health/config');
         if (cfg.data?.TWILIO_PHONE_NUMBER) setFromNumber(cfg.data.TWILIO_PHONE_NUMBER);
       } catch (e) {}
+
+      // Fetch the currently active inbound agent from Retell AI
+      try {
+        const inbRes = await axios.get('/api/retell/active-inbound-agent');
+        if (inbRes.data?.success) {
+          if (inbRes.data.agent_id) setActiveInboundAgentId(inbRes.data.agent_id);
+          if (inbRes.data.phone_number) setActiveInboundPhone(inbRes.data.phone_number);
+        }
+      } catch (e) {
+        console.warn('Could not fetch active inbound agent from Retell:', e);
+      }
     };
     load();
   }, [userId]);
@@ -355,20 +382,44 @@ const RetellLiveCalls = ({ user }) => {
     }
   };
 
+  const handleSetActiveInboundAgent = async (agentId) => {
+    if (!agentId || agentId === activeInboundAgentId) return;
+    setSettingLiveInbound(true);
+    try {
+      const res = await axios.post('/api/retell/set-active-inbound-agent', {
+        agent_id: agentId,
+        phone_number: activeInboundPhone || undefined,
+      });
+      if (res.data?.success) {
+        setActiveInboundAgentId(agentId);
+        const targetAgent = agents.find((a) => a.agent_id === agentId);
+        setStatusMsg(`✅ Live Inbound Agent updated to "${targetAgent?.agent_name || agentId}"! Incoming carrier & WebRTC calls will now route here.`);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message;
+      setStatusMsg(`❌ Failed to update live inbound agent: ${msg}`);
+    } finally {
+      setSettingLiveInbound(false);
+    }
+  };
+
   const handleAcceptInbound = async () => {
     if (!incomingCall) return;
     try {
       setStatusMsg('Connecting inbound call...');
+      // Strictly route to the designated active live inbound agent
+      const targetAgentId = activeInboundAgentId || inboundAgents[0]?.agent_id || selectedAgentId;
       await supabase
         .from('call_requests')
         .update({
           status: 'answered',
-          agent_id: selectedAgentId,
+          agent_id: targetAgentId,
         })
         .eq('id', incomingCall.id);
 
       setIncomingQueue((prev) => prev.slice(1));
-      setStatusMsg('🎙️ Call accepted. Lead is connecting...');
+      const ag = agents.find((a) => a.agent_id === targetAgentId);
+      setStatusMsg(`🎙️ Call accepted. Routed to Live Inbound Agent: "${ag?.agent_name || 'Inbound Specialist'}"`);
     } catch (e) {
       setStatusMsg(`❌ Inbound accept failed: ${e.message}`);
     }
@@ -501,23 +552,26 @@ const RetellLiveCalls = ({ user }) => {
 
           <form onSubmit={handleInitiateCall} className="live-form">
             <div className="live-form-group">
-              <label className="live-label">VOICE AGENT</label>
+              <div className="live-label-row">
+                <label className="live-label">OUTBOUND VOICE AGENT</label>
+                <span className="live-label-tag">OUTBOUND ONLY</span>
+              </div>
               <select
                 className="live-select"
                 value={selectedAgentId}
                 onChange={(e) => setSelectedAgentId(e.target.value)}
                 required
               >
-                <option value="" disabled>Select an agent…</option>
-                {agents.map((a) => (
+                <option value="" disabled>Select an outbound agent…</option>
+                {outboundAgents.map((a) => (
                   <option key={a.agent_id} value={a.agent_id}>
-                    {a.agent_name} ({a.call_type})
+                    {a.agent_name}
                   </option>
                 ))}
               </select>
-              {agents.length === 0 && (
-                <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  No agents found — deploy one first in the Inbound/Outbound Builder.
+              {outboundAgents.length === 0 && (
+                <span style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', display: 'block' }}>
+                  ⚠️ No outbound agents found. Deploy an outbound agent in the Inbound/Outbound Builder.
                 </span>
               )}
             </div>
@@ -636,6 +690,52 @@ const RetellLiveCalls = ({ user }) => {
               Telephony Line Monitors
             </h3>
             <span className="live-badge-count">{inboundActive + outboundActive}/10 ACTIVE</span>
+          </div>
+
+          {/* Active Live Inbound Agent Selector Card */}
+          <div className="active-inbound-card">
+            <div className="active-inbound-header">
+              <div className="active-inbound-title-area">
+                <span className="inbound-pulse-dot" />
+                <span className="active-inbound-title">ACTIVE LIVE INBOUND AGENT</span>
+                {activeInboundPhone && (
+                  <span className="inbound-phone-tag">
+                    📞 {activeInboundPhone}
+                  </span>
+                )}
+              </div>
+              <span className={`inbound-status-pill ${activeInboundAgentId ? 'live' : ''}`}>
+                {settingLiveInbound ? 'SWITCHING...' : (activeInboundAgentId ? '● LIVE INBOUND' : 'STANDBY')}
+              </span>
+            </div>
+
+            <div className="active-inbound-body">
+              <div className="active-inbound-desc">
+                Designate which agent answers 100% of incoming live carrier (Twilio/Retell) & WebRTC calls:
+              </div>
+              <div className="active-inbound-control-row">
+                <select
+                  className="active-inbound-select"
+                  value={activeInboundAgentId}
+                  onChange={(e) => handleSetActiveInboundAgent(e.target.value)}
+                  disabled={settingLiveInbound || inboundAgents.length === 0}
+                >
+                  {inboundAgents.length === 0 && (
+                    <option value="" disabled>No inbound agents deployed</option>
+                  )}
+                  {inboundAgents.map((ag) => (
+                    <option key={ag.agent_id} value={ag.agent_id}>
+                      {ag.agent_name} {ag.agent_id === activeInboundAgentId ? '★ (Active Live)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {activeInboundAgentId && (
+                  <span className="active-inbound-confirmed-badge">
+                    ✓ Verified Active
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="section-subhead">

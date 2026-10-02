@@ -38,6 +38,8 @@ const AgentBuilder = ({ user }) => {
 
   const currentUserId = user?.id || user?.email || 'demo_user';
 
+  const [liveInboundId, setLiveInboundId] = useState('');
+
   const fetchUserAgents = async () => {
     try {
       const { data, error } = await supabase
@@ -57,8 +59,35 @@ const AgentBuilder = ({ user }) => {
       if (!error && data && data.length > 0) {
         setMyAgents(data);
       }
+
+      // Query active live inbound agent from Retell
+      try {
+        const liveRes = await axios.get(`${API_BASE_URL}/active-inbound-agent`);
+        if (liveRes.data?.success && liveRes.data.agent_id) {
+          setLiveInboundId(liveRes.data.agent_id);
+        }
+      } catch (e) {
+        console.warn('Could not fetch active inbound agent:', e);
+      }
     } catch (e) {
       console.log('Supabase agents query info:', e);
+    }
+  };
+
+  const handleSetLiveInbound = async (agentId) => {
+    try {
+      setStatusMsg('Updating Retell live inbound routing...');
+      const res = await axios.post(`${API_BASE_URL}/set-active-inbound-agent`, {
+        agent_id: agentId,
+      });
+      if (res.data?.success) {
+        setLiveInboundId(agentId);
+        const ag = myAgents.find((a) => a.agent_id === agentId);
+        setStatusMsg(`✅ Agent "${ag?.agent_name || agentId}" is now the active Live Inbound Agent!`);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message;
+      setStatusMsg(`❌ Failed to set live inbound agent: ${msg}`);
     }
   };
 
@@ -351,10 +380,26 @@ const AgentBuilder = ({ user }) => {
                   </button>
                 </div>
 
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span className={`stitch-type-badge ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
                     {(ag.call_type || 'inbound').toUpperCase()}
                   </span>
+                  {ag.call_type === 'inbound' && (
+                    ag.agent_id === liveInboundId ? (
+                      <span className="stitch-live-inbound-badge">
+                        ● LIVE INBOUND AGENT
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSetLiveInbound(ag.agent_id)}
+                        className="stitch-set-live-btn"
+                        title="Route all live incoming carrier and WebRTC calls to this agent"
+                      >
+                        Set as Live Inbound
+                      </button>
+                    )
+                  )}
                 </div>
 
                 <div className="stitch-agent-id-row">
