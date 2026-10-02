@@ -64,7 +64,7 @@ const AgentBuilder = ({ user }) => {
 
   useEffect(() => {
     if (bgVideoRef.current) {
-      bgVideoRef.current.play().catch(() => {});
+      bgVideoRef.current.play().catch(() => { });
     }
   }, []);
 
@@ -138,7 +138,7 @@ const AgentBuilder = ({ user }) => {
 
   const handleInsertTag = (tag) => {
     const variableTag = `{{${tag}}}`;
-    navigator.clipboard.writeText(variableTag).catch(() => {});
+    navigator.clipboard.writeText(variableTag).catch(() => { });
     setEditCopiedTag(tag);
     setTimeout(() => setEditCopiedTag(null), 1800);
     setEditPrompt((prev) => (prev ? `${prev} ${variableTag}` : variableTag));
@@ -248,7 +248,7 @@ const AgentBuilder = ({ user }) => {
     if (retellClientRef.current) {
       try {
         retellClientRef.current.stopCall();
-      } catch (e) {}
+      } catch (e) { }
     }
     setActiveCallAgentId(null);
     setActiveCallStatus('Call ended.');
@@ -353,406 +353,394 @@ const AgentBuilder = ({ user }) => {
           <h2 className="stitch-title">Agent Builder</h2>
           <p className="stitch-subtitle">Set up and deploy your voice agent</p>
 
-        {/* Route Selector Cards */}
-        <div className="stitch-route-grid">
-          <div
-            className={`stitch-route-card ${callType === 'inbound' ? 'active' : ''}`}
-            onClick={() => {
-              setCallType('inbound');
-              if (agentName === 'Outbound Sales Pitcher' || !agentName) {
-                setAgentName('Customer Support Desk');
-              }
-            }}
-          >
-            <div className="stitch-route-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
-              </svg>
-            </div>
-            <div className="stitch-route-text">
-              <span className="stitch-route-title">Inbound Agent</span>
-              <span className="stitch-route-desc">Support &amp; FAQ handling</span>
-            </div>
-            <span className="stitch-route-tag">ROUTE_01</span>
-          </div>
-
-          <div
-            className={`stitch-route-card ${callType === 'outbound' ? 'active' : ''}`}
-            onClick={() => {
-              setCallType('outbound');
-              if (agentName === 'Customer Support Desk' || !agentName) {
-                setAgentName('Outbound Sales Pitcher');
-              }
-            }}
-          >
-            <div className="stitch-route-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                <line x1="23" y1="1" x2="17" y2="7"></line>
-                <polyline points="17 1 23 1 23 7"></polyline>
-              </svg>
-            </div>
-            <div className="stitch-route-text">
-              <span className="stitch-route-title">Outbound Agent</span>
-              <span className="stitch-route-desc">Sales &amp; cold outreach</span>
-            </div>
-            <span className="stitch-route-tag">ROUTE_02</span>
-          </div>
-        </div>
-
-        {/* Builder Form */}
-        <form onSubmit={handleDeployAgent} className="stitch-form">
-          <div className="stitch-form-group">
-            <label className="stitch-label">AGENT NAME</label>
-            <input
-              type="text"
-              className="stitch-input"
-              placeholder={callType === 'inbound' ? "Customer Support Desk" : "Outbound Sales Pitcher"}
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="stitch-form-group">
-            <div className="stitch-label-row">
-              <label className="stitch-label">SYSTEM PROMPT</label>
-              <span className="stitch-label-tag">SYSTEM_DIRECTIVE_V1</span>
-            </div>
-            <textarea
-              rows={4}
-              className="stitch-textarea"
-              placeholder={callType === 'inbound'
-                ? "You are a customer service representative for FinanceAI. Help callers answer account questions politely and concisely."
-                : "You are an outbound sales representative. Call potential clients to pitch our financial software."
-              }
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="stitch-form-group">
-            <div className="stitch-label-row">
-              <label className="stitch-label">KNOWLEDGE BASE</label>
-              <span className="stitch-label-tag">RAG_CONTEXT</span>
-            </div>
-            <textarea
-              rows={4}
-              className="stitch-textarea"
-              placeholder="Paste FAQs, product details, policies..."
-              value={knowledgeBaseText}
-              onChange={(e) => setKnowledgeBaseText(e.target.value)}
-            />
-          </div>
-
-          <div className="stitch-form-group">
-            <label className="stitch-label">VOICE PERSONA</label>
-            <select
-              className="stitch-select"
-              value={voiceId}
-              onChange={(e) => setVoiceId(e.target.value)}
+          {/* Route Selector Cards */}
+          <div className="stitch-route-grid">
+            <div
+              className={`stitch-route-card ${callType === 'inbound' ? 'active' : ''}`}
+              onClick={() => {
+                setCallType('inbound');
+                if (agentName === 'Outbound Sales Pitcher' || !agentName) {
+                  setAgentName('Customer Support Desk');
+                }
+              }}
             >
-              <option value="11labs-Adrian">Male Professional — Adrian (ElevenLabs)</option>
-              <option value="11labs-Emily">Female Professional — Emily (ElevenLabs)</option>
-              <option value="11labs-Brian">Male Friendly — Brian (ElevenLabs)</option>
-              <option value="11labs-Jenny">Female Support — Jenny (ElevenLabs)</option>
-              <option value="11labs-John">Male Executive — John (ElevenLabs)</option>
-              <option value="11labs-Grace">Female Warm — Grace (ElevenLabs)</option>
-              <option value="openai-Nova">Female Expressive — Nova (OpenAI)</option>
-              <option value="openai-Echo">Male Deep — Echo (OpenAI)</option>
-            </select>
+              <div className="stitch-route-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                </svg>
+              </div>
+              <div className="stitch-route-text">
+                <span className="stitch-route-title">Inbound Agent</span>
+                <span className="stitch-route-desc">Support &amp; FAQ handling</span>
+              </div>
+              <span className="stitch-route-tag">ROUTE_01</span>
+            </div>
+
+            <div
+              className={`stitch-route-card ${callType === 'outbound' ? 'active' : ''}`}
+              onClick={() => {
+                setCallType('outbound');
+                if (agentName === 'Customer Support Desk' || !agentName) {
+                  setAgentName('Outbound Sales Pitcher');
+                }
+              }}
+            >
+              <div className="stitch-route-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  <line x1="23" y1="1" x2="17" y2="7"></line>
+                  <polyline points="17 1 23 1 23 7"></polyline>
+                </svg>
+              </div>
+              <div className="stitch-route-text">
+                <span className="stitch-route-title">Outbound Agent</span>
+                <span className="stitch-route-desc">Sales &amp; cold outreach</span>
+              </div>
+              <span className="stitch-route-tag">ROUTE_02</span>
+            </div>
           </div>
 
-          <button type="submit" className="stitch-deploy-btn" disabled={loading}>
-            {loading ? 'Deploying...' : `Deploy ${callType === 'inbound' ? 'Inbound' : 'Outbound'} Agent`}
-          </button>
-        </form>
+          {/* Builder Form */}
+          <form onSubmit={handleDeployAgent} className="stitch-form">
+            <div className="stitch-form-group">
+              <label className="stitch-label">AGENT NAME</label>
+              <input
+                type="text"
+                className="stitch-input"
+                placeholder={callType === 'inbound' ? "Customer Support Desk" : "Outbound Sales Pitcher"}
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                required
+              />
+            </div>
 
-        {statusMsg && (
-          <div className="stitch-status-banner">
-            {statusMsg}
-          </div>
-        )}
-      </div>
+            <div className="stitch-form-group">
+              <div className="stitch-label-row">
+                <label className="stitch-label">SYSTEM PROMPT</label>
+                <span className="stitch-label-tag">SYSTEM_DIRECTIVE_V1</span>
+              </div>
+              <textarea
+                rows={4}
+                className="stitch-textarea"
+                placeholder={callType === 'inbound'
+                  ? "You are a customer service representative for FinanceAI. Help callers answer account questions politely and concisely."
+                  : "You are an outbound sales representative. Call potential clients to pitch our financial software."
+                }
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                required
+              />
+            </div>
 
-      {/* Right Column: Deployed Agents */}
-      <div className="stitch-card">
-        <div className="stitch-panel-header">
-          <h3 className="stitch-panel-title">Deployed Agents</h3>
-          <span className="stitch-count-badge">{myAgents.length}</span>
+            <div className="stitch-form-group">
+              <div className="stitch-label-row">
+                <label className="stitch-label">KNOWLEDGE BASE</label>
+                <span className="stitch-label-tag">RAG_CONTEXT</span>
+              </div>
+              <textarea
+                rows={4}
+                className="stitch-textarea"
+                placeholder="Paste FAQs, product details, policies..."
+                value={knowledgeBaseText}
+                onChange={(e) => setKnowledgeBaseText(e.target.value)}
+              />
+            </div>
+
+            <div className="stitch-form-group">
+              <label className="stitch-label">VOICE PERSONA</label>
+              <select
+                className="stitch-select"
+                value={voiceId}
+                onChange={(e) => setVoiceId(e.target.value)}
+              >
+                <option value="11labs-Adrian">Male Professional — Adrian (ElevenLabs)</option>
+                <option value="11labs-Emily">Female Professional — Emily (ElevenLabs)</option>
+                <option value="11labs-Brian">Male Friendly — Brian (ElevenLabs)</option>
+                <option value="11labs-Jenny">Female Support — Jenny (ElevenLabs)</option>
+                <option value="11labs-John">Male Executive — John (ElevenLabs)</option>
+                <option value="11labs-Grace">Female Warm — Grace (ElevenLabs)</option>
+                <option value="openai-Nova">Female Expressive — Nova (OpenAI)</option>
+                <option value="openai-Echo">Male Deep — Echo (OpenAI)</option>
+              </select>
+            </div>
+
+            <button type="submit" className="stitch-deploy-btn" disabled={loading}>
+              {loading ? 'Deploying...' : `Deploy ${callType === 'inbound' ? 'Inbound' : 'Outbound'} Agent`}
+            </button>
+          </form>
+
+          {statusMsg && (
+            <div className="stitch-status-banner">
+              {statusMsg}
+            </div>
+          )}
         </div>
 
-        {/* Deployed List */}
-        <div className="stitch-agent-list">
-          {myAgents.length === 0 ? (
-            <div className="stitch-empty-slot">
-              Deploy an agent to see it here
-            </div>
-          ) : (
-            myAgents.map((ag, idx) => (
-              <div key={ag.agent_id || idx} className={`stitch-agent-card ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
-                <div className="stitch-agent-top">
-                  <div className="stitch-agent-name" title={ag.agent_name}>
-                    {ag.agent_name}
+        {/* Right Column: Deployed Agents */}
+        <div className="stitch-card">
+          <div className="stitch-panel-header">
+            <h3 className="stitch-panel-title">Deployed Agents</h3>
+            <span className="stitch-count-badge">{myAgents.length}</span>
+          </div>
+
+          {/* Deployed List */}
+          <div className="stitch-agent-list">
+            {myAgents.length === 0 ? (
+              <div className="stitch-empty-slot">
+                Deploy an agent to see it here
+              </div>
+            ) : (
+              myAgents.map((ag, idx) => (
+                <div key={ag.agent_id || idx} className={`stitch-agent-card ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
+                  <div className="stitch-agent-top">
+                    <div className="stitch-agent-name" title={ag.agent_name}>
+                      {ag.agent_name}
+                    </div>
+                    <div className="stitch-agent-top-right">
+                      <svg className="stitch-agent-sparkline" width="56" height="22" viewBox="0 0 56 22" fill="none" aria-hidden="true">
+                        <path d="M2 14 C 10 18, 16 6, 26 14 C 36 20, 44 4, 52 6" stroke="url(#sparkGrad)" strokeWidth="2.5" strokeLinecap="round" />
+                        <circle cx="52" cy="6" r="2.5" fill="#38bdf8" />
+                        <defs>
+                          <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#818cf8" />
+                            <stop offset="100%" stopColor="#38bdf8" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAgent(ag.agent_id)}
+                        className="stitch-trash-btn"
+                        title="Delete Agent"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div className="stitch-agent-top-right">
-                    <svg className="stitch-agent-sparkline" width="56" height="22" viewBox="0 0 56 22" fill="none" aria-hidden="true">
-                      <path d="M2 14 C 10 18, 16 6, 26 14 C 36 20, 44 4, 52 6" stroke="url(#sparkGrad)" strokeWidth="2.5" strokeLinecap="round" />
-                      <circle cx="52" cy="6" r="2.5" fill="#38bdf8" />
-                      <defs>
-                        <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#818cf8" />
-                          <stop offset="100%" stopColor="#38bdf8" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span className={`stitch-type-badge ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
+                      {(ag.call_type || 'inbound').toUpperCase()}
+                    </span>
+                    {ag.call_type === 'inbound' && (
+                      ag.agent_id === liveInboundId ? (
+                        <span className="stitch-live-inbound-badge">
+                          ● LIVE INBOUND AGENT
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetLiveInbound(ag.agent_id)}
+                          className="stitch-set-live-btn"
+                          title="Route all live incoming carrier and WebRTC calls to this agent"
+                        >
+                          Set as Live Inbound
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <div className="stitch-agent-id-row">
+                    Agent ID: <span className="stitch-agent-id-val">{ag.agent_id}</span>
+                  </div>
+
+                  <div className="stitch-card-actions-grid">
                     <button
                       type="button"
-                      onClick={() => handleDeleteAgent(ag.agent_id)}
-                      className="stitch-trash-btn"
-                      title="Delete Agent"
+                      onClick={() => handleOpenEditContext(ag)}
+                      className="stitch-edit-context-btn"
+                      title="Edit agent system prompt / context only (voice & phone are protected)"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                       </svg>
+                      Edit Context
                     </button>
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span className={`stitch-type-badge ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
-                    {(ag.call_type || 'inbound').toUpperCase()}
-                  </span>
-                  {ag.call_type === 'inbound' && (
-                    ag.agent_id === liveInboundId ? (
-                      <span className="stitch-live-inbound-badge">
-                        ● LIVE INBOUND AGENT
-                      </span>
+                    {activeCallAgentId !== ag.agent_id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStartCall(ag)}
+                        className="stitch-test-btn"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                          <line x1="12" y1="19" x2="12" y2="23"></line>
+                          <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        Test Call
+                      </button>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleSetLiveInbound(ag.agent_id)}
-                        className="stitch-set-live-btn"
-                        title="Route all live incoming carrier and WebRTC calls to this agent"
+                        onClick={handleStopCall}
+                        className="stitch-test-btn active-call"
                       >
-                        Set as Live Inbound
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="6" y="6" width="12" height="12"></rect>
+                        </svg>
+                        End Call
                       </button>
-                    )
+                    )}
+                  </div>
+
+                  {activeCallAgentId === ag.agent_id && (
+                    <div className="stitch-status-banner" style={{ marginTop: '10px', fontSize: '11.5px', padding: '6px 10px' }}>
+                      {activeCallStatus}
+                    </div>
                   )}
                 </div>
+              ))
+            )}
 
-                <div className="stitch-agent-id-row">
-                  Agent ID: <span className="stitch-agent-id-val">{ag.agent_id}</span>
-                </div>
-
-                <div className="stitch-card-actions-grid">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEditContext(ag)}
-                    className="stitch-edit-context-btn"
-                    title="Edit agent system prompt / context only (voice & phone are protected)"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    Edit Context
-                  </button>
-
-                  {activeCallAgentId !== ag.agent_id ? (
-                    <button
-                      type="button"
-                      onClick={() => handleStartCall(ag)}
-                      className="stitch-test-btn"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                      </svg>
-                      Test Call
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleStopCall}
-                      className="stitch-test-btn active-call"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="6" y="6" width="12" height="12"></rect>
-                      </svg>
-                      End Call
-                    </button>
-                  )}
-                </div>
-
-                {activeCallAgentId === ag.agent_id && (
-                  <div className="stitch-status-banner" style={{ marginTop: '10px', fontSize: '11.5px', padding: '6px 10px' }}>
-                    {activeCallStatus}
-                  </div>
-                )}
+            {/* Placeholder slot if at least 1 agent is present */}
+            {myAgents.length > 0 && (
+              <div className="stitch-empty-slot">
+                Deploy an agent to see it here
               </div>
-            ))
-          )}
-
-          {/* Placeholder slot if at least 1 agent is present */}
-          {myAgents.length > 0 && (
-            <div className="stitch-empty-slot">
-              Deploy an agent to see it here
-            </div>
-          )}
-        </div>
-
-        {/* Telemetry / Status Metadata at bottom */}
-        <div className="stitch-telemetry-box">
-          <div className="stitch-telemetry-row">
-            <span className="stitch-telemetry-label">Runtime Cluster</span>
-            <span className="stitch-telemetry-val">us-east-1-telephony</span>
-          </div>
-          <div className="stitch-telemetry-row">
-            <span className="stitch-telemetry-label">Active Retell Session</span>
-            <span className="stitch-telemetry-val bold">STANDBY_READY</span>
-          </div>
-          <div className="stitch-telemetry-row">
-            <span className="stitch-telemetry-label">Target Pipeline Latency</span>
-            <span className="stitch-telemetry-val cyan">&lt; 380ms</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Context-Only Edit Modal */}
-      {editingAgent && (
-        <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
-          <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="stitch-modal-header">
-              <div className="stitch-modal-title-box">
-                <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
-                <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
-                  {(editingAgent.call_type || 'inbound').toUpperCase()}
-                </span>
-                <button
-                  type="button"
-                  className="stitch-modal-close-btn"
-                  onClick={() => !savingContext && setEditingAgent(null)}
-                  disabled={savingContext}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="stitch-protection-banner">
-              <div className="stitch-protection-icon">🔒</div>
-              <div className="stitch-protection-text">
-                <strong>Context-Only Edit Mode:</strong> This updates <em>only</em> the conversational context / prompt on Retell AI. The voice persona (<code>{editingAgent.voice_id || 'Adrian'}</code>), agent ID, and telephony routing are completely protected and unchanged.
-              </div>
-            </div>
-
-            {fetchingContext ? (
-              <div className="stitch-modal-loading">
-                <div className="stitch-spinner"></div>
-                <span>Retrieving live context from Retell AI...</span>
-              </div>
-            ) : (
-              <form onSubmit={handleSaveContext} className="stitch-modal-form">
-                {/* Dynamic variables are only for Outbound calls (since known lead data is injected at dial time) */}
-                {editingAgent.call_type === 'outbound' ? (
-                  <div className="stitch-modal-chips-row">
-                    <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
-                    {[
-                      'customer_name',
-                      'company_name',
-                      'city',
-                      'website',
-                      'offer_discount',
-                      'appointment_time'
-                    ].map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        className="stitch-modal-var-chip"
-                        onClick={() => handleInsertTag(v)}
-                        title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
-                      >
-                        {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="stitch-inbound-guide-box">
-                    <span className="stitch-inbound-guide-badge">INBOUND DIRECTIVE</span>
-                    <span className="stitch-inbound-guide-text">
-                      Configure FAQs, greeting flow, and qualification criteria for incoming callers. (Dynamic pre-filled variables are disabled for inbound calls since caller identities are unknown until answered).
-                    </span>
-                  </div>
-                )}
-
-
-                <div className="stitch-form-group">
-                  <div className="stitch-label-row">
-                    <label className="stitch-label">SYSTEM CONTEXT / PROMPT</label>
-                    <span className="stitch-label-tag">{editPrompt.length} CHARS</span>
-                  </div>
-                  <textarea
-                    rows={9}
-                    className="stitch-textarea stitch-modal-textarea"
-                    placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
-                    value={editPrompt}
-                    onChange={(e) => setEditPrompt(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="stitch-form-group">
-                  <div className="stitch-label-row">
-                    <label className="stitch-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
-                    <span className="stitch-label-tag">INITIAL_SPEECH</span>
-                  </div>
-                  <input
-                    type="text"
-                    className="stitch-input"
-                    placeholder="e.g. Hello, thank you for calling Axis Bank. How can I assist you today?"
-                    value={editBeginMessage}
-                    onChange={(e) => setEditBeginMessage(e.target.value)}
-                  />
-                </div>
-
-                {editStatusMsg && (
-                  <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
-                    {editStatusMsg}
-                  </div>
-                )}
-
-                <div className="stitch-modal-footer">
-                  <button
-                    type="button"
-                    className="stitch-modal-cancel-btn"
-                    onClick={() => setEditingAgent(null)}
-                    disabled={savingContext}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="stitch-modal-save-btn"
-                    disabled={savingContext || !editPrompt.trim()}
-                  >
-                    {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
-                  </button>
-                </div>
-              </form>
             )}
           </div>
+
+          {/* Telemetry / Status Metadata at bottom */}
+          <div className="stitch-telemetry-box">
+            <div className="stitch-telemetry-row">
+              <span className="stitch-telemetry-label">Runtime Cluster</span>
+              <span className="stitch-telemetry-val">us-east-1-telephony</span>
+            </div>
+            <div className="stitch-telemetry-row">
+              <span className="stitch-telemetry-label">Active Retell Session</span>
+              <span className="stitch-telemetry-val bold">STANDBY_READY</span>
+            </div>
+            <div className="stitch-telemetry-row">
+              <span className="stitch-telemetry-label">Target Pipeline Latency</span>
+              <span className="stitch-telemetry-val cyan">&lt; 380ms</span>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Context-Only Edit Modal */}
+        {editingAgent && (
+          <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
+            <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="stitch-modal-header">
+                <div className="stitch-modal-title-box">
+                  <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
+                  <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
+                    {(editingAgent.call_type || 'inbound').toUpperCase()}
+                  </span>
+                  <button
+                    type="button"
+                    className="stitch-modal-close-btn"
+                    onClick={() => !savingContext && setEditingAgent(null)}
+                    disabled={savingContext}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+
+
+              {fetchingContext ? (
+                <div className="stitch-modal-loading">
+                  <div className="stitch-spinner"></div>
+                  <span>Retrieving live context from Retell AI...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveContext} className="stitch-modal-form">
+                  {/* Dynamic variables are only for Outbound calls (since known lead data is injected at dial time) */}
+                  {editingAgent.call_type === 'outbound' ? (
+                    <div className="stitch-modal-chips-row">
+                      <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
+                      {[
+                        'customer_name',
+                        'company_name',
+                        'city',
+                        'website',
+                        'offer_discount',
+                        'appointment_time'
+                      ].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          className="stitch-modal-var-chip"
+                          onClick={() => handleInsertTag(v)}
+                          title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                        >
+                          {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+
+                  <div className="stitch-form-group">
+                    <div className="stitch-label-row">
+                      <label className="stitch-label">SYSTEM CONTEXT / PROMPT</label>
+                      <span className="stitch-label-tag">{editPrompt.length} CHARS</span>
+                    </div>
+                    <textarea
+                      rows={9}
+                      className="stitch-textarea stitch-modal-textarea"
+                      placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
+                      value={editPrompt}
+                      onChange={(e) => setEditPrompt(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="stitch-form-group">
+                    <div className="stitch-label-row">
+                      <label className="stitch-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
+                      <span className="stitch-label-tag">INITIAL_SPEECH</span>
+                    </div>
+                    <input
+                      type="text"
+                      className="stitch-input"
+                      placeholder="e.g. Hello, thank you for calling Axis Bank. How can I assist you today?"
+                      value={editBeginMessage}
+                      onChange={(e) => setEditBeginMessage(e.target.value)}
+                    />
+                  </div>
+
+                  {editStatusMsg && (
+                    <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
+                      {editStatusMsg}
+                    </div>
+                  )}
+
+                  <div className="stitch-modal-footer">
+                    <button
+                      type="button"
+                      className="stitch-modal-cancel-btn"
+                      onClick={() => setEditingAgent(null)}
+                      disabled={savingContext}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="stitch-modal-save-btn"
+                      disabled={savingContext || !editPrompt.trim()}
+                    >
+                      {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

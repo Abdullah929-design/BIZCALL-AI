@@ -86,8 +86,40 @@ const CallSlot = ({ call, direction, onHangup }) => {
   );
 };
 
+const CrystalShard = ({ position = 'top-left' }) => (
+  <div className={`stitch-corner-crystal ${position}`} aria-hidden="true">
+    <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
+      <path d="M4 4 L 42 12 L 28 38 L 8 42 Z" fill="url(#crystGrad1)" opacity="0.45" />
+      <path d="M4 4 L 28 18 L 12 36 Z" fill="url(#crystGrad2)" opacity="0.65" />
+      <path d="M28 18 L 42 12 L 32 34 Z" fill="url(#crystGrad3)" opacity="0.8" />
+      <path d="M4 4 L 42 12 L 32 34 L 12 36 Z" stroke="rgba(186, 230, 253, 0.9)" strokeWidth="1.2" />
+      <defs>
+        <linearGradient id="crystGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#1e1b4b" />
+        </linearGradient>
+        <linearGradient id="crystGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#bae6fd" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+        <linearGradient id="crystGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+);
+
 const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
   const userId = user?.id || user?.email || 'demo_user';
+  const bgVideoRef = useRef(null);
+
+  useEffect(() => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.play().catch(() => { });
+    }
+  }, []);
 
   const [agents, setAgents] = useState([]);
   const [callMode, setCallMode] = useState('phone'); // 'phone' | 'simulated'
@@ -110,6 +142,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
     { id: 2, key: 'company_name', value: '' }
   ]);
   const [copiedKey, setCopiedKey] = useState(null);
+  const [varsExpanded, setVarsExpanded] = useState(true);
 
   const updateJsonFromRows = (rows) => {
     const obj = {};
@@ -148,7 +181,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
     const cleanKey = key.trim();
     if (!cleanKey) return;
     const tag = `{{${cleanKey}}}`;
-    navigator.clipboard.writeText(tag).catch(() => {});
+    navigator.clipboard.writeText(tag).catch(() => { });
     setCopiedKey(cleanKey);
     setTimeout(() => setCopiedKey(null), 1800);
   };
@@ -165,7 +198,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
         }));
         setVariableRows(rows);
       }
-    } catch {}
+    } catch { }
   };
 
   // Context-Only Edit State for selected agent
@@ -234,7 +267,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
 
   const handleInsertEditTag = (tag) => {
     const variableTag = `{{${tag}}}`;
-    navigator.clipboard.writeText(variableTag).catch(() => {});
+    navigator.clipboard.writeText(variableTag).catch(() => { });
     setEditCopiedTag(tag);
     setTimeout(() => setEditCopiedTag(null), 1800);
     setEditPrompt((prev) => (prev ? `${prev} ${variableTag}` : variableTag));
@@ -269,7 +302,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       const loadedAgents = agentData || [];
       setAgents(loadedAgents);
 
@@ -291,7 +324,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
       try {
         const cfg = await axios.get('/api/health/config');
         if (cfg.data?.TWILIO_PHONE_NUMBER) setFromNumber(cfg.data.TWILIO_PHONE_NUMBER);
-      } catch (e) {}
+      } catch (e) { }
 
       // Fetch the currently active inbound agent from Retell AI
       try {
@@ -651,702 +684,705 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
   const hasMoreLogs = history.length > visibleLogsCount;
 
   return (
-    <div className="live-calls-page">
-      {/* Inbound Call Alert Popup */}
-      {incomingCall && (
-        <div className="inbound-alert-banner">
-          <div className="inbound-alert-left">
-            <span className="inbound-alert-pulse" />
-            <div className="inbound-alert-title">
-              Incoming WebRTC Call from Lead: <strong>{incomingCall.lead_id}</strong>
-              {incomingQueue.length > 1 && (
-                <span style={{ marginLeft: 8, color: '#f59e0b', fontSize: '12px' }}>
-                  (+{incomingQueue.length - 1} queued)
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="inbound-alert-actions">
-            <button onClick={handleAcceptInbound} className="btn-answer">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
-              Answer
-            </button>
-            <button onClick={handleRejectInbound} className="btn-reject">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-              Decline
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="agent-builder-page-wrapper retell-live-page-wrapper">
+      {/* Levitating Crystal Video Background */}
+      <video
+        ref={bgVideoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        className="builder-bg-video"
+        src="https://res.cloudinary.com/dv7fu8gwf/video/upload/Crystal_levitating_up_and_down_20260928230831_dyw0df.mp4"
+      >
+        <iframe
+          src="https://player.cloudinary.com/embed/?cloud_name=dv7fu8gwf&public_id=Crystal_levitating_up_and_down_20260928230831_dyw0df"
+          className="builder-bg-video"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowFullScreen
+          frameBorder="0"
+          title="Background Video"
+        />
+      </video>
+      <div className="builder-bg-overlay" />
 
-      <div className="live-calls-grid">
-        {/* Outbound Trigger Panel */}
-        <div className="live-card">
-          <div className="live-card-header">
-            <h3 className="live-card-title">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-              Initiate Outbound Call
-            </h3>
-            <span className="live-badge-count">{outboundActive}/{MAX_SLOTS} BUSY</span>
-          </div>
-
-          {/* Call Mode Switcher */}
-          <div className="mode-toggle-group">
-            <button
-              type="button"
-              className={`mode-btn ${callMode === 'phone' ? 'active' : ''}`}
-              onClick={() => setCallMode('phone')}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
-              Real Phone (Twilio)
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${callMode === 'simulated' ? 'active' : ''}`}
-              onClick={() => setCallMode('simulated')}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
-              Simulated Lead (WebRTC)
-            </button>
-          </div>
-
-          <form onSubmit={handleInitiateCall} className="live-form">
-            <div className="live-form-group">
-              <div className="live-label-row">
-                <label className="live-label">OUTBOUND VOICE AGENT</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="live-label-tag">OUTBOUND ONLY</span>
-                  {selectedAgentId && (
-                    <button
-                      type="button"
-                      className="live-edit-agent-context-link"
-                      onClick={() => {
-                        const ag = outboundAgents.find((a) => a.agent_id === selectedAgentId) || agents.find((a) => a.agent_id === selectedAgentId);
-                        if (ag) handleOpenEditContext(ag);
-                      }}
-                      title="Edit prompt and conversational context for selected agent"
-                    >
-                      Edit Context ↗
-                    </button>
-                  )}
-                </div>
-              </div>
-              <select
-                className="live-select"
-                value={selectedAgentId}
-                onChange={(e) => setSelectedAgentId(e.target.value)}
-                required
-              >
-                <option value="" disabled>Select an outbound agent…</option>
-                {outboundAgents.map((a) => (
-                  <option key={a.agent_id} value={a.agent_id}>
-                    {a.agent_name}
-                  </option>
-                ))}
-              </select>
-              {outboundAgents.length === 0 && (
-                <span style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', display: 'block' }}>
-                  ⚠️ No outbound agents found. Deploy an outbound agent in the Inbound/Outbound Builder.
-                </span>
-              )}
-            </div>
-
-            {callMode === 'phone' ? (
-              <>
-                <div className="live-form-group">
-                  <div className="live-label-row">
-                    <label className="live-label">TO NUMBER</label>
-                    <span className="live-label-tag">E.164</span>
-                  </div>
-                  <input
-                    type="tel"
-                    className="live-input"
-                    placeholder="+15551234567"
-                    value={toNumber}
-                    onChange={(e) => setToNumber(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="live-form-group">
-                  <div className="live-label-row">
-                    <label className="live-label">FROM NUMBER</label>
-                    <span className="live-label-tag">TWILIO_CALLER_ID</span>
-                  </div>
-                  <input
-                    type="tel"
-                    className="live-input"
-                    placeholder="+15557654321"
-                    value={fromNumber}
-                    onChange={(e) => setFromNumber(e.target.value)}
-                    required
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="live-form-group">
-                <label className="live-label">TARGET SIMULATED LEAD</label>
-                <select
-                  className="live-select"
-                  value={selectedLeadId}
-                  onChange={(e) => setSelectedLeadId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select simulated lead…</option>
-                  {simulatedLeads.map((lead) => (
-                    <option key={lead.id} value={lead.id}>
-                      {lead.label} ({lead.status})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Dynamic Variables & Strategy Injection Builder */}
-            <div className="live-form-group var-builder-group">
-              <div className="live-label-row">
-                <div className="var-header-left">
-                  <label className="live-label">DYNAMIC VARIABLES & STRATEGY</label>
-                  <span className="live-label-tag">
-                    {varMode === 'visual' ? `${variableRows.filter(r => r.key.trim()).length} ACTIVE` : 'RAW_JSON'}
+      <div className="live-calls-page">
+        {/* Inbound Call Alert Popup */}
+        {incomingCall && (
+          <div className="inbound-alert-banner">
+            <div className="inbound-alert-left">
+              <span className="inbound-alert-pulse" />
+              <div className="inbound-alert-title">
+                Incoming WebRTC Call from Lead: <strong>{incomingCall.lead_id}</strong>
+                {incomingQueue.length > 1 && (
+                  <span style={{ marginLeft: 8, color: '#f59e0b', fontSize: '12px' }}>
+                    (+{incomingQueue.length - 1} queued)
                   </span>
-                </div>
-                <div className="var-header-actions">
-                  <div className="var-mode-switch">
-                    <button
-                      type="button"
-                      className={`var-mode-btn ${varMode === 'visual' ? 'active' : ''}`}
-                      onClick={() => setVarMode('visual')}
-                    >
-                      Visual Fields
-                    </button>
-                    <button
-                      type="button"
-                      className={`var-mode-btn ${varMode === 'json' ? 'active' : ''}`}
-                      onClick={() => setVarMode('json')}
-                    >
-                      Raw JSON
-                    </button>
-                  </div>
-                  {variableRows.length > 0 && (
-                    <button
-                      type="button"
-                      className="var-clear-btn"
-                      onClick={handleClearAllVariables}
-                      title="Clear all variables"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
+            </div>
+            <div className="inbound-alert-actions">
+              <button onClick={handleAcceptInbound} className="btn-answer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                Answer
+              </button>
+              <button onClick={handleRejectInbound} className="btn-reject">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Decline
+              </button>
+            </div>
+          </div>
+        )}
 
-              {/* Quick Presets Bar */}
-              <div className="var-quick-presets">
-                <span className="var-preset-label">Quick Add:</span>
-                {[
-                  { k: 'customer_name', label: '+ customer_name' },
-                  { k: 'company_name', label: '+ company_name' },
-                  { k: 'city', label: '+ city' },
-                  { k: 'website', label: '+ website' },
-                  { k: 'offer_discount', label: '+ offer_discount' },
-                  { k: 'appointment_time', label: '+ appointment_time' }
-                ].map((preset) => (
-                  <button
-                    key={preset.k}
-                    type="button"
-                    className="var-preset-chip"
-                    onClick={() => {
-                      if (!variableRows.some((r) => r.key.trim() === preset.k)) {
-                        handleAddVariableRow(preset.k, '');
-                      }
-                    }}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Strategy / Injection guidance */}
-              <div className="var-guide-banner">
-                <div className="var-guide-icon">💡</div>
-                <div className="var-guide-text">
-                  Write <code>{"{{variable_name}}"}</code> inside your Agent prompt (e.g. <em>&quot;You are speaking with {"{{customer_name}}"} from {"{{company_name}}"}&quot;</em>). Click any tag below to copy it!
-                </div>
-              </div>
-
-              {varMode === 'visual' ? (
-                <div className="var-builder-box">
-                  {variableRows.length === 0 ? (
-                    <div className="var-empty-box">
-                      <span>No dynamic variables defined yet.</span>
-                      <button
-                        type="button"
-                        className="var-add-row-btn secondary"
-                        onClick={() => handleAddVariableRow('customer_name', '')}
-                      >
-                        + Add First Variable
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="var-rows-list">
-                      {variableRows.map((row) => {
-                        const cleanKey = row.key.trim();
-                        const isCopied = copiedKey === cleanKey && cleanKey.length > 0;
-                        return (
-                          <div key={row.id} className="var-row-item">
-                            <div className="var-col-key">
-                              <input
-                                type="text"
-                                className="live-input var-input-key"
-                                placeholder="variable_name"
-                                value={row.key}
-                                onChange={(e) =>
-                                  handleUpdateVariableRow(
-                                    row.id,
-                                    'key',
-                                    e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
-                                  )
-                                }
-                              />
-                            </div>
-                            <span className="var-row-sep">=</span>
-                            <div className="var-col-val">
-                              <input
-                                type="text"
-                                className="live-input var-input-val"
-                                placeholder="Value (e.g. Dr. Alex)"
-                                value={row.value}
-                                onChange={(e) => handleUpdateVariableRow(row.id, 'value', e.target.value)}
-                              />
-                            </div>
-                            <div className="var-col-tag">
-                              {cleanKey ? (
-                                <button
-                                  type="button"
-                                  className={`var-copy-tag-btn ${isCopied ? 'copied' : ''}`}
-                                  onClick={() => handleCopyPromptTag(cleanKey)}
-                                  title="Click to copy prompt injection tag"
-                                >
-                                  {isCopied ? 'Copied! ✓' : `{{${cleanKey}}}`}
-                                </button>
-                              ) : (
-                                <span className="var-tag-placeholder">{"{{name}}"}</span>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              className="var-row-delete-btn"
-                              onClick={() => handleRemoveVariableRow(row.id)}
-                              title="Delete variable"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                              </svg>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    className="var-add-row-btn"
-                    onClick={() => handleAddVariableRow('', '')}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add Custom Variable
-                  </button>
-                </div>
-              ) : (
-                <textarea
-                  rows={4}
-                  className="live-textarea var-json-textarea"
-                  value={dynamicVarsText}
-                  onChange={(e) => handleJsonChange(e.target.value)}
-                  placeholder='{\n  "customer_name": "Alex",\n  "company_name": "Acme Corp"\n}'
-                />
-              )}
+        <div className="live-calls-grid">
+          {/* Outbound Trigger Panel */}
+          <div className="live-card">
+            <CrystalShard position="top-left" />
+            <CrystalShard position="top-right" />
+            <div className="live-card-header">
+              <h3 className="live-card-title">
+                Initiate Outbound Call
+              </h3>
             </div>
 
-            {isCalling ? (
+            {/* Call Mode Switcher */}
+            <div className="mode-toggle-group">
               <button
                 type="button"
-                className="live-initiate-btn disconnect-btn"
-                onClick={() => handleHangup(activeCallId)}
+                className={`mode-btn ${callMode === 'phone' ? 'active' : ''}`}
+                onClick={() => setCallMode('phone')}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="6" y="6" width="12" height="12"></rect>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                 </svg>
-                Disconnect Active WebRTC Call
+                Real Phone (Twilio)
               </button>
-            ) : (
               <button
-                type="submit"
-                className="live-initiate-btn"
-                disabled={loading || outboundActive >= MAX_SLOTS}
+                type="button"
+                className={`mode-btn ${callMode === 'simulated' ? 'active' : ''}`}
+                onClick={() => setCallMode('simulated')}
               >
-                {loading ? (
-                  'Ringing Lead...'
-                ) : (
-                  <>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    Initiate Live Outbound Call
-                  </>
-                )}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                Simulated Lead
               </button>
-            )}
-          </form>
-
-          {statusMsg && <div className="live-status-badge">{statusMsg}</div>}
-          {callStatus !== 'Idle' && (
-            <div style={{ color: '#818cf8', fontSize: '11.5px', marginTop: 8, fontFamily: 'DM Mono, monospace' }}>
-              WebRTC Status: {callStatus}
-            </div>
-          )}
-        </div>
-
-        {/* Telephony Slots Monitor */}
-        <div className="live-card">
-          <div className="live-card-header">
-            <h3 className="live-card-title">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
-              Telephony Line Monitors
-            </h3>
-            <span className="live-badge-count">{inboundActive + outboundActive}/10 ACTIVE</span>
-          </div>
-
-          {/* Active Live Inbound Agent Selector Card */}
-          <div className="active-inbound-card">
-            <div className="active-inbound-header">
-              <div className="active-inbound-title-area">
-                <span className="inbound-pulse-dot" />
-                <span className="active-inbound-title">ACTIVE LIVE INBOUND AGENT</span>
-                {activeInboundPhone && (
-                  <span className="inbound-phone-tag">
-                    📞 {activeInboundPhone}
-                  </span>
-                )}
-              </div>
-              <span className={`inbound-status-pill ${activeInboundAgentId ? 'live' : ''}`}>
-                {settingLiveInbound ? 'SWITCHING...' : (activeInboundAgentId ? '● LIVE INBOUND' : 'STANDBY')}
-              </span>
             </div>
 
-            <div className="active-inbound-body">
-              <div className="active-inbound-desc">
-                Designate which agent answers 100% of incoming live carrier (Twilio/Retell) & WebRTC calls:
-              </div>
-              <div className="active-inbound-control-row">
+            <form onSubmit={handleInitiateCall} className="live-form">
+              <div className="live-form-group">
+                <div className="live-label-row">
+                  <label className="live-label">OUTBOUND VOICE AGENT</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {selectedAgentId && (
+                      <button
+                        type="button"
+                        className="live-edit-agent-context-link"
+                        onClick={() => {
+                          const ag = outboundAgents.find((a) => a.agent_id === selectedAgentId) || agents.find((a) => a.agent_id === selectedAgentId);
+                          if (ag) handleOpenEditContext(ag);
+                        }}
+                        title="Edit prompt and conversational context for selected agent"
+                      >
+                        Edit Context ↗
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <select
-                  className="active-inbound-select"
-                  value={activeInboundAgentId}
-                  onChange={(e) => handleSetActiveInboundAgent(e.target.value)}
-                  disabled={settingLiveInbound || inboundAgents.length === 0}
+                  className="live-select"
+                  value={selectedAgentId}
+                  onChange={(e) => setSelectedAgentId(e.target.value)}
+                  required
                 >
-                  {inboundAgents.length === 0 && (
-                    <option value="" disabled>No inbound agents deployed</option>
-                  )}
-                  {inboundAgents.map((ag) => (
-                    <option key={ag.agent_id} value={ag.agent_id}>
-                      {ag.agent_name} {ag.agent_id === activeInboundAgentId ? '★ (Active Live)' : ''}
+                  <option value="" disabled>Select an outbound agent…</option>
+                  {outboundAgents.map((a) => (
+                    <option key={a.agent_id} value={a.agent_id}>
+                      {a.agent_name}
                     </option>
                   ))}
                 </select>
-                {activeInboundAgentId && (
-                  <span className="active-inbound-confirmed-badge">
-                    ✓ Verified Active
+                {outboundAgents.length === 0 && (
+                  <span style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', display: 'block' }}>
+                    ⚠️ No outbound agents found. Deploy an outbound agent in the Inbound/Outbound Builder.
                   </span>
                 )}
               </div>
-            </div>
-          </div>
 
-          <div className="section-subhead">
-            <span>INBOUND LINES</span>
-            <span className="live-badge-count">{inboundActive}/{MAX_SLOTS}</span>
-          </div>
-          <div className="slots-grid">
-            {inboundSlots.map((call, i) => (
-              <CallSlot key={i} call={call} direction="inbound" onHangup={handleHangup} />
-            ))}
-          </div>
+              {callMode === 'phone' ? (
+                <>
+                  <div className="live-form-group">
+                    <div className="live-label-row">
+                      <label className="live-label">TO NUMBER</label>
 
-          <div className="section-subhead" style={{ marginTop: 20 }}>
-            <span>OUTBOUND LINES</span>
-            <span className="live-badge-count">{outboundActive}/{MAX_SLOTS}</span>
-          </div>
-          <div className="slots-grid">
-            {outboundSlots.map((call, i) => (
-              <CallSlot key={i} call={call} direction="outbound" onHangup={handleHangup} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Calls Log Card */}
-      <div className="live-card">
-        <div className="live-card-header">
-          <h3 className="live-card-title">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            Recent Calls Log
-          </h3>
-          <span className="live-badge-count">{history.length} TOTAL</span>
-        </div>
-
-        {history.length === 0 ? (
-          <p className="empty-log">No calls logged yet. Initiate an outbound call or trigger an inbound call.</p>
-        ) : (
-          <>
-            <div className="calls-table-header">
-              <span>DIRECTION</span>
-              <span>NUMBER / ENDPOINT</span>
-              <span>AGENT</span>
-              <span>STATUS</span>
-              <span>DURATION</span>
-              <span>SENTIMENT</span>
-            </div>
-
-            <div className="calls-table">
-              {visibleLogs.map((call) => (
-                <div key={call.call_id} className="calls-row-wrapper">
-                  <div
-                    className={`calls-row ${expandedCallId === call.call_id ? 'expanded' : ''}`}
-                    onClick={() => setExpandedCallId(expandedCallId === call.call_id ? null : call.call_id)}
-                  >
-                    <div>
-                      <span className={`direction-badge ${call.direction}`}>
-                        {call.direction}
-                      </span>
                     </div>
-                    <span className="calls-row-num">
-                      {call.direction === 'inbound' ? call.from_number : call.to_number}
-                    </span>
-                    <span className="calls-row-agent">
-                      {call.agent_name || call.agent_id || '—'}
-                    </span>
-                    <div>
-                      <span className={`status-pill status-${call.status}`}>
-                        {call.status}
-                      </span>
-                    </div>
-                    <span className="calls-row-dur">{formatDuration(call.duration)}</span>
-                    <div>
-                      {call.sentiment ? (
-                        <span className={`sentiment-badge ${call.sentiment.toLowerCase()}`}>
-                          {call.sentiment}
-                        </span>
-                      ) : (
-                        <span style={{ color: '#475569', fontSize: '11px' }}>—</span>
-                      )}
-                    </div>
+                    <input
+                      type="tel"
+                      className="live-input"
+                      placeholder="+15551234567"
+                      value={toNumber}
+                      onChange={(e) => setToNumber(e.target.value)}
+                      required
+                    />
                   </div>
 
-                  {expandedCallId === call.call_id && (
-                    <div className="calls-row-expanded">
-                      {call.summary && (
-                        <div style={{ marginBottom: 10 }}>
-                          <strong style={{ color: '#f8fafc' }}>Call Summary:</strong>{' '}
-                          <span style={{ color: '#94a3b8' }}>{call.summary}</span>
-                        </div>
-                      )}
-                      {call.recording_url && (
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ color: '#f8fafc', fontWeight: 600, marginBottom: 4 }}>Call Audio Recording:</div>
-                          <audio controls src={call.recording_url} style={{ width: '100%', height: '36px' }} />
-                        </div>
-                      )}
-                      {call.transcript && (
-                        <div>
-                          <div style={{ color: '#f8fafc', fontWeight: 600 }}>Live Transcript:</div>
-                          <pre className="transcript-block">{call.transcript}</pre>
-                        </div>
-                      )}
+                  <div className="live-form-group">
+                    <div className="live-label-row">
+                      <label className="live-label">FROM NUMBER</label>
+
                     </div>
+                    <input
+                      type="tel"
+                      className="live-input"
+                      placeholder="+15557654321"
+                      value={fromNumber}
+                      onChange={(e) => setFromNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="live-form-group">
+                  <label className="live-label">TARGET SIMULATED LEAD</label>
+                  <select
+                    className="live-select"
+                    value={selectedLeadId}
+                    onChange={(e) => setSelectedLeadId(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>Select simulated lead…</option>
+                    {simulatedLeads.map((lead) => (
+                      <option key={lead.id} value={lead.id}>
+                        {lead.label} ({lead.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Dynamic Variables & Strategy Injection Builder */}
+              <div className="live-form-group var-builder-group">
+                <div className="var-header-bar" onClick={() => setVarsExpanded(!varsExpanded)}>
+                  <div className="var-header-left">
+                    <svg className={`var-chevron ${varsExpanded ? 'open' : ''}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <label className="live-label" style={{ cursor: 'pointer', userSelect: 'none' }}>DYNAMIC VARIABLES &amp; STRATEGY</label>
+
+                  </div>
+                  <div className="var-header-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="var-mode-switch">
+                      <button
+                        type="button"
+                        className={`var-mode-btn ${varMode === 'visual' ? 'active' : ''}`}
+                        onClick={() => setVarMode('visual')}
+                      >
+                        Visual
+                      </button>
+                      <button
+                        type="button"
+                        className={`var-mode-btn ${varMode === 'json' ? 'active' : ''}`}
+                        onClick={() => setVarMode('json')}
+                      >
+                        JSON
+                      </button>
+                    </div>
+                    {variableRows.length > 0 && (
+                      <button
+                        type="button"
+                        className="var-clear-btn"
+                        onClick={handleClearAllVariables}
+                        title="Clear all variables"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {varsExpanded && (
+                  <div className="var-expanded-content">
+                    {/* Compact Strategy Tip */}
+
+                    {/* Clean Presets + Add Actions Bar */}
+                    <div className="var-action-toolbar">
+                      <select
+                        className="var-preset-dropdown"
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            if (!variableRows.some((r) => r.key.trim() === e.target.value)) {
+                              handleAddVariableRow(e.target.value, '');
+                            }
+                            e.target.value = '';
+                          }
+                        }}
+                      >
+                        <option value="" disabled>+ Quick Add Preset...</option>
+                        <option value="customer_name">customer_name</option>
+                        <option value="company_name">company_name</option>
+                        <option value="city">city</option>
+                        <option value="website">website</option>
+                        <option value="offer_discount">offer_discount</option>
+                        <option value="appointment_time">appointment_time</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        className="var-add-custom-btn"
+                        onClick={() => handleAddVariableRow('', '')}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Custom
+                      </button>
+                    </div>
+
+                    {varMode === 'visual' ? (
+                      <div className="var-builder-box">
+                        {variableRows.length === 0 ? (
+                          <div className="var-empty-box">
+                            <span>No dynamic variables defined. Agent will use default context.</span>
+                            <button
+                              type="button"
+                              className="var-preset-chip"
+                              onClick={() => handleAddVariableRow('customer_name', '')}
+                            >
+                              + Add customer_name
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="var-rows-list">
+                            {variableRows.map((row) => {
+                              const cleanKey = row.key.trim();
+                              const isCopied = copiedKey === cleanKey && cleanKey.length > 0;
+                              return (
+                                <div key={row.id} className="var-row-item">
+                                  <div className="var-row-inputs">
+                                    <input
+                                      type="text"
+                                      className="live-input var-input-key"
+                                      placeholder="variable_name"
+                                      value={row.key}
+                                      onChange={(e) =>
+                                        handleUpdateVariableRow(
+                                          row.id,
+                                          'key',
+                                          e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                                        )
+                                      }
+                                    />
+                                    <input
+                                      type="text"
+                                      className="live-input var-input-val"
+                                      placeholder="Value (e.g. Acme Corp)"
+                                      value={row.value}
+                                      onChange={(e) => handleUpdateVariableRow(row.id, 'value', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="var-row-actions">
+                                    {cleanKey ? (
+                                      <button
+                                        type="button"
+                                        className={`var-copy-tag-btn ${isCopied ? 'copied' : ''}`}
+                                        onClick={() => handleCopyPromptTag(cleanKey)}
+                                        title="Click to copy prompt injection tag"
+                                      >
+                                        {isCopied ? 'Copied!' : `{{${cleanKey}}}`}
+                                      </button>
+                                    ) : (
+                                      <span className="var-tag-placeholder">{"{{tag}}"}</span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className="var-row-delete-btn"
+                                      onClick={() => handleRemoveVariableRow(row.id)}
+                                      title="Delete variable"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <textarea
+                        rows={4}
+                        className="live-textarea var-json-textarea"
+                        value={dynamicVarsText}
+                        onChange={(e) => handleJsonChange(e.target.value)}
+                        placeholder='{\n  "customer_name": "Alex",\n  "company_name": "Acme Corp"\n}'
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {isCalling ? (
+                <button
+                  type="button"
+                  className="live-initiate-btn disconnect-btn"
+                  onClick={() => handleHangup(activeCallId)}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="6" y="6" width="12" height="12"></rect>
+                  </svg>
+                  Disconnect Active WebRTC Call
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="live-initiate-btn"
+                  disabled={loading || outboundActive >= MAX_SLOTS}
+                >
+                  {loading ? (
+                    'Ringing Lead...'
+                  ) : (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                      Initiate Live Outbound Call
+                    </>
+                  )}
+                </button>
+              )}
+            </form>
+
+            {statusMsg && <div className="live-status-badge">{statusMsg}</div>}
+            {callStatus !== 'Idle' && (
+              <div style={{ color: '#818cf8', fontSize: '11.5px', marginTop: 8, fontFamily: 'DM Mono, monospace' }}>
+                WebRTC Status: {callStatus}
+              </div>
+            )}
+          </div>
+
+          {/* Telephony Slots Monitor */}
+          <div className="live-card">
+            <CrystalShard position="top-left" />
+            <CrystalShard position="top-right" />
+            <div className="live-card-header">
+              <h3 className="live-card-title">
+
+                Telephony Line Monitors
+              </h3>
+
+            </div>
+
+            {/* Active Live Inbound Agent Selector Card */}
+            <div className="active-inbound-card">
+              <div className="active-inbound-header">
+                <div className="active-inbound-title-area">
+                  <span className="inbound-pulse-dot" />
+                  <span className="active-inbound-title">ACTIVE LIVE INBOUND AGENT</span>
+                </div>
+                <span className={`inbound-status-pill ${activeInboundAgentId ? 'live' : ''}`}>
+                  {settingLiveInbound ? 'SWITCHING...' : (activeInboundAgentId ? '● LIVE INBOUND' : 'STANDBY')}
+                </span>
+              </div>
+
+              <div className="active-inbound-body">
+
+                <div className="active-inbound-control-row">
+                  <select
+                    className="active-inbound-select"
+                    value={activeInboundAgentId}
+                    onChange={(e) => handleSetActiveInboundAgent(e.target.value)}
+                    disabled={settingLiveInbound || inboundAgents.length === 0}
+                  >
+                    {inboundAgents.length === 0 && (
+                      <option value="" disabled>No inbound agents deployed</option>
+                    )}
+                    {inboundAgents.map((ag) => (
+                      <option key={ag.agent_id} value={ag.agent_id}>
+                        {ag.agent_name} {ag.agent_id === activeInboundAgentId ? '★ (Active Live)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {activeInboundAgentId && (
+                    <span className="active-inbound-confirmed-badge">
+                      Verified Active
+                    </span>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="section-subhead">
+              <span>INBOUND LINES</span>
+              <span className="live-badge-count">{inboundActive}/{MAX_SLOTS}</span>
+            </div>
+            <div className="slots-grid">
+              {inboundSlots.map((call, i) => (
+                <CallSlot key={i} call={call} direction="inbound" onHangup={handleHangup} />
               ))}
             </div>
 
-            {/* Pagination Controls */}
-            <div className="show-more-container">
-              {hasMoreLogs ? (
-                <button
-                  type="button"
-                  className="show-more-btn"
-                  onClick={() => setVisibleLogsCount((prev) => prev + 5)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                  Show More Calls ({history.length - visibleLogsCount} remaining)
-                </button>
-              ) : (
-                history.length > 5 && (
-                  <button
-                    type="button"
-                    className="show-less-btn"
-                    onClick={() => setVisibleLogsCount(5)}
-                  >
-                    Show Less (Reset to 5)
-                  </button>
-                )
-              )}
+            <div className="section-subhead" style={{ marginTop: 20 }}>
+              <span>OUTBOUND LINES</span>
+              <span className="live-badge-count">{outboundActive}/{MAX_SLOTS}</span>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Context-Only Edit Modal */}
-      {editingAgent && (
-        <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
-          <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="stitch-modal-header">
-              <div className="stitch-modal-title-box">
-                <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
-                <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
-                  {(editingAgent.call_type || 'outbound').toUpperCase()}
-                </span>
-                <button
-                  type="button"
-                  className="stitch-modal-close-btn"
-                  onClick={() => !savingContext && setEditingAgent(null)}
-                  disabled={savingContext}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
+            <div className="slots-grid">
+              {outboundSlots.map((call, i) => (
+                <CallSlot key={i} call={call} direction="outbound" onHangup={handleHangup} />
+              ))}
             </div>
-
-            <div className="stitch-protection-banner">
-              <div className="stitch-protection-icon">🔒</div>
-              <div className="stitch-protection-text">
-                <strong>Context-Only Edit Mode:</strong> This updates <em>only</em> the conversational context / prompt on Retell AI. The voice persona (<code>{editingAgent.voice_id || 'Adrian'}</code>), agent ID, and telephony routing are completely protected and unchanged.
-              </div>
-            </div>
-
-            {fetchingContext ? (
-              <div className="stitch-modal-loading">
-                <div className="stitch-spinner"></div>
-                <span>Retrieving live context from Retell AI...</span>
-              </div>
-            ) : (
-              <form onSubmit={handleSaveContext} className="stitch-modal-form">
-                {/* Dynamic variables are only for Outbound calls */}
-                {editingAgent.call_type === 'outbound' && (
-                  <div className="stitch-modal-chips-row">
-                    <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
-                    {[
-                      'customer_name',
-                      'company_name',
-                      'city',
-                      'website',
-                      'offer_discount',
-                      'appointment_time'
-                    ].map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        className="stitch-modal-var-chip"
-                        onClick={() => handleInsertEditTag(v)}
-                        title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
-                      >
-                        {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="live-form-group">
-                  <div className="live-label-row">
-                    <label className="live-label">SYSTEM CONTEXT / PROMPT</label>
-                    <span className="live-label-tag">{editPrompt.length} CHARS</span>
-                  </div>
-                  <textarea
-                    rows={9}
-                    className="live-textarea stitch-modal-textarea"
-                    placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
-                    value={editPrompt}
-                    onChange={(e) => setEditPrompt(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="live-form-group">
-                  <div className="live-label-row">
-                    <label className="live-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
-                    <span className="live-label-tag">INITIAL_SPEECH</span>
-                  </div>
-                  <input
-                    type="text"
-                    className="live-input"
-                    placeholder="e.g. Hello, thank you for calling. How can I assist you today?"
-                    value={editBeginMessage}
-                    onChange={(e) => setEditBeginMessage(e.target.value)}
-                  />
-                </div>
-
-                {editStatusMsg && (
-                  <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
-                    {editStatusMsg}
-                  </div>
-                )}
-
-                <div className="stitch-modal-footer">
-                  <button
-                    type="button"
-                    className="stitch-modal-cancel-btn"
-                    onClick={() => setEditingAgent(null)}
-                    disabled={savingContext}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="stitch-modal-save-btn"
-                    disabled={savingContext || !editPrompt.trim()}
-                  >
-                    {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </div>
-      )}
+
+        {/* Recent Calls Log Card */}
+        <div className="live-card">
+          <CrystalShard position="top-left" />
+          <CrystalShard position="top-right" />
+          <div className="live-card-header">
+            <h3 className="live-card-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Recent Calls Log
+            </h3>
+
+          </div>
+
+          {history.length === 0 ? (
+            <p className="empty-log">No calls logged yet. Initiate an outbound call or trigger an inbound call.</p>
+          ) : (
+            <>
+              <div className="calls-table-header">
+                <span>DIRECTION</span>
+                <span>NUMBER / ENDPOINT</span>
+                <span>AGENT</span>
+                <span>STATUS</span>
+                <span>DURATION</span>
+                <span>SENTIMENT</span>
+              </div>
+
+              <div className="calls-table">
+                {visibleLogs.map((call) => (
+                  <div key={call.call_id} className="calls-row-wrapper">
+                    <div
+                      className={`calls-row ${expandedCallId === call.call_id ? 'expanded' : ''}`}
+                      onClick={() => setExpandedCallId(expandedCallId === call.call_id ? null : call.call_id)}
+                    >
+                      <div>
+                        <span className={`direction-badge ${call.direction}`}>
+                          {call.direction}
+                        </span>
+                      </div>
+                      <span className="calls-row-num">
+                        {call.direction === 'inbound' ? call.from_number : call.to_number}
+                      </span>
+                      <span className="calls-row-agent">
+                        {call.agent_name || call.agent_id || '—'}
+                      </span>
+                      <div>
+                        <span className={`status-pill status-${call.status}`}>
+                          {call.status}
+                        </span>
+                      </div>
+                      <span className="calls-row-dur">{formatDuration(call.duration)}</span>
+                      <div>
+                        {call.sentiment ? (
+                          <span className={`sentiment-badge ${call.sentiment.toLowerCase()}`}>
+                            {call.sentiment}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#475569', fontSize: '11px' }}>—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {expandedCallId === call.call_id && (
+                      <div className="calls-row-expanded">
+                        {call.summary && (
+                          <div style={{ marginBottom: 10 }}>
+                            <strong style={{ color: '#f8fafc' }}>Call Summary:</strong>{' '}
+                            <span style={{ color: '#94a3b8' }}>{call.summary}</span>
+                          </div>
+                        )}
+                        {call.recording_url && (
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ color: '#f8fafc', fontWeight: 600, marginBottom: 4 }}>Call Audio Recording:</div>
+                            <audio controls src={call.recording_url} style={{ width: '100%', height: '36px' }} />
+                          </div>
+                        )}
+                        {call.transcript && (
+                          <div>
+                            <div style={{ color: '#f8fafc', fontWeight: 600 }}>Live Transcript:</div>
+                            <pre className="transcript-block">{call.transcript}</pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="show-more-container">
+                {hasMoreLogs ? (
+                  <button
+                    type="button"
+                    className="show-more-btn"
+                    onClick={() => setVisibleLogsCount((prev) => prev + 5)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    Show More Calls ({history.length - visibleLogsCount} remaining)
+                  </button>
+                ) : (
+                  history.length > 5 && (
+                    <button
+                      type="button"
+                      className="show-less-btn"
+                      onClick={() => setVisibleLogsCount(5)}
+                    >
+                      Show Less (Reset to 5)
+                    </button>
+                  )
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Context-Only Edit Modal */}
+        {editingAgent && (
+          <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
+            <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="stitch-modal-header">
+                <div className="stitch-modal-title-box">
+                  <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
+                  <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
+                    {(editingAgent.call_type || 'outbound').toUpperCase()}
+                  </span>
+                  <button
+                    type="button"
+                    className="stitch-modal-close-btn"
+                    onClick={() => !savingContext && setEditingAgent(null)}
+                    disabled={savingContext}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+
+              {fetchingContext ? (
+                <div className="stitch-modal-loading">
+                  <div className="stitch-spinner"></div>
+                  <span>Retrieving live context from Retell AI...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveContext} className="stitch-modal-form">
+                  {/* Dynamic variables are only for Outbound calls */}
+                  {editingAgent.call_type === 'outbound' && (
+                    <div className="stitch-modal-chips-row">
+                      <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
+                      {[
+                        'customer_name',
+                        'company_name',
+                        'city',
+                        'website',
+                        'offer_discount',
+                        'appointment_time'
+                      ].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          className="stitch-modal-var-chip"
+                          onClick={() => handleInsertEditTag(v)}
+                          title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                        >
+                          {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="live-form-group">
+                    <div className="live-label-row">
+                      <label className="live-label">SYSTEM CONTEXT / PROMPT</label>
+                      <span className="live-label-tag">{editPrompt.length} CHARS</span>
+                    </div>
+                    <textarea
+                      rows={9}
+                      className="live-textarea stitch-modal-textarea"
+                      placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
+                      value={editPrompt}
+                      onChange={(e) => setEditPrompt(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="live-form-group">
+                    <div className="live-label-row">
+                      <label className="live-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
+                      <span className="live-label-tag">INITIAL_SPEECH</span>
+                    </div>
+                    <input
+                      type="text"
+                      className="live-input"
+                      placeholder="e.g. Hello, thank you for calling. How can I assist you today?"
+                      value={editBeginMessage}
+                      onChange={(e) => setEditBeginMessage(e.target.value)}
+                    />
+                  </div>
+
+                  {editStatusMsg && (
+                    <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
+                      {editStatusMsg}
+                    </div>
+                  )}
+
+                  <div className="stitch-modal-footer">
+                    <button
+                      type="button"
+                      className="stitch-modal-cancel-btn"
+                      onClick={() => setEditingAgent(null)}
+                      disabled={savingContext}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="stitch-modal-save-btn"
+                      disabled={savingContext || !editPrompt.trim()}
+                    >
+                      {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
