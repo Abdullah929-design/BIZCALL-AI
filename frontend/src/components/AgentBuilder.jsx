@@ -594,28 +594,38 @@ const AgentBuilder = ({ user }) => {
               </div>
             ) : (
               <form onSubmit={handleSaveContext} className="stitch-modal-form">
-                {/* Quick variable injection tags */}
-                <div className="stitch-modal-chips-row">
-                  <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
-                  {[
-                    'customer_name',
-                    'company_name',
-                    'city',
-                    'website',
-                    'offer_discount',
-                    'appointment_time'
-                  ].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      className="stitch-modal-var-chip"
-                      onClick={() => handleInsertTag(v)}
-                      title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
-                    >
-                      {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
-                    </button>
-                  ))}
-                </div>
+                {/* Dynamic variables are only for Outbound calls (since known lead data is injected at dial time) */}
+                {editingAgent.call_type === 'outbound' ? (
+                  <div className="stitch-modal-chips-row">
+                    <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
+                    {[
+                      'customer_name',
+                      'company_name',
+                      'city',
+                      'website',
+                      'offer_discount',
+                      'appointment_time'
+                    ].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        className="stitch-modal-var-chip"
+                        onClick={() => handleInsertTag(v)}
+                        title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                      >
+                        {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="stitch-inbound-guide-box">
+                    <span className="stitch-inbound-guide-badge">INBOUND DIRECTIVE</span>
+                    <span className="stitch-inbound-guide-text">
+                      Configure FAQs, greeting flow, and qualification criteria for incoming callers. (Dynamic pre-filled variables are disabled for inbound calls since caller identities are unknown until answered).
+                    </span>
+                  </div>
+                )}
+
 
                 <div className="stitch-form-group">
                   <div className="stitch-label-row">

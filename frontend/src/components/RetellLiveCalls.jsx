@@ -1265,28 +1265,30 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
               </div>
             ) : (
               <form onSubmit={handleSaveContext} className="stitch-modal-form">
-                {/* Quick variable injection tags */}
-                <div className="stitch-modal-chips-row">
-                  <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
-                  {[
-                    'customer_name',
-                    'company_name',
-                    'city',
-                    'website',
-                    'offer_discount',
-                    'appointment_time'
-                  ].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      className="stitch-modal-var-chip"
-                      onClick={() => handleInsertEditTag(v)}
-                      title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
-                    >
-                      {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
-                    </button>
-                  ))}
-                </div>
+                {/* Dynamic variables are only for Outbound calls */}
+                {editingAgent.call_type === 'outbound' && (
+                  <div className="stitch-modal-chips-row">
+                    <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
+                    {[
+                      'customer_name',
+                      'company_name',
+                      'city',
+                      'website',
+                      'offer_discount',
+                      'appointment_time'
+                    ].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        className="stitch-modal-var-chip"
+                        onClick={() => handleInsertEditTag(v)}
+                        title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                      >
+                        {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 <div className="live-form-group">
                   <div className="live-label-row">
