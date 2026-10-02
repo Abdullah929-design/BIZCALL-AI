@@ -494,3 +494,305 @@
   color: #38bdf8;
   font-weight: 600;
 }
+
+/* ========================================================
+   CONTEXT-ONLY EDIT ACTION & MODAL STYLES
+   ======================================================== */
+
+.stitch-card-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.stitch-edit-context-btn {
+  width: 100%;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: 6px;
+  color: #a5b4fc;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stitch-edit-context-btn:hover {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: #818cf8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Modal Backdrop */
+.stitch-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(4, 6, 12, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: stitchFadeIn 0.18s ease-out;
+}
+
+@keyframes stitchFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.stitch-modal-card {
+  width: 100%;
+  max-width: 680px;
+  background: #11131c;
+  border: 1px solid #282d42;
+  border-radius: 12px;
+  padding: 24px 26px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(99, 102, 241, 0.15);
+  box-sizing: border-box;
+  animation: stitchModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes stitchModalPop {
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.stitch-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.stitch-modal-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stitch-modal-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: #818cf8;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.stitch-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.stitch-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stitch-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+/* Protection Banner */
+.stitch-protection-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a7f3d0;
+}
+
+.stitch-protection-banner strong {
+  color: #34d399;
+}
+
+.stitch-protection-banner code {
+  font-family: 'DM Mono', monospace;
+  background: rgba(16, 185, 129, 0.2);
+  color: #ecfdf5;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.stitch-protection-banner em {
+  font-style: normal;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.stitch-protection-icon {
+  font-size: 15px;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* Loading Skeleton */
+.stitch-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.stitch-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid #23283c;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: stitchSpin 0.7s linear infinite;
+}
+
+@keyframes stitchSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Form Elements */
+.stitch-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stitch-modal-chips-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.stitch-modal-chips-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-right: 2px;
+}
+
+.stitch-modal-var-chip {
+  background: #161826;
+  border: 1px dashed #2d344d;
+  color: #94a3b8;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stitch-modal-var-chip:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+.stitch-modal-textarea {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  color: #f1f5f9 !important;
+  background: #0b0c13 !important;
+  border-color: #232738 !important;
+}
+
+.stitch-modal-textarea:focus {
+  border-color: #6366f1 !important;
+}
+
+.stitch-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #1e2233;
+}
+
+.stitch-modal-cancel-btn {
+  background: transparent;
+  border: 1px solid #282d40;
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stitch-modal-cancel-btn:hover {
+  background: #181b29;
+  color: #f1f5f9;
+}
+
+.stitch-modal-save-btn {
+  background: #5855d6;
+  border: 1px solid #6e6bf4;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(88, 85, 214, 0.35);
+  transition: all 0.15s ease;
+}
+
+.stitch-modal-save-btn:hover:not(:disabled) {
+  background: #6865e8;
+  transform: translateY(-1px);
+}
+
+.stitch-modal-save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.stitch-status-banner.error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.stitch-status-banner.success {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #86efac;
+}
+

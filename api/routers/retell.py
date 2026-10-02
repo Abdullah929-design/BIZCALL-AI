@@ -293,6 +293,79 @@ async def delete_agent(agent_id: str):
     except Exception as e:
         print(f"[Retell Agent Deletion Error]: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete agent on Retell AI: {str(e)}")
+
+@router.get("/agent-context/{agent_id}")
+async def get_agent_context(agent_id: str):
+    """Retrieve the current prompt/context of an existing Retell agent without altering any settings."""
+    client = get_retell_client()
+    try:
+        agent = client.agent.retrieve(agent_id)
+        llm_id = None
+        if hasattr(agent, "response_engine") and getattr(agent.response_engine, "type", None) == "retell-llm":
+            llm_id = getattr(agent.response_engine, "llm_id", None)
+            
+        if not llm_id:
+            raise HTTPException(
+                status_code=400,
+                detail="This agent does not use a direct Retell LLM response engine with editable context."
+            )
+            
+        llm = client.llm.retrieve(llm_id)
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "agent_name": getattr(agent, "agent_name", ""),
+            "llm_id": llm_id,
+            "prompt": getattr(llm, "general_prompt", "") or "",
+            "begin_message": getattr(llm, "begin_message", "") or ""
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[get_agent_context error]: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve agent context: {str(e)}")
+
+class UpdateAgentContextRequest(BaseModel):
+    agent_id: str
+    prompt: str
+    begin_message: Optional[str] = None
+
+@router.post("/update-agent-context")
+async def update_agent_context(req: UpdateAgentContextRequest):
+    """Update ONLY the prompt/context of an existing Retell agent, preserving all voice, telephony, and routing settings."""
+    client = get_retell_client()
+    try:
+        agent = client.agent.retrieve(req.agent_id)
+        llm_id = None
+        if hasattr(agent, "response_engine") and getattr(agent.response_engine, "type", None) == "retell-llm":
+            llm_id = getattr(agent.response_engine, "llm_id", None)
+            
+        if not llm_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Agent does not have an editable Retell LLM response engine."
+            )
+            
+        update_kwargs = {"general_prompt": req.prompt}
+        if req.begin_message is not None:
+            update_kwargs["begin_message"] = req.begin_message
+
+        updated_llm = client.llm.update(llm_id, **update_kwargs)
+        print(f"[Retell Context Updated] Agent ID: {req.agent_id} | LLM ID: {llm_id}")
+        
+        return {
+            "success": True,
+            "agent_id": req.agent_id,
+            "llm_id": llm_id,
+            "prompt": getattr(updated_llm, "general_prompt", req.prompt),
+            "message": "Agent context updated successfully. Voice persona, telephony, and routing remain untouched."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[update_agent_context error]: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update agent context: {str(e)}")
+
 class FilteredCallsRequest(BaseModel):
     agent_ids: list[str]
     limit: Optional[int] = 50

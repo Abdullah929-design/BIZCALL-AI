@@ -40,6 +40,78 @@ const AgentBuilder = ({ user }) => {
 
   const [liveInboundId, setLiveInboundId] = useState('');
 
+  // Context-Only Edit State
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [editBeginMessage, setEditBeginMessage] = useState('');
+  const [fetchingContext, setFetchingContext] = useState(false);
+  const [savingContext, setSavingContext] = useState(false);
+  const [editStatusMsg, setEditStatusMsg] = useState('');
+  const [editCopiedTag, setEditCopiedTag] = useState(null);
+
+  const handleOpenEditContext = async (agent) => {
+    setEditingAgent(agent);
+    setFetchingContext(true);
+    setEditStatusMsg('');
+    setEditPrompt('');
+    setEditBeginMessage('');
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/agent-context/${agent.agent_id}`);
+      if (res.data?.success) {
+        setEditPrompt(res.data.prompt || '');
+        setEditBeginMessage(res.data.begin_message || '');
+      } else {
+        setEditStatusMsg('⚠️ Could not fetch live prompt. You can enter a new context below.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message;
+      setEditStatusMsg(`⚠️ Could not retrieve live context from Retell: ${msg}`);
+    } finally {
+      setFetchingContext(false);
+    }
+  };
+
+  const handleSaveContext = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingAgent) return;
+
+    setSavingContext(true);
+    setEditStatusMsg('Saving updated context to Retell AI engine...');
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/update-agent-context`, {
+        agent_id: editingAgent.agent_id,
+        prompt: editPrompt,
+        begin_message: editBeginMessage || undefined,
+      });
+
+      if (res.data?.success) {
+        setEditStatusMsg('✅ Context saved successfully! Voice, number, and settings preserved.');
+        setStatusMsg(`✅ Context updated for agent "${editingAgent.agent_name}".`);
+        setTimeout(() => {
+          setEditingAgent(null);
+          setEditStatusMsg('');
+        }, 1300);
+      } else {
+        throw new Error(res.data?.detail || 'Failed to update context');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message;
+      setEditStatusMsg(`❌ Error saving context: ${msg}`);
+    } finally {
+      setSavingContext(false);
+    }
+  };
+
+  const handleInsertTag = (tag) => {
+    const variableTag = `{{${tag}}}`;
+    navigator.clipboard.writeText(variableTag).catch(() => {});
+    setEditCopiedTag(tag);
+    setTimeout(() => setEditCopiedTag(null), 1800);
+    setEditPrompt((prev) => (prev ? `${prev} ${variableTag}` : variableTag));
+  };
+
   const fetchUserAgents = async () => {
     try {
       const { data, error } = await supabase
@@ -73,6 +145,7 @@ const AgentBuilder = ({ user }) => {
       console.log('Supabase agents query info:', e);
     }
   };
+
 
   const handleSetLiveInbound = async (agentId) => {
     try {
@@ -406,20 +479,33 @@ const AgentBuilder = ({ user }) => {
                   Agent ID: <span className="stitch-agent-id-val">{ag.agent_id}</span>
                 </div>
 
-                <div>
+                <div className="stitch-card-actions-grid">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditContext(ag)}
+                    className="stitch-edit-context-btn"
+                    title="Edit agent system prompt / context only (voice & phone are protected)"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit Context
+                  </button>
+
                   {activeCallAgentId !== ag.agent_id ? (
                     <button
                       type="button"
                       onClick={() => handleStartCall(ag)}
                       className="stitch-test-btn"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                         <line x1="12" y1="19" x2="12" y2="23"></line>
                         <line x1="8" y1="23" x2="16" y2="23"></line>
                       </svg>
-                      Test Voice Call
+                      Test Call
                     </button>
                   ) : (
                     <button
@@ -427,10 +513,10 @@ const AgentBuilder = ({ user }) => {
                       onClick={handleStopCall}
                       className="stitch-test-btn active-call"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="6" y="6" width="12" height="12"></rect>
                       </svg>
-                      End Voice Call
+                      End Call
                     </button>
                   )}
                 </div>
@@ -468,6 +554,126 @@ const AgentBuilder = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Context-Only Edit Modal */}
+      {editingAgent && (
+        <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
+          <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="stitch-modal-header">
+              <div className="stitch-modal-title-box">
+                <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
+                <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
+                  {(editingAgent.call_type || 'inbound').toUpperCase()}
+                </span>
+                <button
+                  type="button"
+                  className="stitch-modal-close-btn"
+                  onClick={() => !savingContext && setEditingAgent(null)}
+                  disabled={savingContext}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="stitch-protection-banner">
+              <div className="stitch-protection-icon">🔒</div>
+              <div className="stitch-protection-text">
+                <strong>Context-Only Edit Mode:</strong> This updates <em>only</em> the conversational context / prompt on Retell AI. The voice persona (<code>{editingAgent.voice_id || 'Adrian'}</code>), agent ID, and telephony routing are completely protected and unchanged.
+              </div>
+            </div>
+
+            {fetchingContext ? (
+              <div className="stitch-modal-loading">
+                <div className="stitch-spinner"></div>
+                <span>Retrieving live context from Retell AI...</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveContext} className="stitch-modal-form">
+                {/* Quick variable injection tags */}
+                <div className="stitch-modal-chips-row">
+                  <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
+                  {[
+                    'customer_name',
+                    'company_name',
+                    'city',
+                    'website',
+                    'offer_discount',
+                    'appointment_time'
+                  ].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      className="stitch-modal-var-chip"
+                      onClick={() => handleInsertTag(v)}
+                      title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                    >
+                      {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="stitch-form-group">
+                  <div className="stitch-label-row">
+                    <label className="stitch-label">SYSTEM CONTEXT / PROMPT</label>
+                    <span className="stitch-label-tag">{editPrompt.length} CHARS</span>
+                  </div>
+                  <textarea
+                    rows={9}
+                    className="stitch-textarea stitch-modal-textarea"
+                    placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
+                    value={editPrompt}
+                    onChange={(e) => setEditPrompt(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="stitch-form-group">
+                  <div className="stitch-label-row">
+                    <label className="stitch-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
+                    <span className="stitch-label-tag">INITIAL_SPEECH</span>
+                  </div>
+                  <input
+                    type="text"
+                    className="stitch-input"
+                    placeholder="e.g. Hello, thank you for calling Axis Bank. How can I assist you today?"
+                    value={editBeginMessage}
+                    onChange={(e) => setEditBeginMessage(e.target.value)}
+                  />
+                </div>
+
+                {editStatusMsg && (
+                  <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
+                    {editStatusMsg}
+                  </div>
+                )}
+
+                <div className="stitch-modal-footer">
+                  <button
+                    type="button"
+                    className="stitch-modal-cancel-btn"
+                    onClick={() => setEditingAgent(null)}
+                    disabled={savingContext}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="stitch-modal-save-btn"
+                    disabled={savingContext || !editPrompt.trim()}
+                  >
+                    {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
