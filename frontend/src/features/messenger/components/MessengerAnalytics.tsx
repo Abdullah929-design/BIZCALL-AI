@@ -40,19 +40,25 @@ export const MessengerAnalytics: React.FC<Props> = ({ leads, stats }) => {
             </div>
 
             {/* Leads Table */}
-            <div style={{ background: '#111218', border: '1px solid #1f212d', borderRadius: '12px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f212d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{
+                background: 'rgba(12, 16, 32, 0.38)',
+                backdropFilter: 'blur(14px) saturate(1.3)',
+                WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+            }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#f8fafc' }}>
                         All Discovered Messenger Leads (PSID Registry)
                     </span>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>
-                        Meta policy: 24h window active upon customer's last inbound message
-                    </span>
+
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
                         <thead>
-                            <tr style={{ background: '#13141d', color: '#64748b', borderBottom: '1px solid #1f212d', textTransform: 'uppercase', fontSize: '10.5px', letterSpacing: '0.06em' }}>
+                            <tr style={{ background: 'rgba(16, 20, 36, 0.65)', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', textTransform: 'uppercase', fontSize: '10.5px', letterSpacing: '0.06em' }}>
                                 <th style={{ padding: '10px 14px' }}>NAME</th>
                                 <th style={{ padding: '10px 14px' }}>FACEBOOK PSID</th>
                                 <th style={{ padding: '10px 14px' }}>STATUS</th>
@@ -70,7 +76,7 @@ export const MessengerAnalytics: React.FC<Props> = ({ leads, stats }) => {
                                 </tr>
                             ) : (
                                 leads.map(l => (
-                                    <tr key={l.id} style={{ borderBottom: '1px solid #191a24' }}>
+                                    <tr key={l.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                                         <td style={{ padding: '11px 14px', color: '#f8fafc', fontWeight: 600 }}>{l.name}</td>
                                         <td style={{ padding: '11px 14px', fontFamily: 'DM Mono, monospace', color: '#818cf8', fontSize: '11.5px' }}>{l.psid}</td>
                                         <td style={{ padding: '11px 14px' }}>
@@ -80,16 +86,16 @@ export const MessengerAnalytics: React.FC<Props> = ({ leads, stats }) => {
                                                 fontSize: '10px',
                                                 fontWeight: 700,
                                                 letterSpacing: '0.04em',
-                                                background: l.lead_status === 'hot' ? 'rgba(56, 189, 248, 0.15)' 
-                                                    : l.lead_status === 'uninterested' ? 'rgba(239, 68, 68, 0.15)' 
-                                                    : l.lead_status === 'sensitive' ? 'rgba(220, 38, 38, 0.2)' 
-                                                    : l.lead_status === 'no_reply' ? 'rgba(245, 158, 11, 0.15)' 
-                                                    : '#1c1d27',
-                                                color: l.lead_status === 'hot' ? '#38bdf8' 
-                                                    : l.lead_status === 'uninterested' ? '#f87171' 
-                                                    : l.lead_status === 'sensitive' ? '#fca5a5' 
-                                                    : l.lead_status === 'no_reply' ? '#fbbf24' 
-                                                    : '#94a3b8'
+                                                background: l.lead_status === 'hot' ? 'rgba(56, 189, 248, 0.15)'
+                                                    : l.lead_status === 'uninterested' ? 'rgba(239, 68, 68, 0.15)'
+                                                        : l.lead_status === 'sensitive' ? 'rgba(220, 38, 38, 0.2)'
+                                                            : l.lead_status === 'no_reply' ? 'rgba(245, 158, 11, 0.15)'
+                                                                : '#1c1d27',
+                                                color: l.lead_status === 'hot' ? '#38bdf8'
+                                                    : l.lead_status === 'uninterested' ? '#f87171'
+                                                        : l.lead_status === 'sensitive' ? '#fca5a5'
+                                                            : l.lead_status === 'no_reply' ? '#fbbf24'
+                                                                : '#94a3b8'
                                             }}>
                                                 {l.lead_status.toUpperCase()}
                                             </span>

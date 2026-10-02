@@ -1,5 +1,5 @@
 // frontend/src/features/messenger/components/FacebookPageConnectModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ConnectedFacebookPage } from '../types';
 import { saveConnectedFacebookPage, disconnectFacebookPage } from '../api/messengerApi';
 
@@ -39,6 +39,17 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+    const modalRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+
+    useEffect(() => {
+        if (showManualForm && modalRef.current) {
+            setTimeout(() => {
+                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 60);
+        }
+    }, [showManualForm]);
 
     // Initialize Facebook JS SDK
     useEffect(() => {
@@ -146,7 +157,7 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                 pageAccessToken: page.access_token
             });
 
-            setSuccessMsg(`🎉 Successfully connected "${page.name}"! AI automations and inbound routing are now live.`);
+            setSuccessMsg(`Successfully connected "${page.name}"! AI automations and inbound routing are now live.`);
             setTimeout(() => {
                 onPageUpdated();
                 onClose();
@@ -177,7 +188,7 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                 pageAccessToken: manualPageAccessToken.trim()
             });
 
-            setSuccessMsg('🎉 Facebook Page connected successfully!');
+            setSuccessMsg('Facebook Page connected successfully!');
             setTimeout(() => {
                 onPageUpdated();
                 onClose();
@@ -212,43 +223,65 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
     };
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '20px'
-        }}>
-            <div style={{
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '16px',
-                width: '100%',
-                maxWidth: '560px',
-                padding: '28px',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                color: '#fff'
-            }}>
+        <div 
+            onClick={onClose}
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.78)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999,
+                padding: '24px 16px',
+                overflowY: 'auto',
+                boxSizing: 'border-box'
+            }}
+        >
+            <div 
+                ref={modalRef}
+                onClick={(e) => e.stopPropagation()}
+                className="messenger-modal-dialog"
+                style={{
+                    background: 'rgba(12, 16, 32, 0.96)',
+                    border: '1px solid rgba(255, 255, 255, 0.16)',
+                    borderRadius: '16px',
+                    width: '100%',
+                    maxWidth: '560px',
+                    maxHeight: 'min(90vh, 740px)',
+                    overflowY: 'auto',
+                    padding: '26px 28px',
+                    boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 40px rgba(99, 102, 241, 0.25)',
+                    backdropFilter: 'blur(20px) saturate(1.4)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+                    color: '#fff',
+                    boxSizing: 'border-box',
+                    margin: 'auto'
+                }}
+            >
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.5rem' }}>💬</span>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
                         <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
                             {connectedPage ? 'Connected Facebook Page' : 'Connect Facebook Page'}
                         </h3>
                     </div>
                     <button
                         onClick={onClose}
-                        style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.25rem', cursor: 'pointer' }}
+                        style={{ background: 'transparent', border: 'none', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', cursor: 'pointer', borderRadius: '6px', transition: 'color 0.15s' }}
                     >
-                        ✕
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                     </button>
                 </div>
 
@@ -299,14 +332,19 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
 
                 {/* Primary Method: 1-Click Facebook Login Button */}
                 <div style={{
-                    background: '#0f172a',
-                    border: '1px solid #334155',
+                    background: 'rgba(20, 24, 42, 0.65)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     borderRadius: '12px',
                     padding: '24px',
                     textAlign: 'center',
-                    marginBottom: '16px'
+                    marginBottom: '16px',
+                    backdropFilter: 'blur(8px)'
                 }}>
-                    <div style={{ fontSize: '1.75rem', marginBottom: '8px' }}>🔵</div>
+                    <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                    </div>
                     <h4 style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px' }}>
                         1-Click Facebook Connection
                     </h4>
@@ -398,7 +436,21 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                     </button>
 
                     {showManualForm && (
-                        <form onSubmit={handleManualSave} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', background: '#0f172a', padding: '16px', borderRadius: '10px', border: '1px solid #334155' }}>
+                        <form 
+                            ref={formRef}
+                            onSubmit={handleManualSave} 
+                            style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '12px', 
+                                marginTop: '12px', 
+                                background: 'rgba(15, 20, 36, 0.65)', 
+                                padding: '16px', 
+                                borderRadius: '12px', 
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                boxSizing: 'border-box'
+                            }}
+                        >
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
                                     Page Name
@@ -408,7 +460,7 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                                     value={manualPageName}
                                     onChange={(e) => setManualPageName(e.target.value)}
                                     placeholder="e.g. BizCall AI Page"
-                                    style={{ width: '100%', padding: '8px 12px', background: '#1e293b', border: '1px solid #475569', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
+                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
                                 />
                             </div>
 
@@ -421,7 +473,7 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                                     value={manualPageId}
                                     onChange={(e) => setManualPageId(e.target.value)}
                                     placeholder="e.g. 61594175137308"
-                                    style={{ width: '100%', padding: '8px 12px', background: '#1e293b', border: '1px solid #475569', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
+                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
                                 />
                             </div>
 
@@ -434,7 +486,7 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                                     value={manualPageAccessToken}
                                     onChange={(e) => setManualPageAccessToken(e.target.value)}
                                     placeholder="EAAG..."
-                                    style={{ width: '100%', padding: '8px 12px', background: '#1e293b', border: '1px solid #475569', borderRadius: '6px', color: '#fff', outline: 'none', fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontFamily: 'monospace', fontSize: '0.75rem', boxSizing: 'border-box', resize: 'vertical' }}
                                 />
                             </div>
 
@@ -442,15 +494,20 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                                 type="submit"
                                 disabled={saving}
                                 style={{
-                                    padding: '9px 16px',
-                                    background: '#334155',
+                                    padding: '10px 16px',
+                                    background: '#5855d6',
                                     color: '#fff',
                                     border: 'none',
-                                    borderRadius: '6px',
+                                    borderRadius: '7px',
                                     fontWeight: 700,
                                     fontSize: '0.85rem',
                                     cursor: saving ? 'not-allowed' : 'pointer',
-                                    marginTop: '4px'
+                                    marginTop: '4px',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px'
                                 }}
                             >
                                 {saving ? 'Saving...' : 'Save Credentials Manually'}

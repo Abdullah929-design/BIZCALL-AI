@@ -26,9 +26,7 @@ export const MessengerEscalations: React.FC<Props> = ({ calls, onRefresh }) => {
     if (calls.length === 0) {
         return (
             <div className="messenger-empty-card">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
+
                 <div className="messenger-empty-title">No Sensitive Escalations</div>
                 <p style={{ color: '#85899d', maxWidth: '450px', margin: '0 auto', fontSize: '12px' }}>
                     When a lead discusses sensitive topics (legal disputes, fraud, severe complaints), WF2 automatically pauses AI automations and flags them here for human escalation.
@@ -59,7 +57,7 @@ export const MessengerEscalations: React.FC<Props> = ({ calls, onRefresh }) => {
                         <div style={{ fontSize: '12px', color: '#fca5a5', fontWeight: 600, marginBottom: '6px' }}>
                             Reason: {call.reason}
                         </div>
-                        <div style={{ background: '#0f1017', border: '1px solid #242738', padding: '10px 14px', borderRadius: '6px', fontSize: '12.5px', color: '#cbd5e1' }}>
+                        <div style={{ background: 'rgba(15, 18, 30, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '10px 14px', borderRadius: '8px', fontSize: '12.5px', color: '#cbd5e1' }}>
                             "{call.lead_message}"
                         </div>
                     </div>

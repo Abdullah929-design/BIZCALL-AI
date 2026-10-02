@@ -364,7 +364,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
       }
     }
 
-    setStatusMsg(`🎯 Pre-filled lead: ${prefilledCallData.companyName || prefilledCallData.toNumber}. Customize variables below and initiate call.`);
+    setStatusMsg(`Pre-filled lead: ${prefilledCallData.companyName || prefilledCallData.toNumber}. Customize variables below and initiate call.`);
     if (onClearPrefilledData) {
       onClearPrefilledData();
     }

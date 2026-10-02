@@ -58,7 +58,7 @@ export const WindowTimerBadge: React.FC<Props> = ({ lastMessagedAt, followUpSent
                 }}
                 title="Lead has no recorded inbound message. Meta 24-hour window is inactive."
             >
-                <span>⚪</span>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', display: 'inline-block' }} />
                 <span>No Inbound (Locked)</span>
             </span>
         );
@@ -83,7 +83,7 @@ export const WindowTimerBadge: React.FC<Props> = ({ lastMessagedAt, followUpSent
                 }}
                 title="24-hour window has expired. You cannot send standard messages until the user replies back."
             >
-                <span>🔴</span>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f87171', display: 'inline-block' }} />
                 <span>Window Expired</span>
             </span>
         );
@@ -97,18 +97,18 @@ export const WindowTimerBadge: React.FC<Props> = ({ lastMessagedAt, followUpSent
     let bg = 'rgba(16, 185, 129, 0.15)';
     let border = 'rgba(16, 185, 129, 0.35)';
     let color = '#34d399';
-    let icon = '🟢';
+    let dotColor = '#34d399';
 
     if (isCritical) {
         bg = 'rgba(239, 68, 68, 0.2)';
         border = 'rgba(239, 68, 68, 0.4)';
         color = '#fca5a5';
-        icon = '⚠️';
+        dotColor = '#f87171';
     } else if (isWarning) {
         bg = 'rgba(245, 158, 11, 0.15)';
         border = 'rgba(245, 158, 11, 0.35)';
         color = '#fbbf24';
-        icon = '🟡';
+        dotColor = '#fbbf24';
     }
 
     return (
@@ -127,7 +127,7 @@ export const WindowTimerBadge: React.FC<Props> = ({ lastMessagedAt, followUpSent
             }}
             title={`Active 24h Meta messaging window. Closes in ${timeText}.${followUpSentAt ? ' Final 23h follow-up was dispatched.' : ''}`}
         >
-            <span>{icon}</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, boxShadow: `0 0 6px ${dotColor}`, display: 'inline-block' }} />
             <span>{timeText}</span>
             {followUpSentAt && (
                 <span style={{ fontSize: '0.68rem', opacity: 0.85, marginLeft: '2px' }}>

@@ -53,7 +53,9 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ lead, onClose, onReplySu
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
         }}>
             <div style={{
-                background: '#13131a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+                background: 'rgba(12, 16, 32, 0.88)', backdropFilter: 'blur(20px) saturate(1.4)',
+                border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16,
+                boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 40px rgba(99,102,241,0.2)',
                 padding: '24px 28px', maxWidth: 580, width: '100%', color: '#edeae2', fontFamily: "'Inter', sans-serif"
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

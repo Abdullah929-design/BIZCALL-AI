@@ -59,7 +59,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
 
     try {
       const res = await uploadBulkCsv(file);
-      setSuccessMsg(`🎉 ${res.message || `Successfully imported ${res.count} leads!`}`);
+      setSuccessMsg(` ${res.message || `Successfully imported ${res.count} leads!`}`);
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -77,13 +77,15 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
     }}>
       <div style={{
-        background: '#13131a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+        background: 'rgba(12, 16, 32, 0.88)', backdropFilter: 'blur(20px) saturate(1.4)',
+        border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 40px rgba(99,102,241,0.2)',
         padding: '26px 30px', maxWidth: 580, width: '100%', color: '#edeae2', fontFamily: "'Inter', sans-serif"
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: 8 }}>
-            📥 Bulk Import Leads via CSV
+            Bulk Import Leads via CSV
           </h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
@@ -94,13 +96,13 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
           borderRadius: 10, padding: '14px 16px', marginBottom: 18, fontSize: '0.82rem', lineHeight: '1.5'
         }}>
           <strong style={{ color: '#818cf8', display: 'block', marginBottom: 4 }}>
-            ⚠️ Strict CSV Format Requirement:
+            Strict CSV Format Requirement:
           </strong>
           Your CSV columns must exactly match the Leads sheet fields:
           <code style={{ display: 'block', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: 6, margin: '8px 0', color: '#4ade80', fontSize: '0.75rem', fontFamily: 'monospace' }}>
             first_name, last_name, email, company, title, industry, notes, status
           </code>
-          The system will strictly attach your tenant <code style={{ color: '#818cf8' }}>user_id</code> to every imported row.
+
         </div>
 
         {/* Download Template Action */}
@@ -114,7 +116,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
               borderRadius: 6, color: '#edeae2', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 500
             }}
           >
-            📄 Download Sample CSV
+            Download Sample CSV
           </button>
         </div>
 
@@ -144,12 +146,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
               style={{ display: 'none' }}
             />
             <label htmlFor="csvFileInput" style={{ cursor: 'pointer', display: 'block' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 6 }}>📊</div>
+              <div style={{ fontSize: '2rem', marginBottom: 6 }}></div>
               <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem', marginBottom: 4 }}>
                 {file ? file.name : 'Click to select or drop your .csv file here'}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                {file ? `${(file.size / 1024).toFixed(1)} KB` : 'Supports standard UTF-8 encoded .csv files'}
               </div>
             </label>
           </div>
@@ -173,7 +172,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose,
                 color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: !file || uploading ? 'not-allowed' : 'pointer'
               }}
             >
-              {uploading ? '⏳ Importing to Sheets...' : '🚀 Import Leads'}
+              {uploading ? ' Importing to Sheets...' : ' Import Leads'}
             </button>
           </div>
         </form>

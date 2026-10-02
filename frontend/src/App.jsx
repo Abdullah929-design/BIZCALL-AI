@@ -299,7 +299,7 @@ function App() {
           </div>
         </div>
 
-        <div className={`app-content ${activeTab === 'builder' || activeTab === 'live-calls' ? 'builder-tab-active' : ''}`}>
+        <div className={`app-content ${activeTab === 'builder' || activeTab === 'live-calls' || activeTab === 'lead-finder' || activeTab === 'analytics' || activeTab === 'company' || activeTab === 'cold-email' || activeTab === 'messenger' || activeTab === 'models-on-demand' ? 'builder-tab-active' : ''}`}>
           {activeTab === 'lead-finder' && (
             <LeadFinder user={user} onInitiateOutboundCall={handleInitiateOutboundCall} />
           )}

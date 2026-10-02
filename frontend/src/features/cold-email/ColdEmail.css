@@ -1,15 +1,65 @@
 /* ==========================================================================
-   Cold Email Automation — Google Stitch Minimalist Style
+   Cold Email Automation — Google Stitch Glassmorphism & Video Background System
    ========================================================================== */
 
+.cold-email-page-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  padding: 24px 28px 48px 28px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.builder-bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: brightness(0.88) contrast(1.15) saturate(1.2);
+}
+
+.builder-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(12, 16, 32, 0.22) 0%, rgba(6, 8, 16, 0.58) 85%),
+    linear-gradient(180deg, rgba(8, 10, 20, 0.25) 0%, rgba(5, 6, 12, 0.65) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.stitch-corner-crystal {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.55));
+}
+
+.stitch-corner-crystal.top-left {
+  top: 10px;
+  left: 10px;
+}
+
+.stitch-corner-crystal.top-right {
+  top: 10px;
+  right: 10px;
+}
+
 .cold-email-page {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 20px;
   max-width: 1380px;
   width: 100%;
   margin: 0 auto;
-  padding: 8px 12px 32px 12px;
   box-sizing: border-box;
 }
 
@@ -30,19 +80,20 @@
 
 .cold-email-title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #f8fafc;
   display: flex;
   align-items: center;
   gap: 9px;
   letter-spacing: -0.01em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .cold-email-subtitle {
   margin: 0;
   font-size: 11.5px;
-  color: #85899d;
+  color: #94a3b8;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -58,9 +109,9 @@
 .btn-ce-primary {
   height: 38px;
   padding: 0 16px;
-  background: #5855d6;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   font-size: 12.5px;
   font-weight: 600;
@@ -69,20 +120,21 @@
   align-items: center;
   gap: 7px;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(88, 85, 214, 0.35);
 }
 
 .btn-ce-primary:hover:not(:disabled) {
-  background: #6c69f0;
+  background: linear-gradient(135deg, #7174f8, #5a52ec);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(88, 85, 214, 0.35);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
 .btn-ce-emerald {
   height: 38px;
   padding: 0 16px;
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   font-size: 12.5px;
   font-weight: 600;
@@ -91,19 +143,20 @@
   align-items: center;
   gap: 7px;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
 
 .btn-ce-emerald:hover:not(:disabled) {
-  background: #059669;
+  background: linear-gradient(135deg, #34d399, #059669);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
 }
 
 .btn-ce-ghost {
   height: 38px;
   padding: 0 14px;
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(21, 24, 40, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #94a3b8;
   border-radius: 8px;
   font-size: 12.5px;
@@ -113,11 +166,12 @@
   align-items: center;
   gap: 7px;
   transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 .btn-ce-ghost:hover:not(:disabled) {
-  background: #1c1d27;
-  border-color: #383c54;
+  background: rgba(35, 38, 60, 0.8);
+  border-color: rgba(255, 255, 255, 0.25);
   color: #f1f5f9;
 }
 
@@ -125,17 +179,17 @@
 .cold-email-tabs-bar {
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid #1f212d;
-  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
   overflow-x: auto;
 }
 
 .tab-nav-btn {
   padding: 8px 16px;
-  background: transparent;
-  border: none;
+  background: rgba(21, 24, 40, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  color: #85899d;
+  color: #94a3b8;
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -144,86 +198,106 @@
   gap: 8px;
   transition: all 0.15s ease;
   white-space: nowrap;
+  backdrop-filter: blur(6px);
 }
 
 .tab-nav-btn:hover {
   color: #f1f5f9;
-  background: #151620;
+  background: rgba(30, 34, 56, 0.7);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .tab-nav-btn.active {
   color: #ffffff;
-  background: #181926;
-  border: 1px solid #282a3c;
+  background: rgba(35, 40, 68, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .tab-nav-btn.active.tab-hot {
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: rgba(245, 158, 11, 0.5);
   color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
 }
 
 .tab-nav-btn.active.tab-neutral {
-  border-color: rgba(88, 85, 214, 0.4);
+  border-color: rgba(99, 102, 241, 0.5);
   color: #a5b4fc;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
 }
 
 .tab-nav-btn.active.tab-all {
-  border-color: rgba(88, 85, 214, 0.4);
+  border-color: rgba(99, 102, 241, 0.5);
   color: #818cf8;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
 }
 
 .tab-nav-btn.active.tab-failed {
-  border-color: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.5);
   color: #f87171;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
 }
 
 .tab-count-pill {
-  padding: 1px 6px;
+  padding: 1px 7px;
   border-radius: 4px;
   font-size: 10px;
   font-family: 'DM Mono', monospace;
   font-weight: 600;
-  background: #1c1d27;
-  border: 1px solid #2d3040;
+  background: rgba(28, 29, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: inherit;
 }
 
-/* Panels Card Container */
+/* Panels Card Container — See-Through Glassmorphism with Corner Crystals */
 .cold-email-panel-card {
-  background: #111218;
-  border: 1px solid #1f212d;
-  border-radius: 12px;
+  position: relative;
+  background: rgba(12, 16, 32, 0.38) !important;
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 35px rgba(99, 102, 241, 0.15);
+  box-sizing: border-box;
 }
 
 .panel-loading-state,
 .panel-empty-state {
   padding: 48px 16px;
   text-align: center;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 12.5px;
+  position: relative;
+  z-index: 2;
 }
 
-/* Hot & Neutral Prospect Cards */
+/* Hot & Neutral Prospect Cards — See-Through Glass */
 .prospect-card-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
+  position: relative;
+  z-index: 2;
 }
 
 .prospect-card {
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(20, 24, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 16px 18px;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 .prospect-card:hover {
-  border-color: #2e3247;
-  background: #171824;
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(30, 36, 62, 0.75);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
 }
 
 .prospect-card.is-replied {
@@ -264,15 +338,15 @@
 .prospect-email {
   font-family: 'DM Mono', monospace;
   font-size: 11.5px;
-  color: #85899d;
+  color: #94a3b8;
 }
 
 .prospect-company-tag {
   font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: #1c1d27;
-  border: 1px solid #2d3040;
+  background: rgba(28, 29, 39, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #cbd5e1;
 }
 
@@ -283,8 +357,8 @@
   font-size: 10px;
   font-weight: 600;
   color: #34d399;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   padding: 2px 7px;
   border-radius: 4px;
 }
@@ -296,29 +370,29 @@
   font-size: 10px;
   font-weight: 600;
   color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.35);
   padding: 2px 7px;
   border-radius: 4px;
 }
 
 .prospect-summary-box {
   margin-top: 8px;
-  padding: 8px 12px;
+  padding: 9px 13px;
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.45;
 }
 
 .prospect-summary-box.hot {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   color: #fde68a;
 }
 
 .prospect-summary-box.neutral {
-  background: rgba(88, 85, 214, 0.08);
-  border: 1px solid rgba(88, 85, 214, 0.2);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
   color: #c7d2fe;
 }
 
@@ -330,9 +404,9 @@
 
 .btn-prospect-reply {
   padding: 6px 14px;
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   font-size: 11.5px;
   font-weight: 600;
@@ -341,17 +415,19 @@
   align-items: center;
   gap: 6px;
   transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .btn-prospect-reply:hover {
-  background: #059669;
+  background: linear-gradient(135deg, #34d399, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
 }
 
 .btn-prospect-again {
   padding: 5px 12px;
-  background: #1c1d27;
+  background: rgba(28, 29, 39, 0.7);
   color: #cbd5e1;
-  border: 1px solid #2d3040;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
@@ -359,13 +435,20 @@
 }
 
 .btn-prospect-again:hover {
-  background: #252838;
+  background: rgba(45, 48, 65, 0.85);
   color: #ffffff;
 }
 
-/* Leads Table in Cold Email */
+/* Leads Table in Cold Email — See-Through Glass */
 .ce-table-container {
   overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(10, 12, 22, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+  margin: 12px;
 }
 
 .ce-table {
@@ -376,29 +459,29 @@
 }
 
 .ce-table thead {
-  background: #13141d;
-  border-bottom: 1px solid #1f212d;
+  background: rgba(16, 19, 32, 0.65);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ce-table th {
-  padding: 10px 14px;
+  padding: 11px 14px;
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
 .ce-table td {
-  padding: 11px 14px;
-  border-bottom: 1px solid #191a24;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   vertical-align: middle;
   color: #cbd5e1;
 }
 
 .ce-table tbody tr:hover {
-  background: #141520;
+  background: rgba(99, 102, 241, 0.14);
 }
 
 .ce-table tbody tr:last-child td {
@@ -415,35 +498,35 @@
 }
 
 .ce-status-pill.hot {
-  background: rgba(245, 158, 11, 0.14);
+  background: rgba(245, 158, 11, 0.18);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
 .ce-status-pill.sent {
-  background: rgba(88, 85, 214, 0.14);
+  background: rgba(99, 102, 241, 0.18);
   color: #a5b4fc;
-  border: 1px solid rgba(88, 85, 214, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
 .ce-status-pill.failed {
-  background: rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.18);
   color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .ce-status-pill.pending {
-  background: #1c1d27;
+  background: rgba(28, 29, 39, 0.65);
   color: #94a3b8;
-  border: 1px solid #2d3040;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .btn-table-edit {
   padding: 4px 8px;
   border-radius: 5px;
   font-size: 11px;
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(21, 24, 40, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
   cursor: pointer;
   display: inline-flex;
@@ -453,8 +536,8 @@
 }
 
 .btn-table-edit:hover {
-  background: #1e202e;
-  border-color: #5855d6;
+  background: rgba(35, 38, 60, 0.85);
+  border-color: #6366f1;
   color: #ffffff;
 }
 
@@ -462,8 +545,8 @@
   padding: 4px 8px;
   border-radius: 5px;
   font-size: 11px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   color: #f87171;
   cursor: pointer;
   display: inline-flex;
@@ -473,5 +556,26 @@
 }
 
 .btn-table-del:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.28);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cold-email-page-wrapper {
+    padding: 16px 12px 32px 12px;
+  }
+  .cold-email-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cold-email-actions {
+    width: 100%;
+  }
+  .prospect-card-top {
+    flex-direction: column;
+  }
+  .prospect-actions-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

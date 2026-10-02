@@ -90,18 +90,20 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
     }}>
       <div style={{
-        background: '#13131a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+        background: 'rgba(12, 16, 32, 0.88)', backdropFilter: 'blur(20px) saturate(1.4)',
+        border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 40px rgba(99,102,241,0.2)',
         padding: '24px 28px', maxWidth: 540, width: '100%', color: '#edeae2', fontFamily: "'Inter', sans-serif"
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: '1.15rem', color: isEdit ? '#818cf8' : '#4ade80' }}>
-            {isEdit ? '✏️ Edit Lead' : '➕ Add New Lead'}
+            {isEdit ? 'Edit Lead' : 'Add New Lead'}
           </h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
         </div>
 
         <p style={{ margin: '0 0 16px', fontSize: '0.8rem', color: '#94a3b8' }}>
-          {isEdit ? `Updating lead on row #${lead?._row_number} in Google Sheets` : 'Appends directly to your Google Sheet Leads tab with your account user ID.'}
+          {isEdit ? `Updating lead on row #${lead?._row_number} in Google Sheets` : null}
         </p>
 
         {error && (
@@ -192,7 +194,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
                 border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer'
               }}
             >
-              {saving ? 'Saving to Sheets...' : isEdit ? '💾 Update Lead' : '➕ Add Lead'}
+              {saving ? 'Saving to Sheets...' : isEdit ? 'Update Lead' : 'Add Lead'}
             </button>
           </div>
         </form>

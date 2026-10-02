@@ -1,49 +1,122 @@
 /* ==========================================================================
-   Lead Finder & Scraper — Google Stitch Minimalist Streamlined Style
+   Lead Finder & Scraper — Google Stitch Glassmorphism & Video Background System
    ========================================================================== */
 
-.lead-finder-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 1380px;
+.lead-finder-page-wrapper {
+  position: relative;
   width: 100%;
-  margin: 0 auto;
-  padding: 8px 12px 32px 12px;
+  min-height: 100%;
+  padding: 24px 28px 48px 28px;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-/* Card Container */
-.finder-card {
-  background: #111218;
-  border: 1px solid #1f212d;
-  border-radius: 12px;
-  padding: 22px 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+.builder-bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: brightness(0.88) contrast(1.15) saturate(1.2);
+}
+
+.builder-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(12, 16, 32, 0.22) 0%, rgba(6, 8, 16, 0.58) 85%),
+    linear-gradient(180deg, rgba(8, 10, 20, 0.25) 0%, rgba(5, 6, 12, 0.65) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.stitch-corner-crystal {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.55));
+}
+
+.stitch-corner-crystal.top-left {
+  top: 10px;
+  left: 10px;
+}
+
+.stitch-corner-crystal.top-right {
+  top: 10px;
+  right: 10px;
+}
+
+.lead-finder-page {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1380px;
+  width: 100%;
+  margin: 0 auto;
   box-sizing: border-box;
+}
+
+/* Cards — Glassmorphic See-Through Design with Corner Crystals */
+.finder-card {
+  position: relative;
+  background: rgba(12, 16, 32, 0.35) !important;
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 24px 26px;
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 35px rgba(99, 102, 241, 0.15);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .finder-card-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 18px;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 22px;
+  width: 100%;
+}
+
+.finder-card-header.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .finder-card-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #f8fafc;
   margin: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  text-align: center;
+  width: 100%;
 }
 
 .finder-card-desc {
-  font-size: 12.5px;
-  color: #85899d;
-  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 6px auto 0 auto;
+  text-align: center;
+  max-width: 680px;
 }
 
 .finder-badge-count {
@@ -105,8 +178,10 @@
 
 .finder-input,
 .finder-select {
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(10, 14, 26, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 9px 12px;
   color: #f1f5f9;
@@ -114,14 +189,15 @@
   font-family: inherit;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .finder-input:focus,
 .finder-select:focus {
   outline: none;
-  border-color: #5855d6;
-  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.22);
+  background: rgba(12, 17, 34, 0.75);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25), 0 0 16px rgba(99, 102, 241, 0.2);
 }
 
 .finder-select {
@@ -140,11 +216,11 @@
 
 .finder-search-btn {
   height: 38px;
-  background: #5855d6;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
   font-weight: 600;
   font-size: 13px;
-  border: none;
+  border: 1px solid rgba(165, 180, 252, 0.3);
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
@@ -153,13 +229,14 @@
   gap: 8px;
   padding: 0 20px;
   white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
   transition: all 0.2s ease;
 }
 
 .finder-search-btn:hover:not(:disabled) {
-  background: #6c69f0;
+  background: linear-gradient(135deg, #7175f8 0%, #5d55ef 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(88, 85, 214, 0.35);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.48);
 }
 
 .finder-search-btn:disabled {
@@ -185,8 +262,10 @@
   gap: 7px;
   padding: 6px 12px;
   border-radius: 6px;
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(15, 18, 30, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   color: #94a3b8;
   font-size: 12px;
   cursor: pointer;
@@ -195,14 +274,16 @@
 }
 
 .finder-filter-chip:hover {
-  border-color: #383c54;
+  background: rgba(24, 28, 48, 0.65);
+  border-color: rgba(99, 102, 241, 0.4);
   color: #f1f5f9;
 }
 
 .finder-filter-chip.active {
-  background: rgba(88, 85, 214, 0.14);
-  border-color: #5855d6;
+  background: rgba(88, 85, 214, 0.22);
+  border-color: #6366f1;
   color: #c7d2fe;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
 }
 
 .finder-filter-chip input {
@@ -234,6 +315,8 @@
   align-items: center;
   gap: 8px;
   box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .finder-status-banner.info {
@@ -284,7 +367,7 @@
 }
 
 .btn-crm-sync {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #ffffff;
   border: none;
   border-radius: 7px;
@@ -295,13 +378,14 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   transition: all 0.2s;
 }
 
 .btn-crm-sync:hover:not(:disabled) {
-  background: #059669;
+  background: linear-gradient(135deg, #18c98e 0%, #08a374 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
 .btn-crm-sync:disabled {
@@ -311,9 +395,11 @@
 }
 
 .btn-export-csv {
-  background: #151620;
+  background: rgba(18, 22, 38, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: #94a3b8;
-  border: 1px solid #242738;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 7px;
   padding: 7px 12px;
   font-size: 12px;
@@ -326,9 +412,9 @@
 }
 
 .btn-export-csv:hover:not(:disabled) {
-  background: #1c1d27;
+  background: rgba(28, 34, 58, 0.7);
   color: #f1f5f9;
-  border-color: #383c54;
+  border-color: rgba(99, 102, 241, 0.4);
 }
 
 .btn-export-csv:disabled {
@@ -339,9 +425,11 @@
 /* Leads Table */
 .finder-table-container {
   overflow-x: auto;
-  border: 1px solid #1f212d;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 10px;
-  background: #0f1017;
+  background: rgba(10, 13, 24, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .finder-table {
@@ -352,8 +440,8 @@
 }
 
 .finder-table thead {
-  background: #13141d;
-  border-bottom: 1px solid #1f212d;
+  background: rgba(14, 18, 34, 0.65);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .finder-table th {
@@ -368,7 +456,7 @@
 
 .finder-table td {
   padding: 11px 14px;
-  border-bottom: 1px solid #191a24;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   vertical-align: middle;
   color: #cbd5e1;
 }
@@ -382,11 +470,11 @@
 }
 
 .finder-table tbody tr:hover {
-  background: #141520;
+  background: rgba(24, 30, 56, 0.55);
 }
 
 .finder-table tbody tr.row-selected {
-  background: rgba(88, 85, 214, 0.08);
+  background: rgba(88, 85, 214, 0.18);
 }
 
 /* Checkbox Style */
@@ -573,12 +661,13 @@
 }
 
 .btn-row-action.call {
-  background: #5855d6;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
 }
 
 .btn-row-action.call:hover:not(:disabled) {
-  background: #6c69f0;
+  background: linear-gradient(135deg, #7175f8 0%, #5d55ef 100%);
   transform: translateY(-1px);
 }
 
@@ -588,14 +677,15 @@
 }
 
 .btn-row-action.crm {
-  background: #181a28;
+  background: rgba(16, 185, 129, 0.15);
   color: #34d399;
-  border: 1px solid #242738;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .btn-row-action.crm:hover {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.25);
   border-color: #10b981;
+  color: #ffffff;
 }
 
 /* Empty State */
@@ -643,8 +733,10 @@
   align-items: center;
   gap: 7px;
   padding: 7px 16px;
-  background: #151620;
-  border: 1px solid #242738;
+  background: rgba(18, 22, 38, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 7px;
   color: #f1f5f9;
   font-size: 12px;
@@ -654,7 +746,7 @@
 }
 
 .finder-more-btn:hover {
-  background: #1c1e2a;
+  background: rgba(28, 34, 58, 0.7);
   border-color: #5855d6;
 }
 

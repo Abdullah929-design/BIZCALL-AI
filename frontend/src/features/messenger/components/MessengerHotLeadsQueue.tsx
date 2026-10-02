@@ -64,9 +64,7 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
     if (drafts.length === 0) {
         return (
             <div className="messenger-empty-card">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5855d6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
+
                 <div className="messenger-empty-title">Hot Leads Queue is Clear</div>
                 <p style={{ color: '#85899d', maxWidth: '450px', margin: '0 auto', fontSize: '12px' }}>
                     When a lead replies with positive intent, Gemini AI classifies it as <code style={{ color: '#a5b4fc' }}>hot</code> and generates an editable draft here for human approval.
