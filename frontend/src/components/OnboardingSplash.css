@@ -1,0 +1,387 @@
+/* ==========================================================================
+   Company Onboarding & Domain Assigned Success — Google Stitch Glassmorphism
+   ========================================================================== */
+
+.onboarding-page-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.onboarding-page-wrapper .builder-bg-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: brightness(0.88) contrast(1.15) saturate(1.2);
+}
+
+.onboarding-page-wrapper .builder-bg-iframe {
+  border: none;
+}
+
+.onboarding-page-wrapper .builder-bg-overlay {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(12, 16, 32, 0.22) 0%, rgba(6, 8, 16, 0.58) 85%),
+    linear-gradient(180deg, rgba(8, 10, 20, 0.25) 0%, rgba(5, 6, 12, 0.65) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.onboarding-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 680px;
+  margin: auto;
+  box-sizing: border-box;
+}
+
+.onboarding-card {
+  background: rgba(12, 16, 32, 0.42);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 32px 36px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  color: #edeae2;
+  box-sizing: border-box;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.onboarding-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(88, 85, 214, 0.15);
+  border: 1px solid rgba(88, 85, 214, 0.3);
+  color: #a5b4fc;
+  margin-bottom: 12px;
+}
+
+.onboarding-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: -0.01em;
+}
+
+.onboarding-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.onboarding-error-box {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.onboarding-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onboarding-section-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c9a84c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onboarding-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .onboarding-input-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.onboarding-label {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.onboarding-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(15, 18, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  font-size: 0.88rem;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.onboarding-input:focus {
+  border-color: #5855d6;
+  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.25);
+  background: rgba(18, 22, 42, 0.8);
+}
+
+.onboarding-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(15, 18, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  font-size: 0.88rem;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.onboarding-textarea:focus {
+  border-color: #5855d6;
+  box-shadow: 0 0 0 2px rgba(88, 85, 214, 0.25);
+  background: rgba(18, 22, 42, 0.8);
+}
+
+.btn-onboarding-submit {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-onboarding-submit.active {
+  background: #5855d6;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(88, 85, 214, 0.35);
+}
+
+.btn-onboarding-submit.active:hover {
+  background: #6c69f0;
+  transform: translateY(-1px);
+}
+
+.btn-onboarding-submit:disabled {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================================================================
+   Domain Assigned Success Modal — Glassmorphic Design
+   ========================================================================== */
+
+.domain-success-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.domain-success-card {
+  background: rgba(12, 16, 32, 0.94);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 36px 34px;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(99, 102, 241, 0.25);
+  text-align: center;
+  color: #edeae2;
+  position: relative;
+  box-sizing: border-box;
+  margin: auto;
+}
+
+.domain-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: 0.04em;
+}
+
+.domain-success-title {
+  margin: 0 0 10px 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.domain-success-desc {
+  margin: 0 0 22px 0;
+  font-size: 0.88rem;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+.domain-success-details {
+  background: rgba(15, 18, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: left;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.domain-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.domain-detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #818cf8;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.domain-detail-value-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.92rem;
+}
+
+.domain-detail-pill {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.domain-security-note {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-domain-launch {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 10px;
+  background: #5855d6;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(88, 85, 214, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-domain-launch:hover {
+  background: #6c69f0;
+  transform: translateY(-1px);
+}
