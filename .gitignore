@@ -59,3 +59,9 @@ token.txt
 secrets/
 *.json
 !api/package*.json
+
+benchmark_latency.py
+benchmark_rag_isolated.py
+benchmark_results.csv
+benchmark_results_rag_isolated.csv
+benchmark_results_sales_gemma_2b.csv
