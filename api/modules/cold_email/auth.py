@@ -23,8 +23,8 @@ def get_current_user(authorization: str = Header(None)) -> AuthenticatedUser:
     if not token or len(token) < 10:
         raise HTTPException(status_code=401, detail="Empty or malformed token")
 
-    supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    supabase_url = (os.getenv("SUPABASE_URL") or "").strip('"').strip("'").rstrip("/")
+    supabase_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip('"').strip("'")
 
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase configuration missing on server")

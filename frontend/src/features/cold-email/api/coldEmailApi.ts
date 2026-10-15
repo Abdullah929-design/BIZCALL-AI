@@ -3,6 +3,8 @@
 import { supabase } from '../../../services/supabaseClient';
 import type { ColdEmailLead, SendReplyPayload } from '../types';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+
 export async function uploadBulkCsv(file: File): Promise<{ success: boolean; count: number; message: string }> {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token || '';
@@ -10,7 +12,7 @@ export async function uploadBulkCsv(file: File): Promise<{ success: boolean; cou
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("/api/cold-email/leads/bulk-csv", {
+    const res = await fetch(`${API_BASE}/api/cold-email/leads/bulk-csv`, {
         method: "POST",
         headers: {
             "Authorization": `Bearer ${token}`
@@ -27,7 +29,7 @@ export async function uploadBulkCsv(file: File): Promise<{ success: boolean; cou
 
 export async function createLead(leadData: Partial<ColdEmailLead>): Promise<any> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/leads", {
+    const res = await fetch(`${API_BASE}/api/cold-email/leads`, {
         method: "POST",
         headers,
         body: JSON.stringify(leadData)
@@ -41,7 +43,7 @@ export async function createLead(leadData: Partial<ColdEmailLead>): Promise<any>
 
 export async function updateLead(rowNumber: number, leadData: Partial<ColdEmailLead>): Promise<any> {
     const headers = await getAuthHeaders();
-    const res = await fetch(`/api/cold-email/leads/${rowNumber}`, {
+    const res = await fetch(`${API_BASE}/api/cold-email/leads/${rowNumber}`, {
         method: "PUT",
         headers,
         body: JSON.stringify(leadData)
@@ -55,7 +57,7 @@ export async function updateLead(rowNumber: number, leadData: Partial<ColdEmailL
 
 export async function deleteLead(rowNumber: number): Promise<any> {
     const headers = await getAuthHeaders();
-    const res = await fetch(`/api/cold-email/leads/${rowNumber}`, {
+    const res = await fetch(`${API_BASE}/api/cold-email/leads/${rowNumber}`, {
         method: "DELETE",
         headers
     });
@@ -65,7 +67,6 @@ export async function deleteLead(rowNumber: number): Promise<any> {
     }
     return res.json();
 }
-
 
 async function getAuthHeaders(): Promise<HeadersInit> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -78,7 +79,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 
 export async function sendBatch(campaign?: { subject?: string; message?: string }): Promise<{ status: string; n8n_response: any }> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/send-batch", {
+    const res = await fetch(`${API_BASE}/api/cold-email/send-batch`, {
         method: "POST",
         headers,
         body: JSON.stringify(campaign || {})
@@ -99,7 +100,7 @@ export interface DashboardBundleData {
 
 export async function fetchDashboardBundle(force: boolean = false): Promise<DashboardBundleData> {
     const headers = await getAuthHeaders();
-    const url = force ? "/api/cold-email/bundle?force=true" : "/api/cold-email/bundle";
+    const url = force ? `${API_BASE}/api/cold-email/bundle?force=true` : `${API_BASE}/api/cold-email/bundle`;
     const res = await fetch(url, { headers });
     if (!res.ok) {
         if (res.status === 401) {
@@ -116,8 +117,8 @@ export async function fetchDashboardBundle(force: boolean = false): Promise<Dash
 export async function fetchLeads(status?: string): Promise<ColdEmailLead[]> {
     const headers = await getAuthHeaders();
     const url = status
-        ? `/api/cold-email/leads?status=${encodeURIComponent(status)}`
-        : '/api/cold-email/leads';
+        ? `${API_BASE}/api/cold-email/leads?status=${encodeURIComponent(status)}`
+        : `${API_BASE}/api/cold-email/leads`;
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error("Failed to load leads");
     const json = await res.json();
@@ -126,7 +127,7 @@ export async function fetchLeads(status?: string): Promise<ColdEmailLead[]> {
 
 export async function fetchHotLeads(): Promise<ColdEmailLead[]> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/hot-leads", { headers });
+    const res = await fetch(`${API_BASE}/api/cold-email/hot-leads`, { headers });
     if (!res.ok) throw new Error("Failed to load hot leads");
     const json = await res.json();
     return json.data || [];
@@ -134,7 +135,7 @@ export async function fetchHotLeads(): Promise<ColdEmailLead[]> {
 
 export async function fetchNeutralQueue(): Promise<ColdEmailLead[]> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/neutral-leads", { headers });
+    const res = await fetch(`${API_BASE}/api/cold-email/neutral-leads`, { headers });
     if (!res.ok) throw new Error("Failed to load neutral queue");
     const json = await res.json();
     return json.data || [];
@@ -142,7 +143,7 @@ export async function fetchNeutralQueue(): Promise<ColdEmailLead[]> {
 
 export async function fetchFailedLeads(): Promise<ColdEmailLead[]> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/failed-leads", { headers });
+    const res = await fetch(`${API_BASE}/api/cold-email/failed-leads`, { headers });
     if (!res.ok) throw new Error("Failed to load failed leads");
     const json = await res.json();
     return json.data || [];
@@ -150,10 +151,10 @@ export async function fetchFailedLeads(): Promise<ColdEmailLead[]> {
 
 export async function sendReply(payload: SendReplyPayload): Promise<any> {
     const headers = await getAuthHeaders();
-    const res = await fetch("/api/cold-email/send-reply", {
+    const res = await fetch(`${API_BASE}/api/cold-email/send-reply`, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload), // no user_id here — backend injects it
+        body: JSON.stringify(payload),
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
