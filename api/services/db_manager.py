@@ -15,8 +15,8 @@ if os.path.exists(_root_env):
 ACTIVE_STATUSES = ["ringing", "active", "in_progress", "registered"]
 
 def _get_supabase_config():
-    url = (os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL") or "").rstrip("/")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_SERVICE_ROLE_KEY")
+    url = (os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL") or "").strip('"').strip("'").rstrip("/")
+    key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_SERVICE_ROLE_KEY") or "").strip('"').strip("'")
     if not url or not key:
         raise RuntimeError(
             "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not configured"

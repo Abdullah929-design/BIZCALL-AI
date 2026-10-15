@@ -9,8 +9,8 @@ load_dotenv()
 
 router = APIRouter()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip('"').strip("'")
+SUPABASE_SERVICE_ROLE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip('"').strip("'")
 
 def get_supabase_headers():
     return {
@@ -23,11 +23,26 @@ def fetch_profile_from_supabase(user_id: str) -> Optional[Dict[str, Any]]:
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         return None
     try:
-        url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?user_id=eq.{user_id}&select=*"
+        # Check if user_id is a UUID or an email address
+        is_email = "@" in user_id
+        if is_email:
+            url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?support_email=eq.{user_id}&select=*"
+        else:
+            url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?user_id=eq.{user_id}&select=*"
         res = requests.get(url, headers=get_supabase_headers(), timeout=10)
         res.raise_for_status()
         data = res.json()
-        return data[0] if data else None
+        if data:
+            return data[0]
+            
+        # Fallback: if queried by UUID but not found, try searching by support_email just in case
+        if not is_email:
+            url_email = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?support_email=eq.{user_id}&select=*"
+            res_e = requests.get(url_email, headers=get_supabase_headers(), timeout=10)
+            if res_e.ok and res_e.json():
+                return res_e.json()[0]
+                
+        return None
     except Exception as e:
         print(f"[company] error fetching profile from Supabase: {e}")
         return None

@@ -11,9 +11,9 @@ router = APIRouter()
 import requests as _requests
 from services import db_manager
 
-RETELL_API_KEY = os.getenv("RETELL_API_KEY")
-RETELL_AGENT_ID = os.getenv("RETELL_AGENT_ID")
-RETELL_CONVERSATION_FLOW_ID = os.getenv("RETELL_CONVERSATION_FLOW_ID")
+RETELL_API_KEY = (os.getenv("RETELL_API_KEY") or "").strip('"').strip("'")
+RETELL_AGENT_ID = (os.getenv("RETELL_AGENT_ID") or "").strip('"').strip("'")
+RETELL_CONVERSATION_FLOW_ID = (os.getenv("RETELL_CONVERSATION_FLOW_ID") or "").strip('"').strip("'")
 
 MAX_CONCURRENT_CALLS_PER_DIRECTION = 5
 
