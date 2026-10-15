@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import BankingChat from './components/BankingChat.jsx';
-import MarketingChat from './components/MarketingChat.jsx';
-import TwilioCallDemo from './components/TwilioCallDemo.jsx';
-import WebCallDemo from './components/WebCallDemo.jsx';
 import { ColdEmailDashboard } from './features/cold-email/pages/ColdEmailDashboard';
 import AgentBuilder from './components/AgentBuilder.jsx';
 import { MessengerDashboard } from './features/messenger/pages/MessengerDashboard';
 import AuthModal from './components/AuthModal.jsx';
-import TestAPI from './components/TestAPI.jsx';
 import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
-import HumanAgentSupport from './components/HumanAgentSupport.jsx';
 import { supabase } from './services/supabaseClient.js';
 import { healthAPI } from './services/api.jsx';
 import './App.css';
@@ -312,12 +306,7 @@ function App() {
               onClearPrefilledData={() => setPrefilledCallData(null)}
             />
           )}
-          {activeTab === 'banking' && <BankingChat />}
-          {activeTab === 'marketing' && <MarketingChat />}
-          {activeTab === 'voice' && <TwilioCallDemo />}
-          {activeTab === 'test' && <TestAPI />}
           {activeTab === 'analytics' && <AnalyticsDashboard user={user} />}
-          {activeTab === 'agents' && <HumanAgentSupport />}
           {activeTab === 'company' && <CompanySettings user={user} />}
           {activeTab === 'cold-email' && <ColdEmailDashboard />}
           {activeTab === 'messenger' && <MessengerDashboard user={user} />}

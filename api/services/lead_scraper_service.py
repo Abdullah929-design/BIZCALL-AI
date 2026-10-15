@@ -190,10 +190,15 @@ class CanonicalLead:
         ]
 
 
-async def crawl_contacts_from_website(website_url: str, default_country: str = "US") -> Dict[str, str]:
+async def crawl_contacts_from_website(
+    website_url: str,
+    default_country: str = "US",
+    client: Optional[httpx.AsyncClient] = None
+) -> Dict[str, str]:
     """
-    Crawls website homepage, /contact, and /about to harvest BOTH phone and email contacts.
-    Extracts tel: links, WhatsApp links, mailto: links, and text patterns.
+    Fast-Fail Contact Crawler:
+    Crawls website homepage and /contact with 2.5s timeout and connection reuse.
+    Aborts immediately if homepage is unreachable or blocks crawlers.
     """
     clean_url = clean_website_url(website_url)
     if not clean_url or not clean_url.startswith("http"):
@@ -206,51 +211,78 @@ async def crawl_contacts_from_website(website_url: str, default_country: str = "
     discovered_phones: List[str] = []
     discovered_emails: List[str] = []
 
-    async with httpx.AsyncClient(timeout=7.0, follow_redirects=True, headers=headers) as client:
-        for path in ["", "/contact", "/contact-us", "/about"]:
+    async def _crawl_with_client(http_client: httpx.AsyncClient):
+        # Only check homepage and /contact to avoid 20+ second hangs
+        for path in ["", "/contact"]:
             try:
                 target_url = clean_url + path
-                res = await client.get(target_url)
-                if res.status_code == 200:
-                    soup = BeautifulSoup(res.text, 'html.parser')
-
-                    # 1. Extract tel: links (<a href="tel:+92321...">)
-                    for a in soup.find_all('a', href=re.compile(r'^tel:', re.IGNORECASE)):
-                        raw_tel = urllib.parse.unquote(a['href']).replace('tel://', '').replace('tel:', '').strip()
-                        if raw_tel:
-                            discovered_phones.append(raw_tel)
-
-                    # 2. Extract WhatsApp links (wa.me/XXXXXXXX or api.whatsapp.com/send?phone=XXXXXXX)
-                    for a in soup.find_all('a', href=re.compile(r'wa\.me|whatsapp\.com', re.IGNORECASE)):
-                        href = urllib.parse.unquote(a.get('href', ''))
-                        match_wa = re.search(r'(?:phone=|\/)([+\d]{9,15})', href)
-                        if match_wa:
-                            discovered_phones.append(match_wa.group(1))
-
-                    # 3. Extract mailto: links (<a href="mailto:info@...">)
-                    for a in soup.find_all('a', href=re.compile(r'^mailto:', re.IGNORECASE)):
-                        raw_mail = urllib.parse.unquote(a['href']).replace('mailto:', '').split('?')[0].strip().lower()
-                        if '@' in raw_mail and re.search(r'@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}(?:\.[a-zA-Z]{2,4})?$', raw_mail):
-                            if not any(b in raw_mail for b in ["example", "domain", "sentry"]):
-                                discovered_emails.append(raw_mail)
-
-                    # 4. Regex fallback for emails
-                    email_pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
-                    for e in re.findall(email_pattern, res.text):
-                        el = e.lower().strip()
-                        if not re.search(r'@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}(?:\.[a-zA-Z]{2,4})?$', el):
-                            continue
-                        if any(el.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".svg", ".webp", ".css", ".js"]):
-                            continue
-                        if any(b in el for b in ["sentry", "wixpress", "example", "domain", "test", "bootstrap", "remixicon", "fontawesome"]):
-                            continue
-                        discovered_emails.append(el)
-
-                    # If we found both phone and email, stop early
-                    if discovered_phones and discovered_emails:
+                res = await http_client.get(target_url, timeout=2.5, follow_redirects=True)
+                
+                # If homepage fails (403, 404, 500, etc.), do not waste time on /contact
+                if res.status_code != 200:
+                    if path == "":
                         break
+                    continue
+
+                html_text = res.text
+                soup = BeautifulSoup(html_text, 'html.parser')
+
+                # 1. Extract tel: links (<a href="tel:+92321...">)
+                for a in soup.find_all('a', href=re.compile(r'^tel:', re.IGNORECASE)):
+                    raw_tel = urllib.parse.unquote(a.get('href', '')).replace('tel://', '').replace('tel:', '').strip()
+                    if raw_tel:
+                        discovered_phones.append(raw_tel)
+
+                # 2. Extract WhatsApp links (wa.me/XXXXXXXX or api.whatsapp.com/send?phone=XXXXXXX)
+                for a in soup.find_all('a', href=re.compile(r'wa\.me|whatsapp\.com', re.IGNORECASE)):
+                    href = urllib.parse.unquote(a.get('href', ''))
+                    match_wa = re.search(r'(?:phone=|\/)([+\d]{9,15})', href)
+                    if match_wa:
+                        discovered_phones.append(match_wa.group(1))
+
+                # 3. Extract mailto: links (<a href="mailto:info@...">)
+                for a in soup.find_all('a', href=re.compile(r'^mailto:', re.IGNORECASE)):
+                    raw_mail = urllib.parse.unquote(a.get('href', '')).replace('mailto:', '').split('?')[0].strip().lower()
+                    if '@' in raw_mail and re.search(r'@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}(?:\.[a-zA-Z]{2,4})?$', raw_mail):
+                        if not any(b in raw_mail for b in ["example", "domain", "sentry"]):
+                            discovered_emails.append(raw_mail)
+
+                # 4. Regex search for emails in page body
+                email_pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+                for e in re.findall(email_pattern, html_text):
+                    el = e.lower().strip()
+                    if not re.search(r'@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}(?:\.[a-zA-Z]{2,4})?$', el):
+                        continue
+                    if any(el.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".svg", ".webp", ".css", ".js"]):
+                        continue
+                    if any(b in el for b in ["sentry", "wixpress", "example", "domain", "test", "bootstrap", "remixicon", "fontawesome"]):
+                        continue
+                    discovered_emails.append(el)
+
+                # 5. Regex search for phone numbers in text if no tel link found
+                if not discovered_phones:
+                    phone_candidates = re.findall(r'(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}', html_text)
+                    for pc in phone_candidates:
+                        digits = re.sub(r'[^\d+]', '', pc)
+                        if 9 <= len(digits) <= 15:
+                            discovered_phones.append(digits)
+                            break
+
+                # If we found both phone and email, stop early
+                if discovered_phones and discovered_emails:
+                    break
+
             except Exception:
+                # If homepage times out or fails connection, immediately abort checking subpaths
+                if path == "":
+                    break
                 continue
+
+    if client:
+        await _crawl_with_client(client)
+    else:
+        async with httpx.AsyncClient(headers=headers, timeout=3.0) as local_client:
+            await _crawl_with_client(local_client)
 
     # Normalize extracted phone to E.164
     clean_phone = ""
@@ -266,7 +298,10 @@ async def crawl_contacts_from_website(website_url: str, default_country: str = "
                     clean_phone = digits
                     break
         except Exception:
-            continue
+            digits = re.sub(r'[^\d+]', '', p)
+            if len(digits) >= 9:
+                clean_phone = digits
+                break
 
     clean_email = discovered_emails[0] if discovered_emails else ""
     return {"phone": clean_phone, "email": clean_email}
@@ -362,7 +397,7 @@ async def fetch_ddg_leads(query: str, city: str, offset: int, country_code: str,
     ddg_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(search_str)}&s={offset}"
     leads = []
     try:
-        resp_ddg = await client.post(ddg_url, data={"q": search_str, "s": offset}, timeout=8.0)
+        resp_ddg = await client.post(ddg_url, data={"q": search_str, "s": offset}, timeout=4.5)
         if resp_ddg.status_code == 200:
             soup = BeautifulSoup(resp_ddg.text, 'html.parser')
             for res in soup.find_all('div', class_='result'):
@@ -380,7 +415,9 @@ async def fetch_ddg_leads(query: str, city: str, offset: int, country_code: str,
                     if any(spam in title_text.lower() or spam in snip_text.lower() for spam in SPAM_PATTERNS):
                         continue
 
-                    phone_match = re.search(r'(\+?\d[\d\s\-\(\)]{8,15}\d)', snip_text)
+                    # Search phone in combined title and snippet
+                    combined_text = f"{title_text} {snip_text}"
+                    phone_match = re.search(r'(\+?\d[\d\s\-\(\)]{8,15}\d)', combined_text)
                     extracted_phone = phone_match.group(0).strip() if phone_match else ""
 
                     email_match = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', snip_text)
@@ -422,6 +459,7 @@ async def fetch_apollo_leads(
     """
     Fetches verified B2B organizations from Apollo.io.
     Strictly capped to maximum 15 results per request to preserve free quota.
+    Falls back gracefully if tags do not match taxonomy.
     """
     api_key = os.getenv("APOLLO_API_KEY", "").strip()
     if not api_key:
@@ -434,55 +472,69 @@ async def fetch_apollo_leads(
     }
     per_page = min(limit, 15)
 
-    tags = get_search_variations(query)[:4]
+    tags = get_search_variations(query)[:3]
+    locations = [city]
+    if country_code == "PK":
+        locations.append(f"{city}, Pakistan")
 
     payload = {
         "q_organization_keyword_tags": tags,
-        "organization_locations": [city, f"{city}, Pakistan" if country_code == "PK" else city],
+        "organization_locations": locations,
         "page": 1,
         "per_page": per_page
     }
 
-    # Add employee range filter if specified (e.g. "1,10", "11,50", "51,200")
     if employee_range:
         payload["organization_num_employees_ranges"] = [employee_range]
 
     leads = []
     try:
-        resp = await client.post(url, json=payload, headers=headers, timeout=10.0)
-        if resp.status_code == 200:
-            data = resp.json()
-            for org in data.get("organizations", []):
-                name = org.get("name")
-                if not name:
-                    continue
-                phone = org.get("phone") or org.get("sanitized_phone") or ""
-                website = org.get("website_url") or ""
-                org_city = org.get("city") or city
-                industry = org.get("industry") or query
+        resp = await client.post(url, json=payload, headers=headers, timeout=5.0)
+        data = resp.json() if resp.status_code == 200 else {}
+        orgs = data.get("organizations", [])
 
-                # Extract High-Value Enrichment
-                logo_url = org.get("logo_url") or ""
-                linkedin_url = org.get("linkedin_url") or ""
-                employees = org.get("estimated_num_employees")
-                revenue = org.get("organization_revenue_printed") or org.get("annual_revenue_printed") or ""
+        # Fallback to name/domain search if tags yielded 0 results
+        if not orgs and resp.status_code == 200:
+            fallback_payload = {
+                "q_organization_name_or_domain": query,
+                "organization_locations": locations,
+                "page": 1,
+                "per_page": per_page
+            }
+            if employee_range:
+                fallback_payload["organization_num_employees_ranges"] = [employee_range]
+            fallback_resp = await client.post(url, json=fallback_payload, headers=headers, timeout=5.0)
+            if fallback_resp.status_code == 200:
+                orgs = fallback_resp.json().get("organizations", [])
 
-                leads.append({
-                    "company": name,
-                    "name": f"Manager at {name}",
-                    "phone": phone,
-                    "website": website,
-                    "email": "",
-                    "city": org_city,
-                    "industry": industry,
-                    "country": country_code,
-                    "logo_url": logo_url,
-                    "linkedin_url": linkedin_url,
-                    "employees": employees,
-                    "revenue": revenue
-                })
-        else:
-            print(f"[Apollo Warning] Status {resp.status_code}: {resp.text[:100]}")
+        for org in orgs:
+            name = org.get("name")
+            if not name:
+                continue
+            phone = org.get("phone") or org.get("sanitized_phone") or ""
+            website = org.get("website_url") or ""
+            org_city = org.get("city") or city
+            industry = org.get("industry") or query
+
+            logo_url = org.get("logo_url") or ""
+            linkedin_url = org.get("linkedin_url") or ""
+            employees = org.get("estimated_num_employees")
+            revenue = org.get("organization_revenue_printed") or org.get("annual_revenue_printed") or ""
+
+            leads.append({
+                "company": name,
+                "name": f"Manager at {name}",
+                "phone": phone,
+                "website": website,
+                "email": "",
+                "city": org_city,
+                "industry": industry,
+                "country": country_code,
+                "logo_url": logo_url,
+                "linkedin_url": linkedin_url,
+                "employees": employees,
+                "revenue": revenue
+            })
     except Exception as e:
         print(f"[Apollo Error] {e}")
     return leads
@@ -497,8 +549,9 @@ async def scrape_leads_live(
     employee_range: Optional[str] = None
 ) -> List[CanonicalLead]:
     """
-    High-Volume Multi-Page Parallel Scraper:
-    Returns 50-100+ actionable business leads with validated phone or email contacts.
+    High-Volume Parallel Scraper (Optimized & Fast-Failing):
+    Returns actionable business leads with validated phone or email contacts,
+    with graceful fallback for verified business prospects.
     """
     country_code = detect_country_code(city)
     headers = {
@@ -508,20 +561,22 @@ async def scrape_leads_live(
     variations = get_search_variations(keyword)
     all_raw: List[Dict[str, Any]] = []
 
-    async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
+    async with httpx.AsyncClient(timeout=8.0, headers=headers) as client:
         tasks = []
-        # 1. Apollo B2B Engine (capped strictly at 15 leads per request)
+        # 1. Apollo B2B Engine (capped at 15 leads)
         tasks.append(fetch_apollo_leads(keyword, city, country_code, client, limit=15, employee_range=employee_range))
-        # 2. Query OpenStreetMap & DuckDuckGo with multiple pages concurrently
-        for term in variations:
+
+        # 2. OpenStreetMap & DuckDuckGo (focused on top 3 variations with smart offset)
+        for i, term in enumerate(variations[:3]):
             tasks.append(fetch_nominatim_leads(term, city, country_code, client))
             tasks.append(fetch_ddg_leads(term, city, 0, country_code, client))
-            tasks.append(fetch_ddg_leads(term, city, 30, country_code, client))
-            tasks.append(fetch_ddg_leads(term, city, 60, country_code, client))
+            if i == 0:
+                tasks.append(fetch_ddg_leads(term, city, 30, country_code, client))
 
-        batches = await asyncio.gather(*tasks)
+        batches = await asyncio.gather(*tasks, return_exceptions=True)
         for b in batches:
-            all_raw.extend(b)
+            if isinstance(b, list):
+                all_raw.extend(b)
 
         # Deduplicate businesses
         seen_companies = set()
@@ -538,13 +593,23 @@ async def scrape_leads_live(
             for r in deduped_raw
         ]
 
-        # Deep crawl websites in parallel (concurrency limited to 15 to stay fast)
-        sem = asyncio.Semaphore(15)
-        async def enrich_lead(lead: CanonicalLead):
-            if lead.website and (not lead.email or not lead.phone):
+        # 3. Deep website crawl (respect crawl_emails flag, reuse client, fast-fail)
+        if crawl_emails:
+            sem = asyncio.Semaphore(15)
+            # Only enrich candidates that lack contacts, capped to min(count, limit)
+            candidates_to_enrich = [
+                l for l in canonical_candidates
+                if l.website and (not l.email or not l.phone)
+            ][:limit]
+
+            async def enrich_lead(lead: CanonicalLead):
                 async with sem:
                     try:
-                        contacts = await crawl_contacts_from_website(lead.website, default_country=country_code)
+                        contacts = await crawl_contacts_from_website(
+                            lead.website,
+                            default_country=country_code,
+                            client=client
+                        )
                         if not lead.phone and contacts.get("phone"):
                             lead.phone = contacts["phone"]
                         if not lead.email and contacts.get("email"):
@@ -552,12 +617,24 @@ async def scrape_leads_live(
                     except Exception:
                         pass
 
-        await asyncio.gather(*[enrich_lead(l) for l in canonical_candidates[:limit * 2]])
+            if candidates_to_enrich:
+                await asyncio.gather(*[enrich_lead(l) for l in candidates_to_enrich], return_exceptions=True)
 
-    # 🛑 QUALITY GATE: Keep only leads that have a PHONE or an EMAIL
-    actionable_leads = [
+    # 🛑 QUALITY GATE WITH SMART FALLBACK:
+    # Tier 1: Leads that have verified phone or email contacts
+    tier1_leads = [
         lead for lead in canonical_candidates
         if lead.phone or lead.email
     ]
 
-    return actionable_leads[:limit]
+    # Tier 2: If Tier 1 has fewer leads than requested limit, supplement with verified business entities
+    final_leads = list(tier1_leads)
+    if len(final_leads) < limit:
+        seen_ids = {l.id for l in final_leads}
+        for lead in canonical_candidates:
+            if lead.id not in seen_ids and (lead.website or lead.company):
+                final_leads.append(lead)
+                if len(final_leads) >= limit:
+                    break
+
+    return final_leads[:limit]

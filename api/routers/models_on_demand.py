@@ -11,6 +11,10 @@ import concurrent.futures
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import requests
+import threading
+
+_banking_client_lock = threading.Lock()
+_sales_client_lock = threading.Lock()
 
 router = APIRouter()
 
@@ -129,7 +133,8 @@ def refine_with_groq_cloud(
 def _gen_para(client, seed: str, max_tokens: int = 160, temperature: float = 0.72) -> str:
     """Send a seeded prompt to the HF Space and return clean continuation text."""
     try:
-        raw = client.predict(prompt=seed, temperature=temperature, max_tokens=max_tokens, api_name="/predict")
+        with _sales_client_lock:
+            raw = client.predict(prompt=seed, temperature=temperature, max_tokens=max_tokens, api_name="/predict")
         text = str(raw).strip()
         # Strip any echoed label the model sometimes repeats at the start
         for label in ["Paragraph:", "Response:", "Answer:", "Continuation:", "Output:"]:
@@ -309,7 +314,7 @@ async def get_models_catalog():
     }
 
 @router.post("/inference")
-async def run_model_inference(req: ModelInferenceRequest):
+def run_model_inference(req: ModelInferenceRequest):
     """
     Executes the appropriate proprietary pipeline on demand:
     - sales-gemma-2b: Pure Outbound Marketing & Sales Pitch Agent (Gemma-2B Q4_K_M)
@@ -358,116 +363,38 @@ async def run_model_inference(req: ModelInferenceRequest):
                 if candidate.split()[0] not in stopwords and len(candidate) > 2:
                     target_brand = candidate
 
-        # =====================================================================
-        # 4-PARAGRAPH FIXED-STRUCTURE ENGINE
-        # Each paragraph has a fixed role. We seed the opening sentence for each
-        # so the model only fills in continuation — structure is 100% guaranteed.
-        # All 4 calls run in parallel via ThreadPoolExecutor.
-        # =====================================================================
-
-        # --- PARAGRAPH 1: INTRODUCTION ---
-        # Introduce the topic/request in a professional, contextual opening.
-        p1_seed = (
-            f"[Topic: {query}]\n"
-            f"Introduction: {target_brand} represents a defining chapter in the evolution of modern enterprise "
-            f"technology, addressing the very core of how businesses today communicate, automate, and scale their "
-            f"operations across every layer of the organization."
-        )
-
-        # --- PARAGRAPH 2: PROBLEM DEVELOPMENT (Layer 1) ---
-        # Establish the industry-wide problem and operational pain points.
-        p2_seed = (
-            f"[Topic: {query}]\n"
-            f"The Problem: The fundamental challenge facing enterprises across every vertical today is the "
-            f"persistent fragmentation of business infrastructure — where disconnected CRMs, manual approval "
-            f"chains, siloed communication stacks, and legacy software create compounding inefficiencies that "
-            f"erode speed, accuracy, and revenue at an alarming rate."
-        )
-
-        # --- PARAGRAPH 3: PROBLEM DEVELOPMENT (Layer 2 — Technical Depth) ---
-        # Go deeper: technical consequences, market data, why the problem compounds.
-        p3_seed = (
-            f"[Topic: {query}]\n"
-            f"Deeper Analysis: What makes this operational crisis particularly acute is that traditional "
-            f"software vendors have failed to address the root cause — their tools manage individual tasks "
-            f"in isolation rather than orchestrating the entire workflow lifecycle, forcing teams into a "
-            f"cycle of manual re-entry, version conflicts, and cross-departmental communication breakdowns "
-            f"that cost enterprises an estimated 20 to 30 percent of their annual productivity output."
-        )
-
-        # --- PARAGRAPH 4: CONCLUSION / SOLUTION ---
-        # How the brand solves it, ROI, and call-to-action.
-        p4_seed = (
-            f"[Topic: {query}]\n"
-            f"The Solution — {target_brand}: This is precisely where {target_brand} delivers transformative "
-            f"value — a fully integrated, AI-powered platform that consolidates every business function into "
-            f"a single intelligent command layer, enabling organizations to eliminate operational drag, "
-            f"accelerate revenue cycles, and achieve measurable results from day one of deployment."
-        )
-
         client = get_hf_sales_client()
         model_output = ""
 
         if client:
             try:
-                # Run all 4 paragraph generations in parallel
-                with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                    futures = {
-                        "p1": executor.submit(_gen_para, client, p1_seed, 160, 0.72),
-                        "p2": executor.submit(_gen_para, client, p2_seed, 160, 0.72),
-                        "p3": executor.submit(_gen_para, client, p3_seed, 160, 0.72),
-                        "p4": executor.submit(_gen_para, client, p4_seed, 160, 0.72),
-                    }
-                    results = {k: f.result() for k, f in futures.items()}
+                # Thread-safe prompt continuation via Gradio
+                sales_seed = f"[Topic: {query}]\nValue Proposition Pitch for {target_brand}:"
+                continuation = _gen_para(client, sales_seed, max_tokens=180, temperature=0.72)
 
-                # Stitch: seed + model continuation for each paragraph
-                para1 = (
-                    f"The convergence of artificial intelligence, cloud-native infrastructure, and automated "
-                    f"business intelligence has positioned {target_brand} at the vanguard of enterprise "
-                    f"digital transformation. " + results["p1"]
-                )
-                para2 = (
-                    f"The fundamental challenge facing enterprises across every vertical today is the "
-                    f"persistent fragmentation of business infrastructure — where disconnected CRMs, "
-                    f"manual workflows, and siloed communication stacks compound into systemic inefficiency. "
-                    + results["p2"]
-                )
-                para3 = (
-                    f"What makes this operational crisis particularly acute is the technical debt "
-                    f"accumulated by legacy software architectures that were never designed for the "
-                    f"velocity and complexity of modern enterprise workflows. "
-                    + results["p3"]
-                )
-
-                # Para 4: strip any trailing question the model generates, then close with a hard CTA.
-                p4_continuation = results["p4"]
-                # Remove trailing question sentences (anything ending with '?')
-                p4_continuation = re.sub(r'\s*[^.!?]*\?\s*$', '', p4_continuation).strip()
-                # If model output is now empty or too short, use a safe filler
-                if len(p4_continuation) < 30:
-                    p4_continuation = (
-                        f"Early adopters report a 38% reduction in manual overhead within the first 90 days, "
-                        f"a 47% acceleration in approval cycles, and a 2.4x improvement in revenue conversion velocity."
+                if continuation and len(continuation.strip()) > 20:
+                    para1 = (
+                        f"The convergence of artificial intelligence, cloud-native infrastructure, and automated "
+                        f"business intelligence has positioned {target_brand} at the vanguard of modern enterprise "
+                        f"digital transformation."
                     )
-                # Hardcoded assertive CTA — always closes the response, no questions
-                hard_cta = (
-                    f" Schedule a 20-minute executive briefing today and launch a zero-risk 14-day pilot — "
-                    f"your team gets full production access to {target_brand} with no contract required."
-                )
-                para4 = (
-                    f"{target_brand} addresses these compounding challenges through a vertically integrated, "
-                    f"AI-native platform that replaces fragmentation with a single intelligent command layer — "
-                    f"delivering measurable ROI, sub-second operational response times, and a clear path "
-                    f"to deployment within 30 days. "
-                    + p4_continuation
-                    + hard_cta
-                )
-
-                # Assemble final 4-paragraph response
-                model_output = f"{para1}\n\n{para2}\n\n{para3}\n\n{para4}"
+                    para2 = continuation
+                    para3 = (
+                        f"Early adopters consistently report a 38% reduction in manual operational overhead within "
+                        f"the first 90 days of deployment, alongside a 47% acceleration in cross-departmental execution "
+                        f"and a measurable 2.4x improvement in pipeline conversion velocity."
+                    )
+                    para4 = (
+                        f"{target_brand} delivers measurable ROI, sub-second operational response times, and a clear "
+                        f"path to deployment within 30 days. Schedule a 20-minute executive briefing today to launch "
+                        f"a zero-risk 14-day enterprise pilot — your team gets full production access with no contract required."
+                    )
+                    model_output = f"{para1}\n\n{para2}\n\n{para3}\n\n{para4}"
+                else:
+                    model_output = _build_sales_fallback(target_brand, query)
 
             except Exception as e:
-                print(f"[models_on_demand] Sales 4-para engine error: {e}")
+                print(f"[models_on_demand] Sales engine error: {e}")
                 global hf_sales_client
                 hf_sales_client = None
                 model_output = _build_sales_fallback(target_brand, query)
@@ -535,7 +462,8 @@ async def run_model_inference(req: ModelInferenceRequest):
     client = get_hf_banking_client()
     if client:
         try:
-            model_output = client.predict(customer_query=query)
+            with _banking_client_lock:
+                model_output = client.predict(customer_query=query, api_name="/generate_banking_response")
         except Exception as e:
             print(f"[models_on_demand] Banking Space predict error: {e}")
             global hf_banking_client

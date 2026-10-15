@@ -44,7 +44,7 @@ def get_retell_client():
         raise HTTPException(status_code=500, detail="retell-sdk python package is missing. Install with 'pip install retell-sdk'.")
 
 @router.post("/register-call")
-async def register_web_call(req: RegisterCallRequest):
+def register_web_call(req: RegisterCallRequest):
     """Register a web/browser voice call session with Retell AI using direct HTTP API."""
     api_key = os.getenv("RETELL_API_KEY")
     agent_id = req.agent_id or os.getenv("RETELL_AGENT_ID")
@@ -89,7 +89,7 @@ async def register_web_call(req: RegisterCallRequest):
         raise HTTPException(status_code=500, detail=f"Retell Direct API Error: {str(e)}")
 
 @router.post("/create-custom-agent")
-async def create_custom_agent(req: CreateCustomAgentRequest):
+def create_custom_agent(req: CreateCustomAgentRequest):
     """Provision a real custom Retell AI Agent dynamically using Retell SDK."""
     client = get_retell_client()
     
@@ -151,10 +151,15 @@ async def create_custom_agent(req: CreateCustomAgentRequest):
         raise HTTPException(status_code=500, detail=f"Failed to create agent on Retell AI: {str(e)}")
 
 @router.post("/create-phone-call")
-async def create_phone_call(req: CreatePhoneCallRequest):
+def create_phone_call(req: CreatePhoneCallRequest):
     """Initiate an outbound phone call using Retell AI, capped at 5 concurrent outbound calls."""
     client = get_retell_client()
-    agent_id = req.override_agent_id or RETELL_AGENT_ID
+    agent_id = req.override_agent_id
+    if not agent_id:
+        raise HTTPException(
+            status_code=400,
+            detail="An agent ID is required to place calls. Please create or select your custom voice agent first."
+        )
 
     try:
         active_outbound = db_manager.get_active_calls_count("outbound")
@@ -219,13 +224,21 @@ class SetActiveInboundAgentRequest(BaseModel):
     phone_number: Optional[str] = None
 
 @router.get("/active-inbound-agent")
-async def get_active_inbound_agent():
-    """Retrieve the currently active live inbound agent and bound phone number."""
-    client = get_retell_client()
-    active_agent_id = os.getenv("RETELL_AGENT_ID")
-    bound_phone = os.getenv("TWILIO_PHONE_NUMBER")
+def get_active_inbound_agent():
+    """Retrieve the currently active live inbound agent and bound phone number.
     
+    Returns env-variable defaults immediately if RETELL_API_KEY is not configured
+    or if the external Retell API call fails, so the frontend never hangs on login.
+    """
+    active_agent_id = os.getenv("RETELL_AGENT_ID", "")
+    bound_phone = os.getenv("TWILIO_PHONE_NUMBER", "")
+
+    # Short-circuit if no API key — avoids blocking HTTP call on startup
+    if not RETELL_API_KEY:
+        return {"success": True, "phone_number": bound_phone, "agent_id": active_agent_id}
+
     try:
+        client = get_retell_client()
         numbers_resp = client.phone_number.list()
         items = numbers_resp if isinstance(numbers_resp, list) else (
             numbers_resp[1] if isinstance(numbers_resp, tuple) else getattr(numbers_resp, "items", [])
@@ -237,8 +250,8 @@ async def get_active_inbound_agent():
             if inbound_agents:
                 active_agent_id = getattr(inbound_agents[0], "agent_id", active_agent_id)
     except Exception as e:
-        print(f"[retell active-inbound-agent] could not fetch live phone number list: {e}")
-        
+        print(f"[retell active-inbound-agent] could not fetch live phone number list (using env fallback): {e}")
+
     return {
         "success": True,
         "phone_number": bound_phone,
@@ -246,7 +259,7 @@ async def get_active_inbound_agent():
     }
 
 @router.post("/set-active-inbound-agent")
-async def set_active_inbound_agent(req: SetActiveInboundAgentRequest):
+def set_active_inbound_agent(req: SetActiveInboundAgentRequest):
     """Binds the selected inbound agent to the live Retell phone number so it handles 100% of live inbound calls."""
     client = get_retell_client()
     target_phone = req.phone_number
@@ -271,6 +284,16 @@ async def set_active_inbound_agent(req: SetActiveInboundAgentRequest):
             print(f"[Retell Live Phone Updated] Phone {target_phone} bound to inbound agent {req.agent_id}")
             
         os.environ["RETELL_AGENT_ID"] = req.agent_id
+
+        # Auto-configure agent webhook_url to ngrok so hangup events are immediately delivered
+        ngrok_url = (os.getenv("NGROK_URL") or "").rstrip("/")
+        if ngrok_url:
+            webhook_endpoint = f"{ngrok_url}/api/retell/webhook"
+            try:
+                client.agent.update(req.agent_id, webhook_url=webhook_endpoint)
+                print(f"[Retell Webhook Configured] Agent {req.agent_id} bound to {webhook_endpoint}")
+            except Exception as w_err:
+                print(f"[Retell Webhook Warning] non-fatal: could not update agent webhook_url: {w_err}")
         
         return {
             "success": True,
@@ -283,7 +306,7 @@ async def set_active_inbound_agent(req: SetActiveInboundAgentRequest):
         raise HTTPException(status_code=500, detail=f"Failed to update active inbound agent: {str(e)}")
 
 @router.delete("/delete-agent/{agent_id}")
-async def delete_agent(agent_id: str):
+def delete_agent(agent_id: str):
     """Delete the custom agent from Retell AI servers."""
     client = get_retell_client()
     try:
@@ -295,7 +318,7 @@ async def delete_agent(agent_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete agent on Retell AI: {str(e)}")
 
 @router.get("/agent-context/{agent_id}")
-async def get_agent_context(agent_id: str):
+def get_agent_context(agent_id: str):
     """Retrieve the current prompt/context of an existing Retell agent without altering any settings."""
     client = get_retell_client()
     try:
@@ -331,7 +354,7 @@ class UpdateAgentContextRequest(BaseModel):
     begin_message: Optional[str] = None
 
 @router.post("/update-agent-context")
-async def update_agent_context(req: UpdateAgentContextRequest):
+def update_agent_context(req: UpdateAgentContextRequest):
     """Update ONLY the prompt/context of an existing Retell agent, preserving all voice, telephony, and routing settings."""
     client = get_retell_client()
     try:
@@ -447,6 +470,9 @@ def get_call_detail(call_id: str):
     """Fetch detailed metadata for a single call."""
     try:
         client = get_retell_client()
+        item = None
+        db_status = "active"
+        dur_sec = 0
         try:
             item = client.call.retrieve(call_id)
             if item:
@@ -456,6 +482,14 @@ def get_call_detail(call_id: str):
                 summary = getattr(analysis, "call_summary", None) if analysis else None
                 sentiment = getattr(analysis, "user_sentiment", None) if analysis else None
                 
+                raw_status = getattr(item, "call_status", "")
+                if raw_status in ("ended", "not_connected", "error"):
+                    db_status = "completed" if raw_status == "ended" else "failed"
+                elif raw_status in ("registered", "ongoing"):
+                    db_status = "active"
+                else:
+                    db_status = "completed"
+                
                 db_manager.upsert_call({
                     "call_id": call_id,
                     "agent_id": getattr(item, "agent_id", None),
@@ -463,17 +497,25 @@ def get_call_detail(call_id: str):
                     "direction": getattr(item, "direction", "inbound"),
                     "from_number": getattr(item, "from_number", None),
                     "to_number": getattr(item, "to_number", None),
-                    "status": "completed" if getattr(item, "call_status", "") == "ended" else "active",
+                    "status": db_status,
                     "duration": dur_sec,
                     "recording_url": getattr(item, "recording_url", None),
                     "transcript": getattr(item, "transcript", None),
                     "summary": summary,
                     "sentiment": sentiment,
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[get_call_detail] retrieve error: {e}")
 
         call = db_manager.get_call(call_id)
+        if not call and item:
+            call = {
+                "call_id": call_id,
+                "agent_id": getattr(item, "agent_id", None),
+                "direction": getattr(item, "direction", "inbound"),
+                "status": db_status,
+                "duration": dur_sec,
+            }
         if not call:
             raise HTTPException(status_code=404, detail="Call record not found")
         return {"success": True, "call": call}
@@ -489,10 +531,9 @@ async def retell_webhook_verify():
     return {"status": "ok", "message": "Retell Webhook endpoint active"}
 
 @router.post("/webhook")
-async def retell_webhook(request: Request):
+def retell_webhook(payload: Dict[str, Any]):
     """Handle Webhook events from Retell AI (call_started, call_ended, call_analyzed)."""
     try:
-        payload = await request.json()
         event_type = payload.get("event")
         
         # Check both "call" (Retell v2 standard) and "data" (legacy/fallback)
@@ -511,52 +552,49 @@ async def retell_webhook(request: Request):
         twilio_call_sid = telephony.get("twilio_call_sid")
 
         if event_type == "call_started":
-            db_manager.upsert_call({
-                "call_id": call_id,
-                "agent_id": data.get("agent_id"),
-                "direction": direction,
-                "from_number": data.get("from_number"),
-                "to_number": data.get("to_number"),
-                "status": "active",
-                "twilio_call_sid": twilio_call_sid,
-            })
+            try:
+                db_manager.upsert_call({
+                    "call_id": call_id,
+                    "agent_id": data.get("agent_id"),
+                    "direction": direction,
+                    "from_number": data.get("from_number"),
+                    "to_number": data.get("to_number"),
+                    "status": "active",
+                    "twilio_call_sid": twilio_call_sid,
+                })
+            except Exception as e:
+                print(f"[db_manager] webhook upsert_call warning: {e}")
 
-        elif event_type == "call_ended":
+        elif event_type in ("call_ended", "call_analyzed", "call_completed"):
+            disconnection_reason = data.get("disconnection_reason", "")
             duration_seconds = None
             if data.get("start_timestamp") and data.get("end_timestamp"):
                 duration_seconds = int(
                     (data["end_timestamp"] - data["start_timestamp"]) / 1000
                 )
-            db_manager.update_call_status(
-                call_id,
-                status="completed",
-                extra_data={
-                    "duration": duration_seconds,
-                    "recording_url": data.get("recording_url"),
-                    "transcript": data.get("transcript"),
-                    "twilio_call_sid": twilio_call_sid,
-                },
-            )
-
-        elif event_type in ("call_analyzed", "call_completed"):
             analysis = data.get("call_analysis", {}) or {}
-            duration_seconds = None
-            if data.get("start_timestamp") and data.get("end_timestamp"):
-                duration_seconds = int(
-                    (data["end_timestamp"] - data["start_timestamp"]) / 1000
+            
+            # Map disconnection reasons (e.g. dial_busy, dial_failed) to appropriate status
+            status = "completed"
+            if disconnection_reason in ("dial_busy", "dial_failed", "error"):
+                status = "failed"
+
+            try:
+                db_manager.update_call_status(
+                    call_id,
+                    status=status,
+                    extra_data={
+                        "duration": duration_seconds or (data.get("duration_ms", 0) // 1000 if data.get("duration_ms") else 0),
+                        "recording_url": data.get("recording_url"),
+                        "transcript": data.get("transcript"),
+                        "summary": analysis.get("call_summary"),
+                        "sentiment": analysis.get("user_sentiment"),
+                        "twilio_call_sid": twilio_call_sid,
+                        "disconnection_reason": disconnection_reason
+                    },
                 )
-            db_manager.update_call_status(
-                call_id,
-                status="completed",
-                extra_data={
-                    "duration": duration_seconds or data.get("duration_ms", 0) // 1000 if data.get("duration_ms") else None,
-                    "recording_url": data.get("recording_url"),
-                    "transcript": data.get("transcript"),
-                    "summary": analysis.get("call_summary"),
-                    "sentiment": analysis.get("user_sentiment"),
-                    "twilio_call_sid": twilio_call_sid,
-                },
-            )
+            except Exception as e:
+                print(f"[db_manager] webhook update_call_status warning: {e}")
 
         return {"status": "received"}
     except Exception as e:
@@ -565,7 +603,7 @@ async def retell_webhook(request: Request):
 
 
 @router.post("/hangup-call/{call_id}")
-async def hangup_call(call_id: str):
+def hangup_call(call_id: str):
     """Terminate an active call and mark it completed in Supabase."""
     ended_via = None
 
@@ -590,7 +628,7 @@ async def hangup_call(call_id: str):
                     f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Calls/{twilio_sid}.json"
                 )
                 _requests.post(
-                    twilio_url, data={"Status": "completed"}, auth=(account_sid, auth_token), timeout=10
+                    twilio_url, data={"Status": "completed"}, auth=(account_sid, auth_token), timeout=4
                 )
                 ended_via = "twilio"
         except Exception as e:
@@ -600,5 +638,19 @@ async def hangup_call(call_id: str):
         db_manager.update_call_status(call_id, status="completed")
     except Exception as e:
         print(f"[db_manager] non-fatal: failed to mark call completed: {e}")
+
+    # Also update simulated call_requests if applicable
+    try:
+        supabase_url = (os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL") or "").rstrip("/")
+        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_SERVICE_ROLE_KEY")
+        if supabase_url and service_key:
+            _requests.patch(
+                f"{supabase_url}/rest/v1/call_requests?id=eq.{call_id}",
+                headers={"apikey": service_key, "Authorization": f"Bearer {service_key}", "Content-Type": "application/json"},
+                json={"status": "completed"},
+                timeout=3
+            )
+    except Exception:
+        pass
 
     return {"success": True, "call_id": call_id, "ended_via": ended_via or "marked_completed_only"}

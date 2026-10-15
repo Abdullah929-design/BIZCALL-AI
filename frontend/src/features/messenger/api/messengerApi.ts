@@ -11,7 +11,7 @@ import type {
     ConnectedFacebookPage
 } from '../types';
 
-const N8N_BASE_URL = 'https://130-210-37-190.nip.io';
+const N8N_BASE_URL = (import.meta as any).env?.VITE_N8N_BASE_URL || 'https://130-210-37-190.nip.io';
 
 interface SupabaseLeadRow {
     id: string;

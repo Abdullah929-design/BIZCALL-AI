@@ -1,3 +1,14 @@
+---
+title: BizCall AI API
+emoji: ⚡
+colorFrom: indigo
+colorTo: blue
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+---
+
 # BizCall AI — Enterprise Voice & Multi-Channel Sales Automation Platform
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)

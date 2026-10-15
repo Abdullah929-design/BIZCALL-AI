@@ -1,7 +1,9 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import faiss
 import pickle
 import numpy as np
-import os
 import warnings
 warnings.filterwarnings('ignore')
 from sentence_transformers import SentenceTransformer
@@ -13,7 +15,10 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 # while safely filtering out irrelevant/out-of-domain queries (<0.35)
 SIMILARITY_THRESHOLD = 0.55
 
-model = SentenceTransformer(MODEL_NAME)
+try:
+    model = SentenceTransformer(MODEL_NAME, local_files_only=True)
+except Exception:
+    model = SentenceTransformer(MODEL_NAME)
 
 index = None
 meta = []

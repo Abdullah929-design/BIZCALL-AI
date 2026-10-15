@@ -1,5 +1,6 @@
 import csv
 import io
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from .auth import get_current_user, AuthenticatedUser
 from . import n8n_client, sheets_client
@@ -40,7 +41,7 @@ async def import_leads_csv(file: UploadFile = File(...), user: AuthenticatedUser
         if not leads_to_add:
             raise HTTPException(status_code=400, detail="No valid lead rows with an 'email' column found in CSV.")
 
-        result = sheets_client.bulk_add_leads_for_user(user_id=user.id, leads_data=leads_to_add)
+        result = await run_in_threadpool(sheets_client.bulk_add_leads_for_user, user_id=user.id, leads_data=leads_to_add)
         return {"success": True, "count": result.get("count", 0), "message": f"Successfully imported {result.get('count', 0)} leads."}
     except HTTPException:
         raise
@@ -49,7 +50,7 @@ async def import_leads_csv(file: UploadFile = File(...), user: AuthenticatedUser
 
 
 @router.post("/leads")
-async def create_lead(payload: CreateLeadRequest, user: AuthenticatedUser = Depends(get_current_user)):
+def create_lead(payload: CreateLeadRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """Appends a new lead directly to Google Sheets with user.id stamped."""
     try:
         result = sheets_client.add_lead_for_user(user_id=user.id, data=payload.dict())
@@ -59,7 +60,7 @@ async def create_lead(payload: CreateLeadRequest, user: AuthenticatedUser = Depe
 
 
 @router.put("/leads/{row_number}")
-async def update_lead(row_number: int, payload: UpdateLeadRequest, user: AuthenticatedUser = Depends(get_current_user)):
+def update_lead(row_number: int, payload: UpdateLeadRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """Updates an existing lead in Google Sheets after verifying user ownership."""
     try:
         clean_data = {k: v for k, v in payload.dict().items() if v is not None and k != "row_number"}
@@ -72,7 +73,7 @@ async def update_lead(row_number: int, payload: UpdateLeadRequest, user: Authent
 
 
 @router.delete("/leads/{row_number}")
-async def delete_lead(row_number: int, user: AuthenticatedUser = Depends(get_current_user)):
+def delete_lead(row_number: int, user: AuthenticatedUser = Depends(get_current_user)):
     """Deletes a lead row in Google Sheets after verifying user ownership."""
     try:
         result = sheets_client.delete_lead_for_user(user_id=user.id, row_number=row_number)
@@ -84,11 +85,12 @@ async def delete_lead(row_number: int, user: AuthenticatedUser = Depends(get_cur
 
 
 @router.post("/send-batch")
-async def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUser = Depends(get_current_user)):
+def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Triggers n8n batch email processing for the authenticated user.
     Enforces server-side debounce to prevent duplicate batch triggers.
     Allows passing custom subject and message for mass campaign.
+    Runs synchronously in the worker threadpool.
     """
     now = time.time()
     last_run = _last_batch_trigger.get(user.id, 0)
@@ -124,7 +126,7 @@ async def send_batch(payload: Optional[SendBatchRequest] = None, user: Authentic
         print(f"[cold_email] Failed to resolve tenant subdomain: {ex}")
 
     try:
-        result = await n8n_client.trigger_send_batch(
+        result = n8n_client.trigger_send_batch(
             user_id=user.id,
             subject=subject,
             message=message,
@@ -140,7 +142,7 @@ async def send_batch(payload: Optional[SendBatchRequest] = None, user: Authentic
 
 
 @router.get("/bundle")
-async def get_dashboard_bundle(force: bool = False, user: AuthenticatedUser = Depends(get_current_user)):
+def get_dashboard_bundle(force: bool = False, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Fetches all CRM dashboard tabs (leads, hot_leads, neutral_leads, failed_leads)
     in a single round-trip with in-memory caching and Google batchGet.
@@ -154,7 +156,7 @@ async def get_dashboard_bundle(force: bool = False, user: AuthenticatedUser = De
 
 
 @router.get("/leads")
-async def get_leads(status: str = None, user: AuthenticatedUser = Depends(get_current_user)):
+def get_leads(status: str = None, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Fetches leads from the 'Leads' tab for the authenticated user.
     Optional query param ?status=... filters by status.
@@ -168,7 +170,7 @@ async def get_leads(status: str = None, user: AuthenticatedUser = Depends(get_cu
 
 
 @router.get("/hot-leads")
-async def get_hot_leads(user: AuthenticatedUser = Depends(get_current_user)):
+def get_hot_leads(user: AuthenticatedUser = Depends(get_current_user)):
     """
     Fetches hot leads (positive replies) for the authenticated user.
     Returns reply_summary, draft_reply, confidence, gmail_thread_id, human_action, actioned_at.
@@ -182,7 +184,7 @@ async def get_hot_leads(user: AuthenticatedUser = Depends(get_current_user)):
 
 @router.get("/neutral-leads")
 @router.get("/neutral-queue")
-async def get_neutral_leads(user: AuthenticatedUser = Depends(get_current_user)):
+def get_neutral_leads(user: AuthenticatedUser = Depends(get_current_user)):
     """Fetches neutral queue leads requiring manual inspection for the authenticated user."""
     try:
         leads = sheets_client.get_neutral_leads_for_user(user_id=user.id)
@@ -192,7 +194,7 @@ async def get_neutral_leads(user: AuthenticatedUser = Depends(get_current_user))
 
 
 @router.get("/failed-leads")
-async def get_failed_leads(user: AuthenticatedUser = Depends(get_current_user)):
+def get_failed_leads(user: AuthenticatedUser = Depends(get_current_user)):
     """Fetches bounced or failed leads for the authenticated user (read-only)."""
     try:
         leads = sheets_client.get_failed_leads_for_user(user_id=user.id)
@@ -201,7 +203,7 @@ async def get_failed_leads(user: AuthenticatedUser = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Error reading Failed Leads sheet: {str(e)}")
 
 @router.get("/analytics")
-async def get_analytics(user: AuthenticatedUser = Depends(get_current_user)):
+def get_analytics(user: AuthenticatedUser = Depends(get_current_user)):
     """Fetches aggregate analytics and stats for the authenticated user."""
     try:
         data = sheets_client.fetch_tab_rows(tab_name="Analytics", user_id=user.id)
@@ -211,10 +213,11 @@ async def get_analytics(user: AuthenticatedUser = Depends(get_current_user)):
 
 
 @router.post("/send-reply")
-async def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depends(get_current_user)):
+def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Sends a manual reply to a HOT lead via n8n Workflow 3.
     user_id is injected server-side from user.id.
+    Runs synchronously in the worker threadpool.
     """
     # Defense-in-depth: check that lead belongs to user
     try:
@@ -244,7 +247,7 @@ async def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depend
         print(f"[cold_email] Failed to resolve tenant subdomain for reply: {ex}")
 
     try:
-        result = await n8n_client.trigger_send_reply(
+        result = n8n_client.trigger_send_reply(
             user_id=user.id,
             lead_id=payload.lead_id,
             lead_email=payload.lead_email,

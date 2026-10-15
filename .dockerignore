@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode
+.zenflow
+.zencoder
+node_modules
+frontend/
+lead-frontend/
+notebook_FAQ/
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env.local
+scratch/
+tests/

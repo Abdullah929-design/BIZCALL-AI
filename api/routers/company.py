@@ -40,13 +40,41 @@ ROOT_DOMAIN = "bizcallai.online"
 SUBDOMAINS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "company_subdomains.json")
 
 def load_subdomains_registry() -> Dict[str, Any]:
+    registry = {}
     if os.path.exists(SUBDOMAINS_FILE):
         try:
             with open(SUBDOMAINS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                registry = json.load(f)
         except Exception as e:
             print(f"[company] error loading subdomains file: {e}")
-    return {}
+
+    # Reseed from Supabase on fresh container start if local file was wiped
+    if not registry and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+        try:
+            url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?select=user_id,company_name"
+            res = requests.get(url, headers=get_supabase_headers(), timeout=5)
+            if res.ok:
+                for row in res.json():
+                    uid = row.get("user_id")
+                    cname = row.get("company_name", "")
+                    if uid and uid not in registry:
+                        clean_uid = re.sub(r'[^a-z0-9]', '', uid.lower())
+                        slug = f"org{clean_uid[:6]}" if clean_uid else "client"
+                        registry[uid] = {
+                            "user_id": uid,
+                            "company_name": cname or "My Business",
+                            "subdomain_slug": slug,
+                            "subdomain": f"{slug}.{ROOT_DOMAIN}",
+                            "inbox_email": f"inbox@{slug}.{ROOT_DOMAIN}",
+                            "root_domain": ROOT_DOMAIN,
+                            "assigned_at": datetime.utcnow().isoformat()
+                        }
+                if registry:
+                    save_subdomains_registry(registry)
+        except Exception as e:
+            print(f"[company] note: could not seed subdomains from Supabase: {e}")
+
+    return registry
 
 def save_subdomains_registry(data: Dict[str, Any]) -> None:
     try:
@@ -190,7 +218,7 @@ class OnboardingChatRequest(BaseModel):
     current_profile: Optional[Dict[str, Any]] = None
 
 @router.get("/profile/{user_id}")
-async def get_company_profile(user_id: str):
+def get_company_profile(user_id: str):
     """Retrieve company profile for a logged-in user including their assigned private subdomain."""
     print(f"[DEBUG GET PROFILE] user_id: {user_id}")
     profile = fetch_profile_from_supabase(user_id)
@@ -220,7 +248,7 @@ async def get_company_profile(user_id: str):
     return {"success": True, "profile": profile}
 
 @router.post("/profile")
-async def save_company_profile(req: CompanyProfileRequest):
+def save_company_profile(req: CompanyProfileRequest):
     """Save or update company profile for a user and assign their isolated private subdomain."""
     print(f"[DEBUG POST PROFILE] user_id: {req.user_id}")
     profile_data = req.dict()
@@ -243,7 +271,7 @@ async def save_company_profile(req: CompanyProfileRequest):
     }
 
 @router.delete("/profile/{user_id}")
-async def delete_company_profile(user_id: str):
+def delete_company_profile(user_id: str):
     """
     Deletes a company profile from Supabase and immediately frees
     their assigned subdomain and private inbox.
@@ -267,7 +295,7 @@ async def delete_company_profile(user_id: str):
     }
 
 @router.post("/subdomains/sync")
-async def trigger_subdomain_sync():
+def trigger_subdomain_sync():
     """
     Synchronizes the subdomain registry with active Supabase users,
     purging any subdomains belonging to deleted users.
@@ -280,7 +308,7 @@ async def trigger_subdomain_sync():
     }
 
 @router.post("/onboard-chat")
-async def onboard_chat(req: OnboardingChatRequest):
+def onboard_chat(req: OnboardingChatRequest):
     """Interactive AI Assistant Chatbot to guide company onboarding and automatically save profile."""
     user_msg = req.messages[-1].get("content", "") if req.messages else ""
     user_id = req.user_id

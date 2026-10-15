@@ -38,29 +38,37 @@ def _headers(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
 
 def upsert_call(call_data: Dict[str, Any]) -> Dict[str, Any]:
     """Create or fully replace a call row (matched on call_id)."""
-    _, _, endpoint = _get_supabase_config()
-    headers = _headers({"Prefer": "resolution=merge-duplicates,return=representation"})
-    resp = requests.post(endpoint, headers=headers, json=call_data, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
-    return data[0] if isinstance(data, list) and data else data
+    try:
+        _, _, endpoint = _get_supabase_config()
+        headers = _headers({"Prefer": "resolution=merge-duplicates,return=representation"})
+        resp = requests.post(endpoint, headers=headers, json=call_data, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        return data[0] if isinstance(data, list) and data else data
+    except Exception as e:
+        print(f"[db_manager] upsert_call error (safe fallback): {e}")
+        return {}
 
 
 def update_call_status(
     call_id: str, status: str, extra_data: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """PATCH specific fields on an existing call row."""
-    _, _, endpoint = _get_supabase_config()
-    payload: Dict[str, Any] = {"status": status}
-    if extra_data:
-        payload.update(extra_data)
+    try:
+        _, _, endpoint = _get_supabase_config()
+        payload: Dict[str, Any] = {"status": status}
+        if extra_data:
+            payload.update(extra_data)
 
-    headers = _headers({"Prefer": "return=representation"})
-    params = {"call_id": f"eq.{call_id}"}
-    resp = requests.patch(endpoint, headers=headers, params=params, json=payload, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
-    return data[0] if isinstance(data, list) and data else data
+        headers = _headers({"Prefer": "return=representation"})
+        params = {"call_id": f"eq.{call_id}"}
+        resp = requests.patch(endpoint, headers=headers, params=params, json=payload, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        return data[0] if isinstance(data, list) and data else data
+    except Exception as e:
+        print(f"[db_manager] update_call_status error (safe fallback): {e}")
+        return {}
 
 
 def get_active_calls_count(direction: str) -> int:

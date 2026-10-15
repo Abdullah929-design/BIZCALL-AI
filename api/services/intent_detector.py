@@ -34,8 +34,16 @@ def preprocess_text(text: str) -> str:
     return " ".join(words)
 
 @lru_cache(maxsize=1)
-def load_intent_model(model_dir: str = "../intent_detection_model"):
-    # model_dir should be the folder you have pushed that contains the intent model
+def load_intent_model(model_dir: str = None):
+    if not model_dir:
+        env_dir = os.getenv("INTENT_MODEL_PATH")
+        if env_dir and os.path.exists(env_dir):
+            model_dir = env_dir
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            candidate = os.path.join(base_dir, "intent_detection_model")
+            model_dir = candidate if os.path.exists(candidate) else "../intent_detection_model"
+
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model.eval()

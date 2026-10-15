@@ -43,7 +43,11 @@ export const ColdEmailDashboard: React.FC = () => {
             setAllLeads(bundle.leads || []);
             setNeutralLeads(bundle.neutral_leads || []);
             setFailedLeads(bundle.failed_leads || []);
-        } catch (err) {
+        } catch (err: any) {
+            if (err?.name === 'AuthError') {
+                console.warn('Cold email: session unauthenticated, please sign in.');
+                return;
+            }
             console.warn('Dashboard bundle fetch failed, falling back to parallel fetch:', err);
             try {
                 const [hot, all, neutral, failed] = await Promise.all([

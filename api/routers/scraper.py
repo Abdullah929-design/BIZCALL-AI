@@ -57,7 +57,7 @@ async def search_leads(req: ScrapeSearchRequest):
 
 
 @router.post("/import-to-sheets")
-async def import_to_sheets(
+def import_to_sheets(
     payload: ImportToSheetsRequest,
     user: AuthenticatedUser = Depends(get_current_user)
 ):
@@ -85,7 +85,7 @@ async def import_to_sheets(
 
 
 @router.post("/import-to-voice")
-async def import_to_voice(
+def import_to_voice(
     payload: ImportToVoiceRequest,
     user: AuthenticatedUser = Depends(get_current_user)
 ):

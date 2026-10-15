@@ -101,7 +101,14 @@ export async function fetchDashboardBundle(force: boolean = false): Promise<Dash
     const headers = await getAuthHeaders();
     const url = force ? "/api/cold-email/bundle?force=true" : "/api/cold-email/bundle";
     const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error("Failed to load dashboard bundle");
+    if (!res.ok) {
+        if (res.status === 401) {
+            const err = new Error("Authentication session expired or invalid");
+            err.name = "AuthError";
+            throw err;
+        }
+        throw new Error("Failed to load dashboard bundle");
+    }
     const json = await res.json();
     return json.data || { leads: [], hot_leads: [], neutral_leads: [], failed_leads: [] };
 }

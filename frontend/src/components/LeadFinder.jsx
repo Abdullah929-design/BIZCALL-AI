@@ -43,6 +43,7 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set());
   const [filterPhoneOnly, setFilterPhoneOnly] = useState(false);
   const [filterEmailOnly, setFilterEmailOnly] = useState(false);
+  const [crawlEmails, setCrawlEmails] = useState(true);
   const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
   const [employeeRange, setEmployeeRange] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
@@ -57,14 +58,19 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
     }
 
     setLoading(true);
-    setStatusMsg({ text: 'Scraping real-time business directories and crawling websites for contacts...', type: 'info' });
+    setStatusMsg({
+      text: crawlEmails
+        ? 'Scraping verified business directories and crawling websites for direct contacts...'
+        : 'Searching verified business directories (Fast Mode)...',
+      type: 'info'
+    });
 
     try {
       const res = await axios.post('/api/scraper/search', {
         keyword: keyword.trim(),
         city: city.trim(),
         employee_range: employeeRange || null,
-        crawl_emails: true,
+        crawl_emails: crawlEmails,
       });
 
       if (res.data?.success) {
@@ -342,6 +348,27 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
                 <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
               Has Email Address (Cold Email Ready)
+            </label>
+
+            <label className={`finder-filter-chip ${crawlEmails ? 'active' : ''}`} title="Extract phone numbers, emails, and WhatsApp directly from company websites">
+              <input
+                type="checkbox"
+                checked={crawlEmails}
+                onChange={(e) => setCrawlEmails(e.target.checked)}
+              />
+              <span className="finder-filter-check">
+                {crawlEmails && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                )}
+              </span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              Deep Website Contact Crawl
             </label>
           </div>
         </div>

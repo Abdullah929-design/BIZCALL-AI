@@ -1,12 +1,11 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import sys
-import os
 from dotenv import load_dotenv
-
-
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,7 +48,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.bizcallai\.online|https://bizcallai\.online",
+    allow_origin_regex=r"https://.*\.bizcallai\.online|https://bizcallai\.online|https://.*\.netlify\.app|https://.*\.vercel\.app|https://.*\.hf\.space",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,16 +82,37 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize Retell API service on startup"""
+    """Initialize services and pre-warm models on startup"""
     print("[INFO] Starting Retell AI Voice Call Center API...")
+
+    # Preload Intent Detection model into memory
+    try:
+        from services.intent_detector import load_intent_model
+        print("[INFO] Pre-loading Intent Detection model...")
+        load_intent_model()
+        print("[INFO] Intent Detection model loaded successfully!")
+    except Exception as e:
+        print(f"[WARN] Intent Detection model preload skipped: {e}")
+
+    # Preload FAISS vector search index into memory
+    try:
+        from faq_engine.faiss_search import reload_index
+        print("[INFO] Pre-loading FAISS knowledge base...")
+        reload_index()
+        print("[INFO] FAISS knowledge base loaded successfully!")
+    except Exception as e:
+        print(f"[WARN] FAISS preload skipped: {e}")
+
     print("[INFO] Retell API is ready to serve requests!")
     print("[INFO] Documentation available at: http://localhost:8002/docs")
 
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8002))
+    host = os.getenv("HOST", "0.0.0.0")
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8002,
-        reload=True,
+        host=host,
+        port=port,
+        reload=False,
         log_level="info"
     )

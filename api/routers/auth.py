@@ -10,8 +10,8 @@ load_dotenv()
 
 router = APIRouter()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL") or "").rstrip("/")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY") or ""
 
 
 class AuthRequest(BaseModel):
@@ -19,8 +19,8 @@ class AuthRequest(BaseModel):
     password: str
 
 @router.post("/signup")
-async def signup(req: AuthRequest):
-    """Handle Supabase user registration via backend API proxy."""
+def signup(req: AuthRequest):
+    """Handle Supabase user registration via backend API proxy (runs in worker threadpool)."""
     try:
         url = f"{SUPABASE_URL}/auth/v1/signup"
         payload = json.dumps({"email": req.email, "password": req.password}).encode('utf-8')
@@ -30,7 +30,7 @@ async def signup(req: AuthRequest):
         }
         
         request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=10) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             return {"success": True, "data": res_data}
     except urllib.error.HTTPError as e:
@@ -55,8 +55,8 @@ async def signup(req: AuthRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/login")
-async def login(req: AuthRequest):
-    """Handle Supabase user login via backend API proxy."""
+def login(req: AuthRequest):
+    """Handle Supabase user login via backend API proxy (runs in worker threadpool)."""
     try:
         url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
         payload = json.dumps({"email": req.email, "password": req.password}).encode('utf-8')

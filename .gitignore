@@ -65,3 +65,11 @@ benchmark_rag_isolated.py
 benchmark_results.csv
 benchmark_results_rag_isolated.csv
 benchmark_results_sales_gemma_2b.csv
+evaluate_compound_metrics.py
+benchmark_compound_metrics.csv
+calculate_hybrid_cpq.py
+cpq_benchmark_results.csv
+format_docx.py
+docs/
+*.docx
+google_colab*

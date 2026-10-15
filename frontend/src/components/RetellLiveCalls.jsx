@@ -458,6 +458,34 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
     };
   }, [applyCallToSlots, refreshHistory]);
 
+  // Bulletproof sync: poll active call slots every 3 seconds to auto-clear calls when hung up on phone
+  useEffect(() => {
+    const activeCalls = [...inboundSlots, ...outboundSlots].filter(Boolean);
+    if (activeCalls.length === 0) return;
+
+    const intervalId = setInterval(async () => {
+      for (const c of activeCalls) {
+        if (!c?.call_id) continue;
+        try {
+          const res = await axios.get(`${API_BASE_URL}/calls/${c.call_id}`);
+          if (res.data?.success && res.data?.call) {
+            const latest = res.data.call;
+            if (['completed', 'failed', 'ended'].includes(latest.status)) {
+              applyCallToSlots(latest);
+              if (typeof refreshHistory === 'function') {
+                refreshHistory();
+              }
+            }
+          }
+        } catch {
+          // non-fatal
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [inboundSlots, outboundSlots, applyCallToSlots, refreshHistory]);
+
   // Subscribe to Inbound call_requests
   useEffect(() => {
     const inboundChannel = supabase
@@ -491,6 +519,11 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
   const handleInitiateCall = async (e) => {
     e.preventDefault();
     setStatusMsg('');
+
+    if (!selectedAgentId) {
+      setStatusMsg('⚠️ Please create your custom Voice Agent in the Agent Builder before initiating calls.');
+      return;
+    }
 
     if (callMode === 'simulated') {
       await handleInitiateSimulatedCall();
@@ -660,6 +693,10 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
   };
 
   const handleHangup = async (callId) => {
+    // Optimistically remove call from slots immediately
+    setOutboundSlots((prev) => prev.map((c) => (c?.call_id === callId ? null : c)));
+    setInboundSlots((prev) => prev.map((c) => (c?.call_id === callId ? null : c)));
+
     if (isCalling && activeCallId === callId) {
       if (outboundRequest) {
         await handleHangupSimulated(outboundRequest.id);
@@ -671,6 +708,9 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
 
     try {
       await axios.post(`${API_BASE_URL}/hangup-call/${callId}`);
+      if (typeof refreshHistory === 'function') {
+        refreshHistory();
+      }
     } catch (err) {
       console.error('Hangup error:', err);
     }
@@ -1049,7 +1089,8 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
                 <button
                   type="submit"
                   className="live-initiate-btn"
-                  disabled={loading || outboundActive >= MAX_SLOTS}
+                  disabled={loading || outboundActive >= MAX_SLOTS || !selectedAgentId}
+                  title={!selectedAgentId ? 'Please select or create an outbound voice agent first' : 'Initiate call'}
                 >
                   {loading ? (
                     'Ringing Lead...'
