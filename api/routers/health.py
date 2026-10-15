@@ -22,6 +22,6 @@ async def twilio_test_numbers():
 async def get_config():
     """Return public configuration for the frontend."""
     return {
-        "NGROK_URL": os.getenv("NGROK_URL", "").strip().rstrip("/"),
-        "TWILIO_PHONE_NUMBER": os.getenv("TWILIO_PHONE_NUMBER", "")
+        "NGROK_URL": os.getenv("NGROK_URL", "").strip('"').strip("'").rstrip("/"),
+        "TWILIO_PHONE_NUMBER": os.getenv("TWILIO_PHONE_NUMBER", "").strip('"').strip("'")
     }

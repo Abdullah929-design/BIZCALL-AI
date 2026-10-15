@@ -323,7 +323,9 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
 
       try {
         const cfg = await axios.get('/api/health/config');
-        if (cfg.data?.TWILIO_PHONE_NUMBER) setFromNumber(cfg.data.TWILIO_PHONE_NUMBER);
+        if (cfg.data?.TWILIO_PHONE_NUMBER) {
+          setFromNumber(String(cfg.data.TWILIO_PHONE_NUMBER).replace(/['"]+/g, '').trim());
+        }
       } catch (e) { }
 
       // Fetch the currently active inbound agent from Retell AI

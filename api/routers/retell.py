@@ -174,10 +174,19 @@ def create_phone_call(req: CreatePhoneCallRequest):
                    "Wait for a call to finish before starting another.",
         )
 
+    clean_from = (req.from_number or os.getenv("TWILIO_PHONE_NUMBER") or "").strip('"').strip("'")
+    clean_to = (req.to_number or "").strip('"').strip("'")
+
+    if not clean_from:
+        raise HTTPException(
+            status_code=400,
+            detail="A 'from_number' is required to place calls. Configure TWILIO_PHONE_NUMBER or pass from_number."
+        )
+
     try:
         call = client.call.create_phone_call(
-            from_number=req.from_number,
-            to_number=req.to_number,
+            from_number=clean_from,
+            to_number=clean_to,
             override_agent_id=agent_id,
             retell_llm_dynamic_variables=req.retell_llm_dynamic_variables or {},
         )
