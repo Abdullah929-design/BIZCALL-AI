@@ -183,13 +183,13 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
     if (displayedLeads.length === 0) return;
     const headers = ['Company', 'Website', 'Phone', 'Email', 'City', 'Employees', 'Revenue'];
     const rows = displayedLeads.map((l) => [
-      `"${(l.company || '').replace(/"/g, '""')}"`,
-      `"${(l.website || '').replace(/"/g, '""')}"`,
-      `"${(l.phone || '').replace(/"/g, '""')}"`,
-      `"${(l.email || '').replace(/"/g, '""')}"`,
-      `"${(l.city || city || '').replace(/"/g, '""')}"`,
-      `"${(l.employees || '').replace(/"/g, '""')}"`,
-      `"${(l.revenue || '').replace(/"/g, '""')}"`,
+      `"${String(l.company || '').replace(/"/g, '""')}"`,
+      `"${String(l.website || '').replace(/"/g, '""')}"`,
+      `"${String(l.phone || '').replace(/"/g, '""')}"`,
+      `"${String(l.email || '').replace(/"/g, '""')}"`,
+      `"${String(l.city || city || '').replace(/"/g, '""')}"`,
+      `"${String(l.employees ?? '').replace(/"/g, '""')}"`,
+      `"${String(l.revenue ?? '').replace(/"/g, '""')}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
