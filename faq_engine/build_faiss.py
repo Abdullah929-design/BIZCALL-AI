@@ -40,4 +40,4 @@ faiss.write_index(index, os.path.join(SCRIPT_DIR, "faiss.index"))
 with open(os.path.join(SCRIPT_DIR, "faq_meta.pkl"), "wb") as f:
     pickle.dump(meta, f)
 
-print("✅ FAISS index built successfully")
+print("[INFO] FAISS index built successfully")

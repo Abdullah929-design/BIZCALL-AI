@@ -98,8 +98,10 @@ async def startup_event():
     try:
         from faq_engine.faiss_search import reload_index
         print("[INFO] Pre-loading FAISS knowledge base...")
-        reload_index()
-        print("[INFO] FAISS knowledge base loaded successfully!")
+        if reload_index():
+            print("[INFO] FAISS knowledge base loaded successfully!")
+        else:
+            print("[WARN] FAISS knowledge base failed to load!")
     except Exception as e:
         print(f"[WARN] FAISS preload skipped: {e}")
 

@@ -28,6 +28,12 @@ def reload_index():
     try:
         index_path = os.path.join(SCRIPT_DIR, "faiss.index")
         meta_path = os.path.join(SCRIPT_DIR, "faq_meta.pkl")
+        if not (os.path.exists(index_path) and os.path.exists(meta_path)):
+            build_script = os.path.join(SCRIPT_DIR, "build_faiss.py")
+            if os.path.exists(build_script):
+                print("[INFO] FAISS index missing — building automatically from faq_data.json...")
+                import subprocess, sys
+                subprocess.run([sys.executable, build_script], check=True)
         if os.path.exists(index_path) and os.path.exists(meta_path):
             index = faiss.read_index(index_path)
             with open(meta_path, "rb") as f:

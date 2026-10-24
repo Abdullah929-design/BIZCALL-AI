@@ -33,6 +33,10 @@ COPY --chown=user:user api/ ./api/
 COPY --chown=user:user faq_engine/ ./faq_engine/
 COPY --chown=user:user intent_detection_model/ ./intent_detection_model/
 COPY --chown=user:user intent_config.py ./intent_config.py
+COPY --chown=user:user classification.py ./classification.py
+
+# Ensure FAISS index and metadata are built if missing
+RUN python faq_engine/build_faiss.py || true
 
 # Set working directory to api for execution
 WORKDIR $HOME/app/api

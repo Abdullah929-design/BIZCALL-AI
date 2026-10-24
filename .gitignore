@@ -11,6 +11,8 @@ __pycache__/
 *.gguf
 *.index
 *.pkl
+!faq_engine/faiss.index
+!faq_engine/faq_meta.pkl
 
 # Ollama & model folders
 ollama_models/
