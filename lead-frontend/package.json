@@ -13,7 +13,7 @@
         "axios": "^1.13.6",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
-        "retell-client-js-sdk": "^2.0.8"
+        "retell-client-js-sdk": "^3.0.4"
     },
     "devDependencies": {
         "@vitejs/plugin-react": "^4.3.1",
