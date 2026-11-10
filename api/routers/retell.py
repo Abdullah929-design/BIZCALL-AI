@@ -58,7 +58,7 @@ def register_web_call(req: RegisterCallRequest):
         import urllib.request
         import json
         
-        url = "https://api.retellai.com/v2/create-web-call"
+        url = "https://api.retellai.com/v3/create-web-call"
         payload = json.dumps({"agent_id": agent_id}).encode('utf-8')
         
         headers = {
