@@ -76,7 +76,8 @@ function App() {
             });
 
             client.on('error', (err) => {
-                addLog(`❌ Audio Error: ${err?.message || JSON.stringify(err)}`);
+                const errorText = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+                addLog(`❌ Audio Error: ${errorText}`);
                 handleResetState();
             });
         } catch (e) {
@@ -166,13 +167,18 @@ function App() {
             });
 
             if (res.data?.success && res.data.call_data?.access_token) {
-                const { access_token, call_id } = res.data.call_data;
+                const { access_token, call_id, transport, ice_servers } = res.data.call_data;
                 addLog(`Token acquired (Call ID: ${call_id}). Connecting audio stream…`);
 
                 // 2. Connect WebRTC stream
                 if (!retellWebClientRef.current) throw new Error('Audio client not initialized. Refresh the page.');
                 clearTimeout(timeout); // cancel the 30s safety net
-                await retellWebClientRef.current.startCall({ accessToken: access_token });
+                await retellWebClientRef.current.startCall({
+                    accessToken: access_token,
+                    callId: call_id,
+                    transport: transport || 'gateway',
+                    iceServers: ice_servers || undefined
+                });
 
 
                 // 3. Update DB states
@@ -267,9 +273,14 @@ function App() {
                                 const res = await axios.post(`${API_BASE_URL}/retell/register-call`, {
                                     agent_id: payload.new.agent_id || undefined
                                 });
-                                const { access_token, call_id } = res.data.call_data;
+                                const { access_token, call_id, transport, ice_servers } = res.data.call_data;
 
-                                await retellWebClientRef.current.startCall({ accessToken: access_token });
+                                await retellWebClientRef.current.startCall({
+                                    accessToken: access_token,
+                                    callId: call_id,
+                                    transport: transport || 'gateway',
+                                    iceServers: ice_servers || undefined
+                                });
                                 setStatus('connected');
 
                                 // Update calls table so the slot shows the real name and phone

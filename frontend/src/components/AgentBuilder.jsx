@@ -213,7 +213,7 @@ const AgentBuilder = ({ user }) => {
         throw new Error(res.data?.detail || 'Failed to register call session');
       }
 
-      const accessToken = res.data.call_data.access_token;
+      const { access_token, call_id, transport, ice_servers } = res.data.call_data;
       let client = retellClientRef.current;
       if (!client) {
         client = new RetellWebClient();
@@ -235,7 +235,12 @@ const AgentBuilder = ({ user }) => {
         setActiveCallAgentId(null);
       });
 
-      await client.startCall({ accessToken });
+      await client.startCall({
+        accessToken: access_token,
+        callId: call_id,
+        transport: transport || 'gateway',
+        iceServers: ice_servers || undefined
+      });
 
     } catch (err) {
       const msg = err.response?.data?.detail || err.message;

@@ -47,9 +47,14 @@ export function useRetellWebCall() {
         try {
             const res = await axios.post('/api/retell/register-call', { agent_id: agentId });
             if (res.data?.success && res.data.call_data?.access_token) {
-                const { access_token, call_id } = res.data.call_data;
+                const { access_token, call_id, transport, ice_servers } = res.data.call_data;
                 setActiveCallId(call_id);
-                await retellWebClientRef.current.startCall({ accessToken: access_token });
+                await retellWebClientRef.current.startCall({
+                    accessToken: access_token,
+                    callId: call_id,
+                    transport: transport || 'gateway',
+                    iceServers: ice_servers || undefined
+                });
                 return call_id;
             } else {
                 throw new Error('Failed to register web call');

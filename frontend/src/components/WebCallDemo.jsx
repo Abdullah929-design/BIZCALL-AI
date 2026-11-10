@@ -90,6 +90,9 @@ const WebCallDemo = () => {
 
       await client.startCall({
         accessToken: accessToken,
+        callId: callData.call_id,
+        transport: callData.transport || 'gateway',
+        iceServers: callData.ice_servers || undefined
       });
 
     } catch (err) {
