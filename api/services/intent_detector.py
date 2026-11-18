@@ -49,7 +49,7 @@ def load_intent_model(model_dir: str = None):
     model.eval()
     return model, tokenizer
 
-def predict_top_k(text: str, model, tokenizer, top_k: int = 5, temperature: float = 1.0, min_confidence: float = 0.05):
+def predict_top_k(text: str, model, tokenizer, top_k: int = 5, temperature: float = 0.96, min_confidence: float = 0.05):
     text_proc = preprocess_text(text)
     inputs = tokenizer(
         text_proc,
@@ -140,7 +140,7 @@ def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
     results = []
     detected = []
     for seg in segments:
-        top = predict_top_k(seg, model, tokenizer, top_k=5, temperature=1.0, min_confidence=0.05)
+        top = predict_top_k(seg, model, tokenizer, top_k=5, temperature=0.96, min_confidence=0.05)
         top = apply_overrides_and_hints(seg, top)
         formatted = prioritize_and_format(top, top_n=3)
         primary = formatted[0]["intent"] if formatted else None
