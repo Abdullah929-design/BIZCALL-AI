@@ -125,10 +125,11 @@ def apply_overrides_and_hints(text: str, intents: List[Dict]):
     # Enrich with semantically related intents from INTENT_RELATIONSHIPS for the top detected intent
     strong_intents = [i for i in intents if i["confidence"] >= 0.50]
     if strong_intents:
-        best_primary = max(strong_intents, key=lambda x: (x.get("priority", 0), x.get("confidence", 0)))
+        best_primary = max(strong_intents, key=lambda x: (round(x.get("confidence", 0), 2), x.get("priority", 0)))
         related_list = INTENT_RELATIONSHIPS.get(best_primary["intent_name"], [])
         existing_names = {i["intent_name"] for i in intents if i["confidence"] >= 0.25}
-        rel_conf_schedule = [0.84, 0.76]
+        base_conf = min(0.84, round(best_primary["confidence"] - 0.12, 2))
+        rel_conf_schedule = [max(0.55, base_conf), max(0.48, round(base_conf - 0.08, 2))]
         added_rel = 0
         for rel_intent in related_list:
             if len(existing_names) >= 3 or added_rel >= len(rel_conf_schedule):
@@ -161,11 +162,11 @@ def prioritize_and_format(intents: List[Dict], top_n=3):
         if name not in best_by_name or i["confidence"] > best_by_name[name]["confidence"]:
             best_by_name[name] = i
 
-    # Sort so high-confidence predictions (>= 0.25) always precede low-confidence tail noise,
-    # then rank by banking severity priority and confidence
+    # Rank primarily by calibrated confidence (with priority breaking close ties),
+    # so the true primary intent of each segment always ranks #1.
     intents_sorted = sorted(
         best_by_name.values(),
-        key=lambda x: (x.get("confidence", 0) >= 0.25, x.get("priority", 0) >= 9, round(x.get("confidence", 0), 2), x.get("priority", 0)),
+        key=lambda x: (x.get("confidence", 0) >= 0.25, round(x.get("confidence", 0), 2), x.get("priority", 0)),
         reverse=True
     )
     out = []
@@ -177,14 +178,31 @@ def prioritize_and_format(intents: List[Dict], top_n=3):
         })
     return out
 
+def _score_segment(seg: str, model, tokenizer) -> Dict:
+    top = predict_top_k(seg, model, tokenizer, top_k=5, temperature=0.96, min_confidence=0.05)
+    top = apply_overrides_and_hints(seg, top)
+    formatted = prioritize_and_format(top, top_n=3)
+    primary = formatted[0]["intent"] if formatted else None
+    top_conf = formatted[0]["confidence"] if formatted else 0.0
+    return {
+        "text": seg,
+        "primary_intent": primary,
+        "top_confidence": top_conf,
+        "intents": formatted
+    }
+
 def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
     model, tokenizer = load_intent_model()
-    # Clause-aware splitting: split on contrastive/additive connectors, or on 'and'/'then'
-    # only when followed by a new clause starter (pronoun, auxiliary, or question word)
-    # so noun phrases like "eligibility criteria and documents" remain intact.
+    # Hybrid Explicit + Implicit Clause Splitter:
+    # 1. Sentence-terminal punctuation (. ? ! ;)
+    # 2. Comma splices followed by interrogative, modal, or subject transitions (Categories B & D)
+    # 3. Contrastive/discourse markers (but, however, additionally, plus, meanwhile, also)
+    # 4. 'and'/'then' only when followed by a clause starter (keeps Category C noun phrases intact)
     split_pattern = (
-        r'\b(?:but|however|additionally|plus)\b'
-        r'|\b(?:and|then)\s+(?:also\s+)?(?=(?:i|my|we|what|how|why|where|when|who|can|could|do|does|did|is|are|was|were|will|would|should|please)\b)'
+        r'[.?!;]+\s+'
+        r'|,\s*(?=(?:and\s+|but\s+|also\s+)?(?:how|what|why|when|where|who|which|can|could|do|does|did|is|are|was|were|will|would|should|please|i\s|i\'m|i’m|i\'ve|my\s|we\s|need\s|want\s)\b)'
+        r'|\b(?:but|however|additionally|plus|meanwhile|moreover|furthermore)\b'
+        r'|\b(?:and|then)\s+(?:also\s+)?(?=(?:i|i\'m|i\'ve|my|we|what|how|why|where|when|who|which|can|could|do|does|did|is|are|was|were|will|would|should|please|tell|check|cancel|block|freeze)\b)'
         r'|\balso\b'
     )
     raw_segments = re.split(split_pattern, text, flags=re.IGNORECASE)
@@ -197,7 +215,6 @@ def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
         if carry:
             s_clean = f"{carry} {s_clean}".strip()
             carry = ""
-        # Prevent 1-word or 2-word孤立 pronoun fragments (e.g. "I") from forming a standalone segment
         if len(s_clean.split()) < 3:
             carry = s_clean
         else:
@@ -210,21 +227,30 @@ def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
     if not segments:
         segments = [text.strip()]
 
-    results = []
-    detected = []
-    for seg in segments:
-        top = predict_top_k(seg, model, tokenizer, top_k=5, temperature=0.96, min_confidence=0.05)
-        top = apply_overrides_and_hints(seg, top)
-        formatted = prioritize_and_format(top, top_n=3)
-        primary = formatted[0]["intent"] if formatted else None
-        results.append({
-            "text": seg,
-            "primary_intent": primary,
-            "intents": formatted
-        })
-        detected.extend([f["intent"] for f in formatted])
+    scored_segments = [_score_segment(seg, model, tokenizer) for seg in segments]
 
-    # dedupe
-    unique = list(dict.fromkeys(detected))
+    # DistilBERT-Guided Semantic Guard:
+    # Merge adjacent segments if they predict the exact same primary_intent (Category C over-split guard)
+    # or if a split fragment lost context and has low confidence (< 0.45).
+    results = []
+    for seg_res in scored_segments:
+        if results:
+            prev = results[-1]
+            same_intent = (prev["primary_intent"] == seg_res["primary_intent"])
+            low_conf_frag = (seg_res["top_confidence"] < 0.30 or prev["top_confidence"] < 0.30)
+            if same_intent or low_conf_frag:
+                merged_text = f"{prev['text']} {seg_res['text']}".strip()
+                results[-1] = _score_segment(merged_text, model, tokenizer)
+                continue
+        results.append(seg_res)
+
+    # Clean internal helper key and collect primary intents per distinct segment for complexity routing
+    primary_intents = []
+    for r in results:
+        r.pop("top_confidence", None)
+        if r.get("primary_intent"):
+            primary_intents.append(r["primary_intent"])
+
+    unique = list(dict.fromkeys(primary_intents))
     complexity = classify_query_complexity(unique)
     return results, complexity
