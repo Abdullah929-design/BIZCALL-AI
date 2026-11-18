@@ -79,20 +79,29 @@ def predict_top_k(text: str, model, tokenizer, top_k: int = 5, temperature: floa
 
 def apply_overrides_and_hints(text: str, intents: List[Dict]):
     text_lower = text.lower()
+    banking77_set = set(INTENT_CLASSES.values())
+    custom_domain_matched = False
+
     # hard overrides
     for intent_name, keywords in CRITICAL_KEYWORD_OVERRIDES.items():
         for kw in keywords:
             if kw and kw in text_lower:
+                if intent_name not in banking77_set:
+                    custom_domain_matched = True
                 intents.append({
                     "intent_label": -1,
                     "intent_name": intent_name,
-                    "confidence": 1.0,
+                    "confidence": 0.97 if intent_name not in banking77_set else 1.0,
                     "priority": INTENT_PRIORITY.get(intent_name, 10)
                 })
+                break
+
     # soft hints
     for hint in SOFT_KEYWORD_HINTS:
         for kw in hint["keywords"]:
             if kw in text_lower:
+                if hint["intent"] not in banking77_set:
+                    custom_domain_matched = True
                 exists = next((i for i in intents if i["intent_name"] == hint["intent"]), None)
                 if exists:
                     exists["confidence"] = max(exists["confidence"], hint["confidence"])
@@ -103,6 +112,37 @@ def apply_overrides_and_hints(text: str, intents: List[Dict]):
                         "confidence": hint["confidence"],
                         "priority": INTENT_PRIORITY.get(hint["intent"], 0)
                     })
+                break
+
+    # If an out-of-Banking77 custom banking product (e.g. personal loan, fixed deposit, mortgage)
+    # matched explicitly, remove out-of-distribution Banking77 fallback guesses (< 0.88 confidence)
+    if custom_domain_matched:
+        intents = [
+            i for i in intents
+            if i["intent_label"] == -1 or i["confidence"] >= 0.88
+        ]
+
+    # Enrich with semantically related intents from INTENT_RELATIONSHIPS for the top detected intent
+    strong_intents = [i for i in intents if i["confidence"] >= 0.50]
+    if strong_intents:
+        best_primary = max(strong_intents, key=lambda x: (x.get("priority", 0), x.get("confidence", 0)))
+        related_list = INTENT_RELATIONSHIPS.get(best_primary["intent_name"], [])
+        existing_names = {i["intent_name"] for i in intents if i["confidence"] >= 0.25}
+        rel_conf_schedule = [0.84, 0.76]
+        added_rel = 0
+        for rel_intent in related_list:
+            if len(existing_names) >= 3 or added_rel >= len(rel_conf_schedule):
+                break
+            if rel_intent not in existing_names:
+                intents.append({
+                    "intent_label": -1,
+                    "intent_name": rel_intent,
+                    "confidence": rel_conf_schedule[added_rel],
+                    "priority": INTENT_PRIORITY.get(rel_intent, 1)
+                })
+                existing_names.add(rel_intent)
+                added_rel += 1
+
     # suppression
     filtered = []
     for intent in intents:
@@ -114,28 +154,61 @@ def apply_overrides_and_hints(text: str, intents: List[Dict]):
     return filtered
 
 def prioritize_and_format(intents: List[Dict], top_n=3):
-    intents_sorted = sorted(intents, key=lambda x: x.get("priority", 0), reverse=True)
-    out = []
-    seen = set()
-    for i in intents_sorted:
+    # Deduplicate by intent_name keeping highest confidence first
+    best_by_name: Dict[str, Dict] = {}
+    for i in intents:
         name = i["intent_name"]
-        if name in seen:
-            continue
-        seen.add(name)
+        if name not in best_by_name or i["confidence"] > best_by_name[name]["confidence"]:
+            best_by_name[name] = i
+
+    # Sort so high-confidence predictions (>= 0.25) always precede low-confidence tail noise,
+    # then rank by banking severity priority and confidence
+    intents_sorted = sorted(
+        best_by_name.values(),
+        key=lambda x: (x.get("confidence", 0) >= 0.25, x.get("priority", 0) >= 9, round(x.get("confidence", 0), 2), x.get("priority", 0)),
+        reverse=True
+    )
+    out = []
+    for i in intents_sorted[:top_n]:
         out.append({
-            "intent": name,
+            "intent": i["intent_name"],
             "confidence": round(float(i["confidence"]), 4),
             "priority": int(i.get("priority", 0))
         })
-        if len(out) >= top_n:
-            break
     return out
 
 def predict_multiple_intents(text: str) -> Tuple[List[Dict], str]:
     model, tokenizer = load_intent_model()
-    # basic splitting strategy: split on "but", "and", "also" - keep it simple
-    segments = re.split(r'\b(?:but|however|also|and|then|additionally|plus)\b', text)
-    segments = [s.strip() for s in segments if s.strip()]
+    # Clause-aware splitting: split on contrastive/additive connectors, or on 'and'/'then'
+    # only when followed by a new clause starter (pronoun, auxiliary, or question word)
+    # so noun phrases like "eligibility criteria and documents" remain intact.
+    split_pattern = (
+        r'\b(?:but|however|additionally|plus)\b'
+        r'|\b(?:and|then)\s+(?:also\s+)?(?=(?:i|my|we|what|how|why|where|when|who|can|could|do|does|did|is|are|was|were|will|would|should|please)\b)'
+        r'|\balso\b'
+    )
+    raw_segments = re.split(split_pattern, text, flags=re.IGNORECASE)
+    segments = []
+    carry = ""
+    for s in raw_segments:
+        s_clean = s.strip(" ,;:-")
+        if not s_clean:
+            continue
+        if carry:
+            s_clean = f"{carry} {s_clean}".strip()
+            carry = ""
+        # Prevent 1-word or 2-word孤立 pronoun fragments (e.g. "I") from forming a standalone segment
+        if len(s_clean.split()) < 3:
+            carry = s_clean
+        else:
+            segments.append(s_clean)
+    if carry:
+        if segments:
+            segments[-1] = f"{segments[-1]} {carry}".strip()
+        else:
+            segments.append(carry)
+    if not segments:
+        segments = [text.strip()]
 
     results = []
     detected = []

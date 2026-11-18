@@ -53,18 +53,44 @@ INTENT_RELATIONSHIPS = {
     'card_linking': ['activate_my_card', 'card_not_working', 'apple_pay_or_google_pay'],
     'getting_virtual_card': ['virtual_card_not_working', 'get_disposable_virtual_card'],
     'lost_or_stolen_phone': ['lost_or_stolen_card', 'apple_pay_or_google_pay', 'terminate_account'],
+    'personal_loan_eligibility': ['loan_documentation_requirements', 'credit_score_and_income_check', 'loan_repayment_and_emi'],
+    'loan_documentation_requirements': ['personal_loan_eligibility', 'verify_my_identity', 'verify_source_of_funds'],
+    'credit_score_and_income_check': ['personal_loan_eligibility', 'credit_limit_increase', 'loan_repayment_and_emi'],
+    'loan_repayment_and_emi': ['personal_loan_eligibility', 'direct_debit_payment_not_recognised', 'extra_charge_on_statement'],
+    'open_fixed_deposit': ['deposit_interest_rates', 'term_deposit_maturity_payout', 'transfer_into_account'],
+    'deposit_interest_rates': ['open_fixed_deposit', 'term_deposit_maturity_payout', 'savings_account_yield'],
+    'term_deposit_maturity_payout': ['open_fixed_deposit', 'deposit_interest_rates', 'receiving_money'],
+    'home_loan_mortgage': ['mortgage_interest_rates', 'loan_documentation_requirements', 'credit_score_and_income_check'],
+    'credit_card_application': ['credit_limit_increase', 'credit_score_and_income_check', 'get_physical_card'],
+    'credit_limit_increase': ['credit_card_application', 'credit_score_and_income_check', 'top_up_limits'],
+    'lost_or_stolen_card_freeze': ['lost_or_stolen_card', 'compromised_card', 'get_physical_card'],
+    'account_statement_request': ['extra_charge_on_statement', 'tax_and_balance_certificate', 'card_payment_not_recognised'],
+    'international_wire_transfer': ['iban_and_swift_details', 'exchange_rate', 'transfer_timing'],
+    'cheque_book_request': ['stop_cheque_payment', 'balance_not_updated_after_cheque_or_cash_deposit'],
+    'overdraft_facility': ['credit_limit_increase', 'personal_loan_eligibility', 'extra_charge_on_statement'],
 }
 
 # Critical keyword overrides: always include these intents if matched (safety net)
 CRITICAL_KEYWORD_OVERRIDES = {
     "card_swallowed": ["swallowed", "kept my card", "did not return my card", "atm ate", "machine retained", "card stuck", "atm kept", "didn't return", "didnt return", "atm has my card"],
-    "lost_or_stolen_card": ["lost my card", "card stolen", "card missing", "can't find card", "cant find card", "stolen card", "someone took my card", "misplaced card", "card disappeared", "card lost"],
-    "compromised_card": ["fraud", "unauthorized", "unauthorised", "hacked", "fraudulent", "scam", "suspicious transaction", "didn't make this payment", "didnt make this payment", "not my transaction", "phishing", "identity theft", "someone accessed", "account compromised", "breached", "unauthorized access", "suspicious activity", "not me", "wasn't me", "wasnt me"],
+    "lost_or_stolen_card": ["lost my card", "lost my debit card", "lost my credit card", "card stolen", "card missing", "can't find card", "cant find card", "stolen card", "someone took my card", "misplaced card", "card disappeared", "card lost"],
+    "lost_or_stolen_card_freeze": ["freeze it", "freeze my card", "freeze card", "lock my card", "block my card", "temporarily freeze", "emergency card block"],
+    "compromised_card": ["fraud", "unauthorized", "unauthorised", "dispute an unauthorized", "dispute unauthorized", "hacked", "fraudulent", "scam", "suspicious transaction", "didn't make this payment", "didnt make this payment", "not my transaction", "phishing", "identity theft", "someone accessed", "account compromised", "breached", "unauthorized access", "suspicious activity", "not me", "wasn't me", "wasnt me"],
     "declined_card_payment": ["payment declined", "card declined", "transaction declined", "payment rejected", "card rejected", "payment refused", "transaction refused", "payment blocked"],
     "failed_transfer": ["transfer failed", "money didn't go", "payment bounced", "transfer bounced", "couldn't send money", "couldnt send", "transfer error", "money not sent", "send failed"],
     "pin_blocked": ["pin blocked", "pin locked", "too many attempts", "wrong pin too many", "locked out", "account locked", "pin frozen", "multiple wrong attempts"],
-    "unable_to_verify_identity": ["identity verification failed", "cant verify", "can't verify", "verification rejected", "documents rejected", "kyc failed", "verification issues"],
+    "unable_to_verify_identity": ["identity verification failed", "cant verify", "can't verify", "verification rejected", "documents rejected", "kyc failed", "verification issues", "not able to verify my identity", "unable to verify my identity"],
     "terminate_account": ["close account", "delete account", "cancel account", "close my account", "terminate", "remove account", "deactivate account"],
+    "personal_loan_eligibility": ["personal loan", "apply for a loan", "loan eligibility", "eligibility criteria", "qualify for a loan", "borrow money", "bank loan", "cash loan", "auto loan", "business loan"],
+    "open_fixed_deposit": ["fixed deposit", "term deposit", "open a fd", "open an fd", "fd account", "certificate of deposit", "time deposit"],
+    "deposit_interest_rates": ["interest rate", "interest rates", "fd rate", "annual yield", "apy", "return on deposit", "savings rate"],
+    "home_loan_mortgage": ["home loan", "mortgage", "housing loan", "property loan", "refinance mortgage"],
+    "credit_limit_increase": ["credit limit", "increase limit", "raise my limit", "higher credit limit", "spending limit"],
+    "account_statement_request": ["download statement", "request statement", "get my statement", "bank statement pdf", "account statement pdf", "e-statement", "need a bank statement", "download my monthly"],
+    "tax_and_balance_certificate": ["tax certificate", "balance certificate", "withholding tax", "zakat deduction", "bank maintenance certificate"],
+    "international_wire_transfer": ["wire transfer", "international transfer", "swift transfer", "iban", "swift code", "bic code", "remittance", "overseas transfer"],
+    "cheque_book_request": ["cheque book", "checkbook", "order cheque", "new cheque", "stop cheque"],
+    "overdraft_facility": ["overdraft", "negative balance", "od limit", "overdrawn"],
 }
 
 # Suppression rules: remove low-value intents when higher-severity signals appear in text
@@ -224,6 +250,54 @@ SOFT_KEYWORD_HINTS = [
         ],
         "confidence": 0.6,
     },
+    {
+        "intent": "loan_documentation_requirements",
+        "keywords": [
+            "documents required", "required documents", "what documents", "documents needed",
+            "paperwork for loan", "salary slip", "bank statement for loan", "proof of income",
+        ],
+        "confidence": 0.91,
+    },
+    {
+        "intent": "credit_score_and_income_check",
+        "keywords": [
+            "eligibility criteria", "minimum income", "credit score", "qualify for",
+            "eligibility requirement", "salary requirement", "pre-qualification",
+        ],
+        "confidence": 0.88,
+    },
+    {
+        "intent": "loan_repayment_and_emi",
+        "keywords": [
+            "emi", "monthly installment", "loan repayment", "repay loan", "early settlement",
+            "loan tenure", "foreclosure", "prepayment penalty",
+        ],
+        "confidence": 0.87,
+    },
+    {
+        "intent": "deposit_interest_rates",
+        "keywords": [
+            "interest rates", "interest rate", "what rate", "return rate", "fd interest",
+            "fixed deposit rate", "profit rate", "maturity rate",
+        ],
+        "confidence": 0.92,
+    },
+    {
+        "intent": "term_deposit_maturity_payout",
+        "keywords": [
+            "fixed deposit", "term deposit", "maturity", "premature withdrawal",
+            "monthly payout", "quarterly payout", "open a fixed deposit",
+        ],
+        "confidence": 0.86,
+    },
+    {
+        "intent": "lost_or_stolen_card_freeze",
+        "keywords": [
+            "freeze it", "freeze my card", "lock card", "block card", "lost my debit card",
+            "lost my card", "stop unauthorized",
+        ],
+        "confidence": 0.93,
+    },
 ]
 
 # Intent priority/severity mapping
@@ -233,6 +307,7 @@ INTENT_PRIORITY = {
     'compromised_card': 10,
     'lost_or_stolen_card': 10,
     'lost_or_stolen_phone': 10,
+    'lost_or_stolen_card_freeze': 10,
     
     # HIGH - Major Issues (Priority 9)
     'card_not_working': 9,
@@ -242,7 +317,7 @@ INTENT_PRIORITY = {
     'declined_cash_withdrawal': 9,
     'unable_to_verify_identity': 9,
     
-    # MEDIUM-HIGH - Payment/Transaction Issues (Priority 7)
+    # MEDIUM-HIGH - Payment/Transaction & Lending/Deposit Products (Priority 7)
     'card_payment_fee_charged': 7,
     'card_payment_not_recognised': 7,
     'card_payment_wrong_exchange_rate': 7,
@@ -253,6 +328,25 @@ INTENT_PRIORITY = {
     'transfer_not_received_by_recipient': 7,
     'request_refund': 7,
     'Refund_not_showing_up': 7,
+    'personal_loan_eligibility': 7,
+    'loan_documentation_requirements': 6,
+    'credit_score_and_income_check': 6,
+    'loan_repayment_and_emi': 6,
+    'open_fixed_deposit': 7,
+    'deposit_interest_rates': 6,
+    'term_deposit_maturity_payout': 6,
+    'home_loan_mortgage': 7,
+    'mortgage_interest_rates': 6,
+    'credit_card_application': 6,
+    'credit_limit_increase': 6,
+    'account_statement_request': 5,
+    'tax_and_balance_certificate': 5,
+    'international_wire_transfer': 6,
+    'iban_and_swift_details': 5,
+    'cheque_book_request': 5,
+    'stop_cheque_payment': 8,
+    'overdraft_facility': 6,
+    'savings_account_yield': 5,
     
     # MEDIUM - Account/Card Management (Priority 5)
     'pin_blocked': 5,

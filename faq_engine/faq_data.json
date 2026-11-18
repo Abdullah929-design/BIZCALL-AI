@@ -3829,6 +3829,160 @@
         "pii": false,
         "authentication_required": true
       }
+    },
+    {
+      "faq_id": "loan_repayment_and_emi",
+      "intent": "loan_repayment_and_emi",
+      "priority": 6,
+      "complexity": "simple",
+      "category": "loans",
+      "questions": [
+        "How do I calculate or pay my monthly loan EMI installment?",
+        "Can I pay off or settle my personal loan early before maturity?",
+        "What is the prepayment penalty or foreclosure charge on a personal loan?",
+        "How do I set up auto-debit for my loan repayment?",
+        "What happens if I miss a monthly loan EMI payment?"
+      ],
+      "answer": {
+        "text": "Loan Repayment & Early Settlement Policy: 1) Monthly EMI: Repayments are automatically debited on your selected billing date (1st, 5th, or 15th of each month) from your linked primary account. 2) Early Foreclosure / Partial Prepayment: You may make partial prepayments or settle the full outstanding principal at any time after 6 monthly installments. A nominal 1.5% foreclosure fee applies to the remaining principal (waived after 24 months). 3) Manage in App: Navigate to 'Loans' > 'Active Loans' > 'Repayment Schedule & Prepay' to view amortization details or trigger an instant payment."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "deposit_interest_rates",
+      "intent": "deposit_interest_rates",
+      "priority": 6,
+      "complexity": "simple",
+      "category": "deposits",
+      "questions": [
+        "What are the current interest rates for savings and fixed deposit accounts?",
+        "What is the annual yield or APY on term deposits?",
+        "Do senior citizens get higher interest rates on fixed deposits?",
+        "What happens if I break or withdraw my fixed deposit before maturity?"
+      ],
+      "answer": {
+        "text": "Deposit Interest Rates & Premature Withdrawal Policy: 1) Fixed Deposit Rates: 3–6 months: 4.50% p.a.; 1 year: 6.25% p.a.; 2–3 years: 7.10% p.a.; 5 years: 7.85% p.a. Senior citizens (60+) receive an additional +0.50% p.a. across all tenures. 2) High-Yield Savings Account: Earns up to 4.00% p.a. calculated daily and credited monthly. 3) Premature Withdrawal: Allowed anytime via the Mobile App; interest is paid for the completed period minus a 1.00% premature encashment adjustment."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": false
+      }
+    },
+    {
+      "faq_id": "home_loan_mortgage",
+      "intent": "home_loan_mortgage",
+      "priority": 7,
+      "complexity": "complex",
+      "category": "loans",
+      "questions": [
+        "How do I apply for a home loan or mortgage and what is the down payment required?",
+        "What are your mortgage interest rates and maximum repayment tenure?",
+        "Can I refinance my existing home mortgage with your bank?",
+        "What property documents are required for housing finance?"
+      ],
+      "answer": {
+        "text": "Home Loan & Mortgage Financing Guidelines: 1) Financing Terms: Borrow up to 80% of the appraised property value (minimum 20% down payment) with flexible repayment tenures from 5 to 25 years. Fixed and floating APR options start at 5.75% p.a. 2) Required Documents: Government ID, 6 months bank statements, last 2 years tax returns, employment verification, and property title/sale agreement. 3) Application Process: Apply under 'Loans' > 'Home Mortgage' for a digital pre-approval letter within 24 hours, followed by an accredited property valuation."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "credit_limit_increase",
+      "intent": "credit_limit_increase",
+      "priority": 6,
+      "complexity": "simple",
+      "category": "card",
+      "questions": [
+        "How can I increase my credit card limit or daily spending limit?",
+        "Am I eligible for a credit limit enhancement on my card?",
+        "How do I apply for a new credit card and what is the credit limit?"
+      ],
+      "answer": {
+        "text": "Credit Card Limit Enhancement Policy: 1) Instant Pre-Approved Increase: Go to 'Cards' > 'Manage Limits' > 'Request Credit Limit Increase'. Customers with 6+ months of on-time repayments qualify for an instant no-document limit boost. 2) Income-Backed Enhancement: For higher limits, upload your latest salary slip or tax return directly in the app; reviews complete within 1–2 business days. 3) Daily POS/ATM Limits: Temporary daily transaction limits can be adjusted instantly using the sliders under 'Card Controls'."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "account_statement_request",
+      "intent": "account_statement_request",
+      "priority": 5,
+      "complexity": "simple",
+      "category": "account",
+      "questions": [
+        "How do I download my monthly bank account statement or tax certificate?",
+        "Can I get a stamped account maintenance certificate or withholding tax statement?",
+        "Where can I view my last 6 months transaction statement in PDF?"
+      ],
+      "answer": {
+        "text": "Account Statements & Official Certificates: 1) Digital e-Statements: Open the Mobile App, select 'Accounts' > 'Statements & Certificates', choose your date range (up to 7 years), and tap 'Download PDF' or 'Email Statement'. 2) Tax & Balance Certificates: Digitally signed Account Maintenance Certificates, Balance Confirmations, and Annual Withholding Tax Certificates can be generated instantly with a verifiable QR code at zero charge."
+      },
+      "safety": {
+        "pii": true,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "international_wire_transfer",
+      "intent": "international_wire_transfer",
+      "priority": 6,
+      "complexity": "complex",
+      "category": "transfer",
+      "questions": [
+        "How do I send an international wire transfer using SWIFT or IBAN?",
+        "Where do I find my account IBAN and the bank SWIFT BIC code?",
+        "What are the fees and cut-off times for international remittance?"
+      ],
+      "answer": {
+        "text": "International Wire (SWIFT/IBAN) Transfer Guidelines: 1) Outbound Wire: Navigate to 'Transfers' > 'International Wire (SWIFT)', enter the beneficiary's full name, IBAN/Account Number, bank SWIFT/BIC code, and transfer purpose. 2) Settlement & Timing: Transfers submitted before 3:00 PM local time are processed the same business day and typically arrive within 1–3 business days via SWIFT gpi tracking. 3) Receiving International Funds: View and copy your unique IBAN and our bank's SWIFT/BIC code under 'Account Details' > 'International Receiving Details'."
+      },
+      "safety": {
+        "pii": true,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "cheque_book_request",
+      "intent": "cheque_book_request",
+      "priority": 5,
+      "complexity": "simple",
+      "category": "account",
+      "questions": [
+        "How do I order a new cheque book or stop a cheque payment?",
+        "How long does cheque book delivery take and how can I block a lost cheque?"
+      ],
+      "answer": {
+        "text": "Cheque Book Order & Stop Payment Procedure: 1) Order New Cheque Book: Go to 'Services' > 'Cheque Services' > 'Request Cheque Book', select 25, 50, or 100 leaves, and confirm your delivery address (delivered within 3–5 business days via courier). 2) Stop Cheque Payment: To immediately block an issued or misplaced cheque, select 'Stop Cheque', enter the cheque serial number(s) and reason, and authenticate with your OTP. The stop instruction takes effect immediately across all clearing channels."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": true
+      }
+    },
+    {
+      "faq_id": "overdraft_facility",
+      "intent": "overdraft_facility",
+      "priority": 6,
+      "complexity": "simple",
+      "category": "loans",
+      "questions": [
+        "How do I activate or apply for an overdraft facility on my current account?",
+        "What are the charges and interest rates for an arranged overdraft?"
+      ],
+      "answer": {
+        "text": "Arranged Overdraft Facility Policy: 1) Eligibility & Activation: Salaried and business current account holders can activate an instant revolving overdraft line up to 2x monthly income under 'Accounts' > 'Overdraft Limit'. 2) Interest Calculation: Interest is charged only on the exact overdrawn amount for the number of days utilized (no fee when your account remains in credit)."
+      },
+      "safety": {
+        "pii": false,
+        "authentication_required": true
+      }
     }
   ]
 }
