@@ -452,7 +452,13 @@ def run_model_inference(req: ModelInferenceRequest):
                 seg_text = (seg.get("segment") or "").strip()
                 if not seg_text:
                     continue
-                seg_faq = search_faq(seg_text)
+                seg_intents = seg.get("intents") or []
+                seg_primary = seg_intents[0].get("intent") if seg_intents else None
+                seg_faq = None
+                if seg_primary and seg_primary not in seen_intents:
+                    seg_faq = search_faq(seg_text, predicted_intent=seg_primary)
+                if not seg_faq:
+                    seg_faq = search_faq(seg_text)
                 if seg_faq and seg_faq.get("intent") not in seen_intents:
                     seen_intents.add(seg_faq.get("intent"))
                     rag_policies.append(seg_faq)
