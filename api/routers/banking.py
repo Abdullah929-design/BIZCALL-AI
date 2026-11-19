@@ -163,28 +163,28 @@ async def banking_stream(session_id: str):
                     break
             
             if last_user_message:
-                # Search FAQ for relevant context
+                # Search FAQ for relevant context using calibrated threshold (0.55)
                 faq = search_faq(last_user_message)
-                if faq and faq['confidence'] >= 0.10:
-                    # 450 chars — enough for 2-3 specific factual points
-                    MAX_FAQ_CHARS = 450
+                if faq and faq['confidence'] >= 0.55:
+                    MAX_FAQ_CHARS = 1500
                     faq_text = faq['answer']
                     if len(faq_text) > MAX_FAQ_CHARS:
                         faq_text = faq_text[:MAX_FAQ_CHARS].rsplit(' ', 1)[0] + "\u2026"
 
-                    # Append RAG context to the system message instead of replacing
-                    # the user message. This keeps the user message clean so the small
-                    # Gemma 2B model receives a plain question and does not echo the
-                    # "Knowledge base answer:" prefix back in its output.
-                    rag_addition = f"\n\nRelevant banking knowledge for this query: {faq_text}"
-                    system_updated = False
-                    for i, msg in enumerate(messages):
-                        if msg.get("role") == "system":
-                            messages[i] = {"role": "system", "content": msg["content"] + rag_addition}
-                            system_updated = True
+                    # Inject policy into the last user message as well as system message so
+                    # prompt templates without a {{ .System }} slot still ground Gemma-2B.
+                    for i in range(len(messages) - 1, -1, -1):
+                        if messages[i].get("role") == "user":
+                            messages[i] = {
+                                "role": "user",
+                                "content": (
+                                    f"Use ONLY the Verified Banking Policy below to answer accurately.\n\n"
+                                    f"Verified Banking Policy:\n{faq_text}\n\n"
+                                    f"Customer Question: {messages[i]['content']}"
+                                )
+                            }
                             break
-                    if not system_updated:
-                        messages.insert(0, {"role": "system", "content": f"Relevant banking knowledge: {faq_text}"})
+
                     rag_context_added = True
                     rag_confidence = faq['confidence']
                     rag_intent = faq['intent']

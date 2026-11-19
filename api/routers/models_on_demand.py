@@ -442,28 +442,69 @@ def run_model_inference(req: ModelInferenceRequest):
     else:
         intent_results = [{"segment": query, "intents": [{"intent": "account_inquiry", "confidence": 0.90}]}]
 
-    # Step 2: FAISS Vector Search
+    # Step 2: FAISS Vector Search (per-segment for compound queries + full-query fallback)
     faq_match = None
+    rag_policies = []
     if FAISS_AVAILABLE:
         try:
-            faq_res = search_faq(query)
-            if faq_res:
+            seen_intents = set()
+            for seg in intent_results:
+                seg_text = (seg.get("segment") or "").strip()
+                if not seg_text:
+                    continue
+                seg_faq = search_faq(seg_text)
+                if seg_faq and seg_faq.get("intent") not in seen_intents:
+                    seen_intents.add(seg_faq.get("intent"))
+                    rag_policies.append(seg_faq)
+
+            if not rag_policies:
+                faq_res = search_faq(query)
+                if faq_res:
+                    rag_policies.append(faq_res)
+
+            if rag_policies:
+                primary_faq = rag_policies[0]
+                combined_answer = "\n\n".join(
+                    f"[{p.get('intent', 'policy')}]\n{p.get('answer', '')}" if len(rag_policies) > 1 else p.get("answer", "")
+                    for p in rag_policies
+                ).strip()
                 faq_match = {
-                    "answer": faq_res.get("answer", ""),
-                    "confidence": round(float(faq_res.get("confidence", 0)), 3),
-                    "intent": faq_res.get("intent", ""),
-                    "priority": faq_res.get("priority", "medium")
+                    "answer": combined_answer,
+                    "confidence": round(float(primary_faq.get("confidence", 0)), 3),
+                    "intent": ", ".join(p.get("intent", "") for p in rag_policies),
+                    "priority": primary_faq.get("priority", "medium")
                 }
         except Exception as e:
             print(f"[models_on_demand] FAISS search error: {e}")
 
-    # Step 3: ZeroGPU Model Execution
+    rag_ctx = faq_match["answer"] if (faq_match and faq_match.get("answer")) else ""
+
+    # Build a compact, tag-free context for Gemma-2B's smaller context window (max 3 policies, ~320 chars each)
+    # while keeping full rag_ctx for Groq Cloud synthesis in Step 4.
+    gemma_ctx_parts = []
+    for p in rag_policies[:3]:
+        ans = (p.get("answer") or "").strip()
+        if len(ans) > 320:
+            ans = ans[:320].rsplit(" ", 1)[0] + "."
+        if ans:
+            gemma_ctx_parts.append(ans)
+    gemma_ctx = "\n\n".join(gemma_ctx_parts)
+
+    # Step 3: ZeroGPU Model Execution (grounded with retrieved FAISS policy)
     model_output = ""
     client = get_hf_banking_client()
     if client:
         try:
+            gemma_prompt = (
+                f"Context:\n{gemma_ctx}\n\n"
+                f"Customer Question: {query}\n"
+                f"Provide a direct, helpful answer using only the facts in the Context above. "
+                f"Address every part of the question and do not use placeholders."
+                if gemma_ctx
+                else query
+            )
             with _banking_client_lock:
-                model_output = client.predict(customer_query=query, api_name="/generate_banking_response")
+                model_output = client.predict(customer_query=gemma_prompt, api_name="/generate_banking_response")
         except Exception as e:
             print(f"[models_on_demand] Banking Space predict error: {e}")
             global hf_banking_client
@@ -492,7 +533,6 @@ def run_model_inference(req: ModelInferenceRequest):
 
     # Step 4: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
     # Channel both RAG ground-truth policy + SLM draft to Groq for zero-hallucination factual synthesis
-    rag_ctx = faq_match["answer"] if (faq_match and faq_match.get("answer")) else ""
     refined_output, was_refined = refine_with_groq_cloud(
         query, 
         model_output, 

@@ -65,10 +65,9 @@ def _build_options(temperature: Optional[float] = None) -> dict[str, Any]:
     else:
         if remote:
             # T4 GPU: 300 tokens = ~4-5 complete sentences, ideal for voice
-            # (Original Modelfile had 150 which was too short for complex answers)
             options["num_predict"] = 300
         else:
-            options["num_predict"] = 220
+            options["num_predict"] = 300
 
     num_ctx = _get_env_int("OLLAMA_NUM_CTX")
     if num_ctx is not None:
@@ -79,7 +78,7 @@ def _build_options(temperature: Optional[float] = None) -> dict[str, Any]:
             # 4096 allows full multi-turn conversation history + RAG injection
             options["num_ctx"] = 4096
         else:
-            options["num_ctx"] = 768
+            options["num_ctx"] = 2048
 
     if remote:
         # T4 GPU: force ALL model layers onto GPU (Gemma 2B has 18 layers)
