@@ -1,15 +1,23 @@
 // frontend/src/features/cold-email/components/ReplyModal.tsx
 import React, { useState, useEffect } from 'react';
-import type { ColdEmailLead } from '../types';
+import type { ColdEmailLead, EmailChannel } from '../types';
 import { sendReply } from '../api/coldEmailApi';
 
 interface ReplyModalProps {
     lead: ColdEmailLead | null;
+    channel?: EmailChannel;
+    connectedGmail?: string | null;
     onClose: () => void;
     onReplySuccess: (lead?: ColdEmailLead | null) => void;
 }
 
-export const ReplyModal: React.FC<ReplyModalProps> = ({ lead, onClose, onReplySuccess }) => {
+export const ReplyModal: React.FC<ReplyModalProps> = ({
+    lead,
+    channel = 'managed',
+    connectedGmail,
+    onClose,
+    onReplySuccess,
+}) => {
     const [message, setMessage] = useState('');
     const [subject, setSubject] = useState('Re: Quick Follow-up');
     const [sending, setSending] = useState(false);
@@ -36,7 +44,8 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ lead, onClose, onReplySu
                 lead_id: lead.lead_id || String(lead._row_number),
                 lead_email: lead.email || '',
                 subject,
-                message: message.trim()
+                message: message.trim(),
+                channel,
             });
             onReplySuccess(lead);
             onClose();
@@ -65,6 +74,9 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ lead, onClose, onReplySu
 
                 <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: '#94a3b8' }}>
                     Replying to: <strong style={{ color: '#fff' }}>{lead.name || lead.email}</strong> ({lead.email})
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: channel === 'gmail_smtp' ? '#34d399' : '#a5b4fc', marginTop: 4 }}>
+                        Via: {channel === 'gmail_smtp' ? `Personal Gmail (${connectedGmail || 'SMTP'})` : 'Managed Subdomain (Brevo · n8n)'}
+                    </span>
                 </p>
 
                 {lead.reply_summary && (

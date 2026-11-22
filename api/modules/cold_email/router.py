@@ -1,10 +1,10 @@
 import csv
 import io
 from starlette.concurrency import run_in_threadpool
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from .auth import get_current_user, AuthenticatedUser
-from . import n8n_client, sheets_client
-from .schemas import SendReplyRequest, CreateLeadRequest, UpdateLeadRequest, SendBatchRequest
+from . import n8n_client, sheets_client, gmail_service
+from .schemas import SendReplyRequest, CreateLeadRequest, UpdateLeadRequest, SendBatchRequest, GmailConnectRequest
 from typing import List, Optional
 
 import time
@@ -85,12 +85,15 @@ def delete_lead(row_number: int, user: AuthenticatedUser = Depends(get_current_u
 
 
 @router.post("/send-batch")
-def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUser = Depends(get_current_user)):
+def send_batch(
+    background_tasks: BackgroundTasks,
+    payload: Optional[SendBatchRequest] = None,
+    user: AuthenticatedUser = Depends(get_current_user),
+):
     """
-    Triggers n8n batch email processing for the authenticated user.
-    Enforces server-side debounce to prevent duplicate batch triggers.
-    Allows passing custom subject and message for mass campaign.
-    Runs synchronously in the worker threadpool.
+    Triggers outbound batch email processing for the authenticated user.
+    Supports 'managed' (n8n + Brevo) and 'gmail_smtp' (Personal Gmail SMTP).
+    Enforces server-side 15s debounce across both modes.
     """
     now = time.time()
     last_run = _last_batch_trigger.get(user.id, 0)
@@ -105,6 +108,7 @@ def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUs
 
     _last_batch_trigger[user.id] = now
 
+    channel = (payload.channel or "managed").strip().lower() if payload else "managed"
     subject = payload.subject.strip() if (payload and payload.subject) else None
     message = (payload.message or payload.content or "").strip() if payload else None
     if not message:
@@ -114,7 +118,23 @@ def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUs
     if subject or message:
         sheets_client.set_campaign_content_for_pending_leads(user_id=user.id, subject=subject, message=message)
 
-    # Resolve tenant's dedicated subdomain and private inbox
+    # Branch 1: Personal Gmail SMTP Mode
+    if channel == "gmail_smtp":
+        conn = gmail_service.get_gmail_connection(user.id, include_secret=False)
+        if not conn:
+            _last_batch_trigger.pop(user.id, None)
+            raise HTTPException(status_code=400, detail="Personal Gmail is not connected. Please connect your Gmail first.")
+
+        background_tasks.add_task(gmail_service.send_gmail_batch, user.id, subject, message)
+        sheets_client.invalidate_tab_cache("Leads")
+        return {
+            "status": "started",
+            "channel": "gmail_smtp",
+            "sender_inbox": conn["gmail_address"],
+            "n8n_response": {"mode": "personal_gmail_smtp"},
+        }
+
+    # Branch 2: Managed Pipeline (n8n + Brevo) — completely untouched
     sender_email = None
     subdomain = None
     try:
@@ -134,23 +154,41 @@ def send_batch(payload: Optional[SendBatchRequest] = None, user: AuthenticatedUs
             subdomain=subdomain
         )
         sheets_client.invalidate_tab_cache("Leads")
-        return {"status": "started", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
+        return {"status": "started", "channel": "managed", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
     except Exception as e:
-        # Reset on failure so the user can retry
         _last_batch_trigger.pop(user.id, None)
         raise HTTPException(status_code=502, detail=f"Failed to trigger n8n batch workflow: {str(e)}")
 
 
 @router.get("/bundle")
-def get_dashboard_bundle(force: bool = False, user: AuthenticatedUser = Depends(get_current_user)):
+def get_dashboard_bundle(force: bool = False, channel: str = "managed", user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Fetches all CRM dashboard tabs (leads, hot_leads, neutral_leads, failed_leads)
-    in a single round-trip with in-memory caching and Google batchGet.
-    Set ?force=true to bypass cache and fetch directly from Google Sheets.
+    Fetches CRM dashboard tabs in a single round-trip.
+    - 'leads' is ALWAYS shared from Google Sheets across both modes.
+    - 'hot_leads', 'neutral_leads', 'failed_leads' are strictly isolated by channel:
+        * managed    -> Google Sheets (n8n + Brevo)
+        * gmail_smtp -> Supabase gmail_crm_replies (Personal Gmail IMAP + Groq)
     """
     try:
+        ch = (channel or "managed").strip().lower()
+        if ch == "gmail_smtp":
+            if force:
+                sheets_client.invalidate_tab_cache("Leads")
+            shared_leads = sheets_client.get_leads_for_user(user_id=user.id)
+            gmail_queues = gmail_service.fetch_gmail_replies_bundle(user_id=user.id)
+            return {
+                "success": True,
+                "channel": "gmail_smtp",
+                "data": {
+                    "leads": shared_leads,
+                    "hot_leads": gmail_queues["hot_leads"],
+                    "neutral_leads": gmail_queues["neutral_leads"],
+                    "failed_leads": gmail_queues["failed_leads"],
+                },
+            }
+
         data = sheets_client.fetch_dashboard_bundle(user_id=user.id, force=force)
-        return {"success": True, "data": data}
+        return {"success": True, "channel": "managed", "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading dashboard bundle: {str(e)}")
 
@@ -215,10 +253,27 @@ def get_analytics(user: AuthenticatedUser = Depends(get_current_user)):
 @router.post("/send-reply")
 def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Sends a manual reply to a HOT lead via n8n Workflow 3.
-    user_id is injected server-side from user.id.
-    Runs synchronously in the worker threadpool.
+    Sends a manual reply to a HOT/NEUTRAL lead.
+    Routes strictly by channel:
+    - 'gmail_smtp': sends via Personal Gmail SMTP with In-Reply-To threading.
+    - 'managed': sends via n8n Workflow 3 + Brevo (untouched).
     """
+    ch = (payload.channel or "managed").strip().lower()
+    if ch == "gmail_smtp":
+        try:
+            result = gmail_service.send_gmail_reply(
+                user_id=user.id,
+                lead_id=payload.lead_id,
+                lead_email=payload.lead_email,
+                subject=payload.subject,
+                message_text=payload.message,
+            )
+            return {"status": "sent", "channel": "gmail_smtp", "sender_inbox": result.get("sender"), "result": result}
+        except PermissionError as pe:
+            raise HTTPException(status_code=403, detail=str(pe))
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to send reply via Personal Gmail: {str(e)}")
+
     # Defense-in-depth: check that lead belongs to user
     try:
         user_hot_leads = sheets_client.get_hot_leads_for_user(user_id=user.id)
@@ -233,9 +288,8 @@ def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depends(get_
     except HTTPException:
         raise
     except Exception as e:
-        # Non-fatal defense check logging
         print(f"[WARN] Leads defense check skipped: {e}")
-    # Resolve tenant's dedicated subdomain and private inbox
+
     sender_email = None
     subdomain = None
     try:
@@ -256,8 +310,56 @@ def send_reply(payload: SendReplyRequest, user: AuthenticatedUser = Depends(get_
             sender_email=sender_email,
             subdomain=subdomain
         )
-        # Immediately stamp the status='replied' in Google Sheets so UI reflects it
         sheets_client.mark_lead_replied(user_id=user.id, lead_id=payload.lead_id, lead_email=payload.lead_email)
-        return {"status": "sent", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
+        return {"status": "sent", "channel": "managed", "n8n_response": result, "sender_inbox": sender_email, "subdomain": subdomain}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to send reply via n8n: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Personal Gmail (SMTP / IMAP) Connection & Sync Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/gmail/status")
+def get_gmail_status(user: AuthenticatedUser = Depends(get_current_user)):
+    conn = gmail_service.get_gmail_connection(user.id, include_secret=False)
+    if not conn:
+        return {"connected": False, "gmail_address": None, "last_synced_at": None}
+    return {
+        "connected": True,
+        "gmail_address": conn["gmail_address"],
+        "last_synced_at": conn.get("last_synced_at"),
+    }
+
+
+@router.post("/gmail/connect")
+def connect_gmail(payload: GmailConnectRequest, user: AuthenticatedUser = Depends(get_current_user)):
+    try:
+        res = gmail_service.save_gmail_connection(
+            user_id=user.id,
+            gmail_address=payload.gmail_address,
+            app_password=payload.app_password,
+        )
+        return {"success": True, **res}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to connect Gmail: {str(e)}")
+
+
+@router.delete("/gmail/disconnect")
+def disconnect_gmail(user: AuthenticatedUser = Depends(get_current_user)):
+    try:
+        gmail_service.disconnect_gmail_connection(user.id)
+        return {"success": True, "connected": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect Gmail: {str(e)}")
+
+
+@router.post("/gmail/sync")
+def sync_gmail_inbox(user: AuthenticatedUser = Depends(get_current_user)):
+    try:
+        res = gmail_service.sync_gmail_inbox_for_user(user.id)
+        return {"success": True, **res}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to sync Gmail inbox: {str(e)}")

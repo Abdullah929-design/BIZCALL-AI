@@ -1,7 +1,16 @@
 // frontend/src/features/cold-email/pages/ColdEmailDashboard.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import type { ColdEmailLead } from '../types';
-import { fetchLeads, fetchHotLeads, fetchNeutralQueue, fetchFailedLeads, fetchDashboardBundle, deleteLead } from '../api/coldEmailApi';
+import type { ColdEmailLead, EmailChannel, GmailConnectionStatus } from '../types';
+import {
+    fetchLeads,
+    fetchHotLeads,
+    fetchNeutralQueue,
+    fetchFailedLeads,
+    fetchDashboardBundle,
+    deleteLead,
+    fetchGmailStatus,
+    syncGmailInbox,
+} from '../api/coldEmailApi';
 import { SendBatchButton } from '../components/SendBatchButton';
 import { LeadsTable } from '../components/LeadsTable';
 import { ReplyModal } from '../components/ReplyModal';
@@ -10,6 +19,7 @@ import { NeutralQueuePanel } from '../components/NeutralQueuePanel';
 import { FailedLeadsPanel } from '../components/FailedLeadsPanel';
 import { LeadModal } from '../components/LeadModal';
 import { CsvImportModal } from '../components/CsvImportModal';
+import { GmailConnectModal } from '../components/GmailConnectModal';
 import '../ColdEmail.css';
 
 export const ColdEmailDashboard: React.FC = () => {
@@ -35,10 +45,16 @@ export const ColdEmailDashboard: React.FC = () => {
     // CSV Bulk Import modal state
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
-    const loadAllData = async (force: boolean = false) => {
+    // Channel Switcher & Personal Gmail BYOE state
+    const [channel, setChannel] = useState<EmailChannel>('managed');
+    const [gmailStatus, setGmailStatus] = useState<GmailConnectionStatus>({ connected: false, gmail_address: null });
+    const [isGmailModalOpen, setIsGmailModalOpen] = useState(false);
+    const [syncingGmail, setSyncingGmail] = useState(false);
+
+    const loadAllData = async (force: boolean = false, targetChannel: EmailChannel = channel) => {
         setLoading(true);
         try {
-            const bundle = await fetchDashboardBundle(force);
+            const bundle = await fetchDashboardBundle(force, targetChannel);
             setHotLeads(bundle.hot_leads || []);
             setAllLeads(bundle.leads || []);
             setNeutralLeads(bundle.neutral_leads || []);
@@ -68,6 +84,29 @@ export const ColdEmailDashboard: React.FC = () => {
         }
     };
 
+    const handleSwitchChannel = (nextChannel: EmailChannel) => {
+        if (nextChannel === 'gmail_smtp' && !gmailStatus.connected) {
+            setIsGmailModalOpen(true);
+            return;
+        }
+        setChannel(nextChannel);
+        loadAllData(false, nextChannel);
+    };
+
+    const handleRefreshOrSync = async () => {
+        if (channel === 'gmail_smtp') {
+            setSyncingGmail(true);
+            try {
+                await syncGmailInbox();
+            } catch (err) {
+                console.warn('Gmail sync warning:', err);
+            } finally {
+                setSyncingGmail(false);
+            }
+        }
+        await loadAllData(true, channel);
+    };
+
     const handleBatchTriggered = () => {
         loadAllData(true);
         setTimeout(() => loadAllData(true), 3500);
@@ -95,7 +134,8 @@ export const ColdEmailDashboard: React.FC = () => {
     };
 
     useEffect(() => {
-        loadAllData();
+        loadAllData(false, 'managed');
+        fetchGmailStatus().then(setGmailStatus).catch(() => { });
     }, []);
 
     const handleDeleteLead = async (lead: ColdEmailLead) => {
@@ -144,12 +184,32 @@ export const ColdEmailDashboard: React.FC = () => {
                             Cold Email Automation
                         </h1>
                         <p className="cold-email-subtitle">
-                            n8n Outbound Pipeline · Brevo Telemetry · AI Sentiment Classification
+                            {channel === 'gmail_smtp'
+                                ? `Personal Gmail SMTP · IMAP Sync (${gmailStatus.gmail_address || 'Connected'}) · Shared Leads`
+                                : 'n8n Outbound Pipeline · Brevo Telemetry · AI Sentiment Classification'}
                         </p>
                     </div>
 
                     {/* Actions */}
                     <div className="cold-email-actions">
+                        <button
+                            type="button"
+                            onClick={() => setIsGmailModalOpen(true)}
+                            className="btn-ce-ghost"
+                            style={gmailStatus.connected ? {
+                                borderColor: 'rgba(52, 211, 153, 0.45)',
+                                color: '#6ee7b7',
+                                background: 'rgba(52, 211, 153, 0.08)',
+                            } : undefined}
+                            title="Connect your personal Gmail account (App Password)"
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            {gmailStatus.connected ? `Gmail: ${gmailStatus.gmail_address}` : 'Connect Gmail'}
+                        </button>
+
                         <button
                             type="button"
                             onClick={() => { setEditingLead(null); setIsLeadModalOpen(true); }}
@@ -177,21 +237,80 @@ export const ColdEmailDashboard: React.FC = () => {
 
                         <button
                             type="button"
-                            onClick={() => loadAllData(true)}
+                            onClick={handleRefreshOrSync}
+                            disabled={syncingGmail}
                             className="btn-ce-ghost"
-                            title="Force sync data from Google Sheets"
+                            title={channel === 'gmail_smtp' ? 'Sync Personal Gmail IMAP replies' : 'Force sync data from Google Sheets'}
                         >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"></path>
                             </svg>
-                            Refresh Sheets
+                            {syncingGmail ? 'Syncing Gmail...' : channel === 'gmail_smtp' ? 'Sync Gmail' : 'Refresh Sheets'}
                         </button>
 
                         <SendBatchButton
                             onBatchStarted={handleBatchTriggered}
                             pendingCount={allLeads.filter(l => (l.status || '').toLowerCase() === 'pending').length}
+                            channel={channel}
+                            connectedGmail={gmailStatus.gmail_address}
                         />
                     </div>
+                </div>
+
+                {/* Channel Switcher Bar (Managed Brevo/n8n vs Personal Gmail SMTP/IMAP) */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                    background: 'rgba(15, 23, 42, 0.55)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    padding: '8px 12px',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginRight: 4 }}>
+                            ACTIVE CHANNEL:
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handleSwitchChannel('managed')}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: 7,
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                border: channel === 'managed' ? '1px solid rgba(99, 102, 241, 0.7)' : '1px solid rgba(255,255,255,0.08)',
+                                background: channel === 'managed' ? 'rgba(99, 102, 241, 0.22)' : 'transparent',
+                                color: channel === 'managed' ? '#e0e7ff' : '#94a3b8',
+                            }}
+                        >
+                            Managed Inbox (Brevo · n8n)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSwitchChannel('gmail_smtp')}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: 7,
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                border: channel === 'gmail_smtp' ? '1px solid rgba(52, 211, 153, 0.7)' : '1px solid rgba(255,255,255,0.08)',
+                                background: channel === 'gmail_smtp' ? 'rgba(52, 211, 153, 0.18)' : 'transparent',
+                                color: channel === 'gmail_smtp' ? '#d1fae5' : '#94a3b8',
+                            }}
+                        >
+                            Personal Gmail (SMTP · IMAP){gmailStatus.connected ? '' : ' · Connect'}
+                        </button>
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                        {channel === 'gmail_smtp'
+                            ? 'Showing Personal Gmail replies · All Leads shared'
+                            : 'Showing Managed Brevo/n8n replies · All Leads shared'}
+                    </span>
                 </div>
 
                 {/* Sub-tab Navigation */}
@@ -303,10 +422,29 @@ export const ColdEmailDashboard: React.FC = () => {
                 {replyLead && (
                     <ReplyModal
                         lead={replyLead}
+                        channel={channel}
+                        connectedGmail={gmailStatus.gmail_address}
                         onClose={() => setReplyLead(null)}
                         onReplySuccess={handleReplySuccess}
                     />
                 )}
+
+                {/* Personal Gmail Connection Modal */}
+                <GmailConnectModal
+                    isOpen={isGmailModalOpen}
+                    status={gmailStatus}
+                    onClose={() => setIsGmailModalOpen(false)}
+                    onSuccess={(nextStatus) => {
+                        setGmailStatus(nextStatus);
+                        if (nextStatus.connected) {
+                            setChannel('gmail_smtp');
+                            loadAllData(false, 'gmail_smtp');
+                        } else if (channel === 'gmail_smtp') {
+                            setChannel('managed');
+                            loadAllData(false, 'managed');
+                        }
+                    }}
+                />
             </div>
         </div>
     );

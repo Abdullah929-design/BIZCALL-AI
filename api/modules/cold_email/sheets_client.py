@@ -576,3 +576,87 @@ def set_campaign_content_for_pending_leads(user_id: str, subject: Optional[str] 
                 _tab_cache.pop("Leads", None)
         except Exception as e:
             print(f"[WARN] Failed to set campaign content for pending leads: {e}")
+
+
+def render_template_for_lead(text: str, lead: Dict[str, Any]) -> str:
+    """Renders {{first_name}}, {{last_name}}, {{name}}, {{company}}, {{title}} for a lead dict."""
+    if not text:
+        return ""
+    fn = str(lead.get("first_name") or "").strip()
+    ln = str(lead.get("last_name") or "").strip()
+    comp = str(lead.get("company") or "").strip()
+    title = str(lead.get("title") or "").strip()
+    full_name = str(lead.get("name") or f"{fn} {ln}").strip()
+    if not fn and full_name:
+        fn = full_name.split()[0]
+
+    return (
+        text.replace("{{first_name}}", fn)
+            .replace("{{firstName}}", fn)
+            .replace("{{last_name}}", ln)
+            .replace("{{lastName}}", ln)
+            .replace("{{name}}", full_name or fn)
+            .replace("{{company}}", comp)
+            .replace("{{title}}", title)
+    )
+
+
+def batch_update_leads_fields(user_id: str, row_updates: List[Dict[str, Any]]) -> None:
+    """
+    Batch-updates specific fields (status, sent_at, replied_at, error_note) on the shared 'Leads' tab
+    for rows owned by user_id. Each item in row_updates must contain '_row_number' (or 'email').
+    """
+    if not row_updates:
+        return
+    with _sheets_lock:
+        service = get_sheets_service()
+        sheet_id = settings.COLD_EMAIL_SHEET_ID
+        try:
+            res = service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range="'Leads'!A1:Z"
+            ).execute()
+            values = res.get("values", [])
+            if not values or len(values) < 2:
+                return
+            headers = [str(h).strip().lower() for h in values[0]]
+            user_id_idx = headers.index("user_id") if "user_id" in headers else -1
+            email_idx = headers.index("email") if "email" in headers else -1
+
+            col_map = {h: idx for idx, h in enumerate(headers)}
+            batch_data = []
+
+            for upd in row_updates:
+                target_row = upd.get("_row_number")
+                target_email = str(upd.get("email") or "").strip().lower()
+
+                matched_rows = []
+                if target_row and isinstance(target_row, int) and 2 <= target_row <= len(values):
+                    row = values[target_row - 1]
+                    if user_id_idx == -1 or (len(row) > user_id_idx and row[user_id_idx].strip() == user_id):
+                        matched_rows.append(target_row)
+                elif target_email and email_idx != -1:
+                    for r_idx, row in enumerate(values[1:], start=2):
+                        if user_id_idx != -1 and (len(row) <= user_id_idx or row[user_id_idx].strip() != user_id):
+                            continue
+                        r_email = row[email_idx].strip().lower() if len(row) > email_idx else ""
+                        if r_email == target_email:
+                            matched_rows.append(r_idx)
+
+                for r_idx in matched_rows:
+                    for field_key in ("status", "sent_at", "replied_at", "error_note"):
+                        if field_key in upd and field_key in col_map:
+                            col_letter = chr(ord('A') + col_map[field_key])
+                            batch_data.append({
+                                "range": f"'Leads'!{col_letter}{r_idx}",
+                                "values": [[str(upd[field_key])]]
+                            })
+
+            if batch_data:
+                service.spreadsheets().values().batchUpdate(
+                    spreadsheetId=sheet_id,
+                    body={"valueInputOption": "USER_ENTERED", "data": batch_data}
+                ).execute()
+                _tab_cache.pop("Leads", None)
+        except Exception as e:
+            print(f"[WARN] batch_update_leads_fields failed: {e}")

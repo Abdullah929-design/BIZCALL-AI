@@ -1,19 +1,24 @@
 // frontend/src/features/cold-email/components/MassCampaignModal.tsx
 import React, { useState } from 'react';
 import { sendBatch } from '../api/coldEmailApi';
+import type { EmailChannel } from '../types';
 
 interface MassCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBatchStarted?: () => void;
   pendingCount?: number;
+  channel?: EmailChannel;
+  connectedGmail?: string | null;
 }
 
 export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
   isOpen,
   onClose,
   onBatchStarted,
-  pendingCount
+  pendingCount,
+  channel = 'managed',
+  connectedGmail,
 }) => {
   const [useCustomContent, setUseCustomContent] = useState(true);
   const [subject, setSubject] = useState('Quick question regarding {{company}}');
@@ -38,8 +43,8 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
 
     try {
       const payload = useCustomContent
-        ? { subject: subject.trim(), message: message.trim() }
-        : undefined;
+        ? { subject: subject.trim(), message: message.trim(), channel }
+        : { channel };
 
       await sendBatch(payload);
       setSuccess(true);
@@ -80,10 +85,10 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
             : 'This will dispatch outbound emails to all pending leads in your queue via n8n & Brevo.'}
         </p>
 
-        {/* Dedicated Subdomain Inbox Badge */}
+        {/* Active Sender Channel Badge */}
         <div style={{
-          background: 'rgba(99, 102, 241, 0.08)',
-          border: '1px solid rgba(99, 102, 241, 0.25)',
+          background: channel === 'gmail_smtp' ? 'rgba(52, 211, 153, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+          border: channel === 'gmail_smtp' ? '1px solid rgba(52, 211, 153, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
           borderRadius: 8,
           padding: '8px 12px',
           marginBottom: 16,
@@ -92,11 +97,12 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
           justifyContent: 'space-between',
           fontSize: '0.78rem'
         }}>
-          <span style={{ color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <strong>Private Subdomain Isolation:</strong> Enabled
+          <span style={{ color: channel === 'gmail_smtp' ? '#6ee7b7' : '#a5b4fc', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <strong>{channel === 'gmail_smtp' ? 'Personal Gmail SMTP:' : 'Private Subdomain Isolation:'}</strong>
+            {channel === 'gmail_smtp' ? 'Active' : 'Enabled'}
           </span>
           <span style={{ color: '#34d399', fontFamily: 'monospace', fontSize: '0.75rem', background: 'rgba(52, 211, 153, 0.12)', padding: '2px 8px', borderRadius: 4 }}>
-            Dedicated Private Inbox (*.bizcallai.online)
+            {channel === 'gmail_smtp' ? (connectedGmail || 'Personal Gmail') : 'Dedicated Private Inbox (*.bizcallai.online)'}
           </span>
         </div>
 
@@ -203,6 +209,6 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div >
   );
 };

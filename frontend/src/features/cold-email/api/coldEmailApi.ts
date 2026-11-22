@@ -1,9 +1,18 @@
 // frontend/src/features/cold-email/api/coldEmailApi.ts
 // @ts-ignore
 import { supabase } from '../../../services/supabaseClient';
-import type { ColdEmailLead, SendReplyPayload } from '../types';
+import type { ColdEmailLead, SendReplyPayload, EmailChannel, GmailConnectionStatus } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+
+async function getAuthHeaders(): Promise<HeadersInit> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || '';
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
 
 export async function uploadBulkCsv(file: File): Promise<{ success: boolean; count: number; message: string }> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -68,21 +77,12 @@ export async function deleteLead(rowNumber: number): Promise<any> {
     return res.json();
 }
 
-async function getAuthHeaders(): Promise<HeadersInit> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || '';
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-}
-
-export async function sendBatch(campaign?: { subject?: string; message?: string }): Promise<{ status: string; n8n_response: any }> {
+export async function sendBatch(campaign?: { subject?: string; message?: string; channel?: EmailChannel }): Promise<{ status: string; channel?: EmailChannel; sender_inbox?: string; n8n_response: any }> {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/cold-email/send-batch`, {
         method: "POST",
         headers,
-        body: JSON.stringify(campaign || {})
+        body: JSON.stringify(campaign || { channel: 'managed' })
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -98,9 +98,12 @@ export interface DashboardBundleData {
     failed_leads: ColdEmailLead[];
 }
 
-export async function fetchDashboardBundle(force: boolean = false): Promise<DashboardBundleData> {
+export async function fetchDashboardBundle(force: boolean = false, channel: EmailChannel = 'managed'): Promise<DashboardBundleData> {
     const headers = await getAuthHeaders();
-    const url = force ? `${API_BASE}/api/cold-email/bundle?force=true` : `${API_BASE}/api/cold-email/bundle`;
+    const params = new URLSearchParams();
+    if (force) params.set("force", "true");
+    params.set("channel", channel);
+    const url = `${API_BASE}/api/cold-email/bundle?${params.toString()}`;
     const res = await fetch(url, { headers });
     if (!res.ok) {
         if (res.status === 401) {
@@ -159,6 +162,52 @@ export async function sendReply(payload: SendReplyPayload): Promise<any> {
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || "Failed to send reply");
+    }
+    return res.json();
+}
+
+export async function fetchGmailStatus(): Promise<GmailConnectionStatus> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/cold-email/gmail/status`, { headers });
+    if (!res.ok) return { connected: false, gmail_address: null };
+    return res.json();
+}
+
+export async function connectGmail(gmail_address: string, app_password: string): Promise<GmailConnectionStatus> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/cold-email/gmail/connect`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ gmail_address, app_password }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Failed to connect Gmail");
+    }
+    return res.json();
+}
+
+export async function disconnectGmail(): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/cold-email/gmail/disconnect`, {
+        method: "DELETE",
+        headers,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Failed to disconnect Gmail");
+    }
+}
+
+export async function syncGmailInbox(): Promise<{ synced: number; new_replies: number }> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/cold-email/gmail/sync`, {
+        method: "POST",
+        headers,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Failed to sync Gmail inbox");
     }
     return res.json();
 }

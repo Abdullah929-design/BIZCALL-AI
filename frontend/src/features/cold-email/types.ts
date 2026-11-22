@@ -24,9 +24,18 @@ export interface ColdEmailLead {
     [key: string]: any;
 }
 
+export type EmailChannel = 'managed' | 'gmail_smtp';
+
+export interface GmailConnectionStatus {
+    connected: boolean;
+    gmail_address: string | null;
+    last_synced_at?: string | null;
+}
+
 export interface SendReplyPayload {
     lead_id: string;
     lead_email: string;
     subject: string;
     message: string;
+    channel?: EmailChannel;
 }

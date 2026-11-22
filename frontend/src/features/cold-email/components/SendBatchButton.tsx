@@ -1,13 +1,21 @@
 // frontend/src/features/cold-email/components/SendBatchButton.tsx
 import React, { useState } from 'react';
 import { MassCampaignModal } from './MassCampaignModal';
+import type { EmailChannel } from '../types';
 
 interface SendBatchButtonProps {
     onBatchStarted?: () => void;
     pendingCount?: number;
+    channel?: EmailChannel;
+    connectedGmail?: string | null;
 }
 
-export const SendBatchButton: React.FC<SendBatchButtonProps> = ({ onBatchStarted, pendingCount }) => {
+export const SendBatchButton: React.FC<SendBatchButtonProps> = ({
+    onBatchStarted,
+    pendingCount,
+    channel = 'managed',
+    connectedGmail,
+}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
@@ -41,6 +49,8 @@ export const SendBatchButton: React.FC<SendBatchButtonProps> = ({ onBatchStarted
                 onClose={() => setIsModalOpen(false)}
                 onBatchStarted={onBatchStarted}
                 pendingCount={pendingCount}
+                channel={channel}
+                connectedGmail={connectedGmail}
             />
         </>
     );

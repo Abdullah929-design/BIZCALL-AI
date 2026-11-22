@@ -105,6 +105,15 @@ async def startup_event():
     except Exception as e:
         print(f"[WARN] FAISS preload skipped: {e}")
 
+    # Start 60s background IMAP reply poller for Personal Gmail BYOE users
+    try:
+        import asyncio
+        from modules.cold_email.gmail_service import gmail_imap_poll_loop
+        asyncio.create_task(gmail_imap_poll_loop())
+        print("[INFO] Personal Gmail IMAP background poller started (60s interval)!")
+    except Exception as e:
+        print(f"[WARN] Gmail IMAP poller skipped: {e}")
+
     print("[INFO] Retell API is ready to serve requests!")
     print("[INFO] Documentation available at: http://localhost:8002/docs")
 

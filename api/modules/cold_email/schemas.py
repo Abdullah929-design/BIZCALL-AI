@@ -7,12 +7,18 @@ class SendReplyRequest(BaseModel):
     lead_email: str
     subject: str
     message: str
+    channel: Optional[str] = "managed"  # 'managed' | 'gmail_smtp'
     # NOTE: no user_id field here on purpose — derived exclusively on server
 
 class SendBatchRequest(BaseModel):
     subject: Optional[str] = None
     message: Optional[str] = None
     content: Optional[str] = None
+    channel: Optional[str] = "managed"  # 'managed' | 'gmail_smtp'
+
+class GmailConnectRequest(BaseModel):
+    gmail_address: str
+    app_password: str
 
 class LeadItem(BaseModel):
     row_number: int
