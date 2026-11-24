@@ -228,6 +228,28 @@ HF_BANKING_SPACE_ID = "abdullahsallehaqeel123/bizcall-banking-slm"
 HF_SALES_SPACE_ID = "abdullahsallehaqeel123/finance-chat-api"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
+MODAL_SALES_URL = (os.getenv("MODAL_SALES_URL") or "").strip()
+MODAL_BANKING_URL = (os.getenv("MODAL_BANKING_URL") or "").strip()
+MODAL_FALLBACK_SECRET = (os.getenv("MODAL_FALLBACK_SECRET") or "").strip()
+
+
+def _call_modal_endpoint(url: str, payload: Dict[str, Any], timeout: float = 95.0) -> str:
+    """Calls a Modal serverless GPU fallback endpoint when HF ZeroGPU is unavailable/exhausted."""
+    if not url:
+        return ""
+    headers = {"Content-Type": "application/json"}
+    secret = (os.getenv("MODAL_FALLBACK_SECRET") or MODAL_FALLBACK_SECRET).strip()
+    if secret:
+        headers["Authorization"] = f"Bearer {secret}"
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        if resp.ok:
+            return str(resp.json().get("output", "")).strip()
+        print(f"[models_on_demand] Modal fallback returned {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        print(f"[models_on_demand] Modal fallback error: {e}")
+    return ""
+
 hf_banking_client = None
 hf_sales_client = None
 
@@ -366,6 +388,7 @@ def run_model_inference(req: ModelInferenceRequest):
         client = get_hf_sales_client()
         model_output = ""
         hf_succeeded = False
+        modal_succeeded = False
 
         if client:
             try:
@@ -379,13 +402,25 @@ def run_model_inference(req: ModelInferenceRequest):
                 global hf_sales_client
                 hf_sales_client = None
 
-        if hf_succeeded:
+        if not hf_succeeded:
+            sales_modal_url = (os.getenv("MODAL_SALES_URL") or MODAL_SALES_URL).strip()
+            if sales_modal_url:
+                print("[models_on_demand] Sales ZeroGPU unavailable -> falling back to Modal L4 GPU...")
+                modal_reply = _call_modal_endpoint(
+                    sales_modal_url,
+                    {"prompt": query, "temperature": 0.68, "max_tokens": 800},
+                )
+                if modal_reply and len(modal_reply.strip()) > 20:
+                    model_output = modal_reply.strip()
+                    modal_succeeded = True
+
+        if hf_succeeded or modal_succeeded:
             # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b) — guards against hallucinations & polishes flow
             refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
             if was_refined:
                 model_output = refined_output
         else:
-            # Dynamic fallback via Groq when ZeroGPU quota is exhausted/sleeping (avoids stiff 4-paragraph template)
+            # Dynamic fallback via Groq when both ZeroGPU and Modal are unavailable
             dynamic_fb, was_refined = refine_with_groq_cloud(
                 query,
                 f"Write a direct, accurate response to this B2B sales request for {target_brand}: {query}",
@@ -397,15 +432,21 @@ def run_model_inference(req: ModelInferenceRequest):
         if hf_succeeded:
             hw_label = "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA"
             engine_source = "qwen_zerogpu"
+            model_display = "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)"
+        elif modal_succeeded:
+            hw_label = "Modal Serverless L4 GPU • Qwen2.5-7B + Groq" if was_refined else "Modal Serverless L4 GPU • Qwen2.5-7B LoRA"
+            engine_source = "qwen_modal_gpu"
+            model_display = "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA • Modal GPU)"
         else:
-            hw_label = "Groq Cloud Fallback (ZeroGPU Quota Reached)" if was_refined else "Static Fallback"
+            hw_label = "Groq Cloud Fallback (GPU Quota Reached)" if was_refined else "Static Fallback"
             engine_source = "groq_fallback" if was_refined else "static_fallback"
+            model_display = "BizCall Outbound Sales & Pitch Agent (Groq Fallback)"
 
         return {
             "success": True,
             "query": query,
             "model_id": req.model_id,
-            "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)" if hf_succeeded else "BizCall Outbound Sales & Pitch Agent (Groq Fallback)",
+            "model_name": model_display,
             "hardware": hw_label,
             "engine_source": engine_source,
             "pipeline_type": "sales_marketing",
@@ -490,46 +531,57 @@ def run_model_inference(req: ModelInferenceRequest):
             gemma_ctx_parts.append(ans)
     gemma_ctx = "\n\n".join(gemma_ctx_parts)
 
-    # Step 3: ZeroGPU Model Execution (grounded with retrieved FAISS policy)
+    # Step 3: ZeroGPU Model Execution (with Modal T4 GPU fallback if ZeroGPU is exhausted)
     model_output = ""
+    banking_hf_ok = False
+    banking_modal_ok = False
+    gemma_prompt = (
+        f"Context:\n{gemma_ctx}\n\n"
+        f"Customer Question: {query}\n"
+        f"Provide a direct, helpful answer using only the facts in the Context above. "
+        f"Address every part of the question and do not use placeholders."
+        if gemma_ctx
+        else query
+    )
+
     client = get_hf_banking_client()
     if client:
         try:
-            gemma_prompt = (
-                f"Context:\n{gemma_ctx}\n\n"
-                f"Customer Question: {query}\n"
-                f"Provide a direct, helpful answer using only the facts in the Context above. "
-                f"Address every part of the question and do not use placeholders."
-                if gemma_ctx
-                else query
-            )
             with _banking_client_lock:
                 model_output = client.predict(customer_query=gemma_prompt, api_name="/generate_banking_response")
+            if model_output and str(model_output).strip():
+                banking_hf_ok = True
         except Exception as e:
             print(f"[models_on_demand] Banking Space predict error: {e}")
             global hf_banking_client
             hf_banking_client = None
-            if faq_match and faq_match.get("answer"):
-                model_output = (
-                    f"Certainly! Based on our verified banking guidelines, here are the step-by-step details:\n\n"
-                    f"{faq_match['answer']}\n\n"
-                    "For account-specific adjustments or identity verification, you can finalize this directly inside your mobile banking app."
-                )
-            else:
-                detected_names = [i['intent'] for seg in intent_results for i in seg.get('intents', [])]
-                primary_intent = detected_names[0].replace('_', ' ').title() if detected_names else "Banking Inquiry"
-                model_output = (
-                    f"Here is the standard procedure regarding your {primary_intent}:\n\n"
-                    "1. Log in to your Mobile Banking app using your secure biometric or PIN authentication.\n"
-                    "2. Access the relevant management menu from your account overview.\n"
-                    "3. Submit the required request details or confirm the transaction prompts.\n\n"
-                    "Our customer support team is on standby to assist with verification if required."
-                )
-    else:
+
+    if not banking_hf_ok:
+        banking_modal_url = (os.getenv("MODAL_BANKING_URL") or MODAL_BANKING_URL).strip()
+        if banking_modal_url:
+            print("[models_on_demand] Banking ZeroGPU unavailable -> falling back to Modal T4 GPU...")
+            modal_reply = _call_modal_endpoint(banking_modal_url, {"customer_query": gemma_prompt})
+            if modal_reply and len(modal_reply.strip()) > 10:
+                model_output = modal_reply.strip()
+                banking_modal_ok = True
+
+    if not banking_hf_ok and not banking_modal_ok:
         if faq_match and faq_match.get("answer"):
-            model_output = faq_match["answer"]
+            model_output = (
+                f"Certainly! Based on our verified banking guidelines, here are the step-by-step details:\n\n"
+                f"{faq_match['answer']}\n\n"
+                "For account-specific adjustments or identity verification, you can finalize this directly inside your mobile banking app."
+            )
         else:
-            model_output = "Our banking services portal is ready to process your request. Please ensure you are authenticated."
+            detected_names = [i['intent'] for seg in intent_results for i in seg.get('intents', [])]
+            primary_intent = detected_names[0].replace('_', ' ').title() if detected_names else "Banking Inquiry"
+            model_output = (
+                f"Here is the standard procedure regarding your {primary_intent}:\n\n"
+                "1. Log in to your Mobile Banking app using your secure biometric or PIN authentication.\n"
+                "2. Access the relevant management menu from your account overview.\n"
+                "3. Submit the required request details or confirm the transaction prompts.\n\n"
+                "Our customer support team is on standby to assist with verification if required."
+            )
 
     # Step 4: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
     # Channel both RAG ground-truth policy + SLM draft to Groq for zero-hallucination factual synthesis
@@ -544,15 +596,22 @@ def run_model_inference(req: ModelInferenceRequest):
 
     latency_ms = int((time.time() - start_time) * 1000)
 
-    hardware_label = "Nvidia A100 ZeroGPU"
-    if was_refined:
-        hardware_label = "Nvidia A100 ZeroGPU + Groq Cloud Layer (RAG-Fused)" if rag_ctx else "Nvidia A100 ZeroGPU + Groq Cloud Layer"
+    if banking_hf_ok:
+        hardware_label = "Nvidia A100 ZeroGPU + Groq Cloud Layer (RAG-Fused)" if (was_refined and rag_ctx) else ("Nvidia A100 ZeroGPU + Groq Cloud Layer" if was_refined else "Nvidia A100 ZeroGPU")
+        banking_engine = "gemma_zerogpu"
+    elif banking_modal_ok:
+        hardware_label = "Modal Serverless T4 GPU • Gemma-2B + Groq (RAG-Fused)" if (was_refined and rag_ctx) else ("Modal Serverless T4 GPU • Gemma-2B + Groq" if was_refined else "Modal Serverless T4 GPU • Gemma-2B LoRA")
+        banking_engine = "gemma_modal_gpu"
+    else:
+        hardware_label = "FAISS RAG + Groq Cloud Layer" if was_refined else "FAISS Knowledge Base"
+        banking_engine = "faiss_groq_fallback"
 
     return {
         "success": True,
         "query": query,
         "model_id": req.model_id,
         "model_name": "BizCall Banking & Financial SLM (Gemma-2B LoRA)",
+        "engine_source": banking_engine,
         "hardware": hardware_label,
         "pipeline_type": "banking_services",
         "cloud_layer_active": was_refined,
