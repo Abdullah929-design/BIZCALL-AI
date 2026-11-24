@@ -362,27 +362,33 @@ def run_model_inference(req: ModelInferenceRequest):
 
         client = get_hf_sales_client()
         model_output = ""
+        hf_succeeded = False
 
         if client:
             try:
-                # Single direct ChatML call to the ZeroGPU Qwen2.5-7B LoRA Space (no fixed template wrapper)
-                direct_reply = _gen_para(client, query, max_tokens=1200, temperature=0.68)
+                # Single direct ChatML call to the ZeroGPU Qwen2.5-7B LoRA Space
+                direct_reply = _gen_para(client, query, max_tokens=800, temperature=0.68)
                 if direct_reply and len(direct_reply.strip()) > 20:
                     model_output = direct_reply.strip()
-                else:
-                    model_output = _build_sales_fallback(target_brand, query)
+                    hf_succeeded = True
             except Exception as e:
                 print(f"[models_on_demand] Sales engine error: {e}")
                 global hf_sales_client
                 hf_sales_client = None
-                model_output = _build_sales_fallback(target_brand, query)
-        else:
-            model_output = _build_sales_fallback(target_brand, query)
 
-        # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b) — guards against hallucinations & polishes flow
-        refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
-        if was_refined:
-            model_output = refined_output
+        if hf_succeeded:
+            # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b) — guards against hallucinations & polishes flow
+            refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
+            if was_refined:
+                model_output = refined_output
+        else:
+            # Dynamic fallback via Groq when ZeroGPU quota is exhausted/sleeping (avoids stiff 4-paragraph template)
+            dynamic_fb, was_refined = refine_with_groq_cloud(
+                query,
+                f"Write a direct, accurate response to this B2B sales request for {target_brand}: {query}",
+                domain_context="sales",
+            )
+            model_output = dynamic_fb if was_refined else _build_sales_fallback(target_brand, query)
 
         latency_ms = int((time.time() - start_time) * 1000)
         return {
