@@ -61,7 +61,7 @@ def _verify_bearer(authorization: str | None) -> None:
 @app.cls(
     image=gpu_image,
     gpu="L4",
-    scaledown_window=120,
+    scaledown_window=300,
     timeout=180,
     volumes={"/root/.cache/huggingface": hf_cache_vol},
     secrets=[MODAL_SECRETS],

@@ -233,7 +233,7 @@ MODAL_BANKING_URL = (os.getenv("MODAL_BANKING_URL") or "").strip()
 MODAL_FALLBACK_SECRET = (os.getenv("MODAL_FALLBACK_SECRET") or "").strip()
 
 
-def _call_modal_endpoint(url: str, payload: Dict[str, Any], timeout: float = 95.0) -> str:
+def _call_modal_endpoint(url: str, payload: Dict[str, Any], timeout: float = 115.0) -> str:
     """Calls a Modal serverless GPU fallback endpoint when HF ZeroGPU is unavailable/exhausted."""
     if not url:
         return ""
