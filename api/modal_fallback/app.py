@@ -63,11 +63,12 @@ def _verify_bearer(authorization: str | None) -> None:
     gpu="L4",
     scaledown_window=300,
     timeout=180,
+    enable_memory_snapshot=True,
     volumes={"/root/.cache/huggingface": hf_cache_vol},
     secrets=[MODAL_SECRETS],
 )
 class SalesSLM:
-    @modal.enter()
+    @modal.enter(snap=True)
     def load(self):
         import torch
         from huggingface_hub import snapshot_download
@@ -94,7 +95,7 @@ class SalesSLM:
         base = AutoModelForCausalLM.from_pretrained(
             "Qwen/Qwen2.5-7B-Instruct",
             torch_dtype=torch.bfloat16,
-            device_map="auto",
+            low_cpu_mem_usage=True,
             trust_remote_code=True,
             token=hf_token,
         )
@@ -117,6 +118,10 @@ class SalesSLM:
             "Do NOT invent fake customer case studies, fabricated percentages, or made-up statistics "
             "unless provided by the user. End with a clear, low-friction call-to-action."
         )
+
+    @modal.enter(snap=False)
+    def to_gpu(self):
+        self.model.to("cuda")
 
     @modal.fastapi_endpoint(method="POST")
     def generate(self, req: SalesRequest, authorization: str | None = Header(default=None)):
@@ -162,13 +167,14 @@ class SalesSLM:
 @app.cls(
     image=gpu_image,
     gpu="T4",
-    scaledown_window=120,
+    scaledown_window=300,
     timeout=120,
+    enable_memory_snapshot=True,
     volumes={"/root/.cache/huggingface": hf_cache_vol},
     secrets=[MODAL_SECRETS],
 )
 class BankingSLM:
-    @modal.enter()
+    @modal.enter(snap=True)
     def load(self):
         import torch
         from huggingface_hub import snapshot_download
@@ -191,12 +197,16 @@ class BankingSLM:
         base = AutoModelForCausalLM.from_pretrained(
             "google/gemma-2b",
             torch_dtype=torch.float16,
-            device_map="auto",
+            low_cpu_mem_usage=True,
             token=hf_token,
         )
         self.model = PeftModel.from_pretrained(base, lora_dir)
         self.model.eval()
         hf_cache_vol.commit()
+
+    @modal.enter(snap=False)
+    def to_gpu(self):
+        self.model.to("cuda")
 
     @modal.fastapi_endpoint(method="POST")
     def generate(self, req: BankingRequest, authorization: str | None = Header(default=None)):
