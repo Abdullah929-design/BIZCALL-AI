@@ -51,11 +51,11 @@ def refine_with_groq_cloud(
 
     if domain_context == "sales":
         system_instruction = (
-            "You are a senior B2B sales copy editor. Lightly polish the draft for natural flow, "
+            "You are a senior B2B sales copy editor and fact-checker. Lightly polish the draft for natural flow, "
             "persuasive clarity, and crisp punctuation while strictly preserving the draft's requested "
-            "length/structure (e.g. if the query asks for 3 sentences, keep it to 3 sentences; if it asks "
-            "for a detailed email or feature list, preserve the full detail). Never invent fake statistics "
-            "or leave sentences incomplete. Output only the refined text directly."
+            "length and structure (e.g. if the query asks for 3 sentences, keep it strictly to 3 sentences). "
+            "Remove or soften any hallucinated, unverified statistics, fake case studies, or invented company claims "
+            "not supported by the query. Never leave sentences incomplete. Output only the refined text directly."
         )
         user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
     else:
@@ -95,7 +95,7 @@ def refine_with_groq_cloud(
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": user_content}
         ],
-        "max_tokens": 950,
+        "max_tokens": 1400 if domain_context == "sales" else 950,
         "temperature": 0.2
     }
 
@@ -294,7 +294,7 @@ async def get_models_catalog():
                 "category": "Sales & B2B Marketing",
                 "base_architecture": "Qwen2.5-7B-Instruct (LoRA Fine-Tuned)",
                 "quantization": "bfloat16 / Safetensors",
-                "hardware": "ZeroGPU • Nvidia A10G/A100",
+                "hardware": "ZeroGPU • Nvidia A10G/A100 + Groq Cloud Layer",
                 "status": "active",
                 "accuracy": "95.4%",
                 "avg_latency": "420ms",
@@ -308,7 +308,7 @@ async def get_models_catalog():
                     "Single-Call ChatML Generation",
                     "Objection Handling & Urgency",
                     "Multi-Channel Copy (Email & Messenger)",
-                    "Zero-Hallucination B2B Copy",
+                    "Groq Multi-Model Cloud Booster (gpt-oss-20b)",
                     "Qwen2.5-7B LoRA on ZeroGPU"
                 ]
             }
@@ -379,16 +379,21 @@ def run_model_inference(req: ModelInferenceRequest):
         else:
             model_output = _build_sales_fallback(target_brand, query)
 
+        # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b) — guards against hallucinations & polishes flow
+        refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
+        if was_refined:
+            model_output = refined_output
+
         latency_ms = int((time.time() - start_time) * 1000)
         return {
             "success": True,
             "query": query,
             "model_id": req.model_id,
             "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)",
-            "hardware": "ZeroGPU • Qwen2.5-7B LoRA",
+            "hardware": "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA",
             "pipeline_type": "sales_marketing",
-            "cloud_layer_active": False,
-            "cloud_layer_model": None,
+            "cloud_layer_active": was_refined,
+            "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
             "model_response": str(model_output).strip(),
             "latency_ms": latency_ms
         }
