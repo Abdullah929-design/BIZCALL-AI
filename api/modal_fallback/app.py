@@ -60,15 +60,14 @@ def _verify_bearer(authorization: str | None) -> None:
 # ---------------------------------------------------------------------------
 @app.cls(
     image=gpu_image,
-    gpu="L4",
+    gpu=["L4", "A10G", "A100"],
     scaledown_window=300,
     timeout=180,
-    enable_memory_snapshot=True,
     volumes={"/root/.cache/huggingface": hf_cache_vol},
     secrets=[MODAL_SECRETS],
 )
 class SalesSLM:
-    @modal.enter(snap=True)
+    @modal.enter()
     def load(self):
         import torch
         from huggingface_hub import snapshot_download
@@ -95,7 +94,7 @@ class SalesSLM:
         base = AutoModelForCausalLM.from_pretrained(
             "Qwen/Qwen2.5-7B-Instruct",
             torch_dtype=torch.bfloat16,
-            low_cpu_mem_usage=True,
+            device_map="auto",
             trust_remote_code=True,
             token=hf_token,
         )
@@ -118,10 +117,6 @@ class SalesSLM:
             "Do NOT invent fake customer case studies, fabricated percentages, or made-up statistics "
             "unless provided by the user. End with a clear, low-friction call-to-action."
         )
-
-    @modal.enter(snap=False)
-    def to_gpu(self):
-        self.model.to("cuda")
 
     @modal.fastapi_endpoint(method="POST")
     def generate(self, req: SalesRequest, authorization: str | None = Header(default=None)):
