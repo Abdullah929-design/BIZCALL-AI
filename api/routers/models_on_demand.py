@@ -366,7 +366,7 @@ def run_model_inference(req: ModelInferenceRequest):
         if client:
             try:
                 # Single direct ChatML call to the ZeroGPU Qwen2.5-7B LoRA Space (no fixed template wrapper)
-                direct_reply = _gen_para(client, query, max_tokens=450, temperature=0.68)
+                direct_reply = _gen_para(client, query, max_tokens=1200, temperature=0.68)
                 if direct_reply and len(direct_reply.strip()) > 20:
                     model_output = direct_reply.strip()
                 else:
