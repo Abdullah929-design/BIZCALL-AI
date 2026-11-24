@@ -294,7 +294,7 @@ async def get_models_catalog():
                 "category": "Sales & B2B Marketing",
                 "base_architecture": "Qwen2.5-7B-Instruct (LoRA Fine-Tuned)",
                 "quantization": "bfloat16 / Safetensors",
-                "hardware": "ZeroGPU • Nvidia A10G/A100 + Groq Cloud Layer",
+                "hardware": "ZeroGPU • Nvidia A10G/A100",
                 "status": "active",
                 "accuracy": "95.4%",
                 "avg_latency": "420ms",
@@ -308,7 +308,7 @@ async def get_models_catalog():
                     "Single-Call ChatML Generation",
                     "Objection Handling & Urgency",
                     "Multi-Channel Copy (Email & Messenger)",
-                    "Groq Multi-Model Cloud Booster (gpt-oss-20b)",
+                    "Zero-Hallucination B2B Copy",
                     "Qwen2.5-7B LoRA on ZeroGPU"
                 ]
             }
@@ -379,21 +379,16 @@ def run_model_inference(req: ModelInferenceRequest):
         else:
             model_output = _build_sales_fallback(target_brand, query)
 
-        # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
-        refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
-        if was_refined:
-            model_output = refined_output
-
         latency_ms = int((time.time() - start_time) * 1000)
         return {
             "success": True,
             "query": query,
             "model_id": req.model_id,
             "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)",
-            "hardware": "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA",
+            "hardware": "ZeroGPU • Qwen2.5-7B LoRA",
             "pipeline_type": "sales_marketing",
-            "cloud_layer_active": was_refined,
-            "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
+            "cloud_layer_active": False,
+            "cloud_layer_model": None,
             "model_response": str(model_output).strip(),
             "latency_ms": latency_ms
         }
