@@ -51,11 +51,13 @@ def refine_with_groq_cloud(
 
     if domain_context == "sales":
         system_instruction = (
-            "You are a senior B2B sales copy editor and fact-checker. Lightly polish the draft for natural flow, "
-            "persuasive clarity, and crisp punctuation while strictly preserving the draft's requested "
-            "length and structure (e.g. if the query asks for 3 sentences, keep it strictly to 3 sentences). "
-            "Remove or soften any hallucinated, unverified statistics, fake case studies, or invented company claims "
-            "not supported by the query. Never leave sentences incomplete. Output only the refined text directly."
+            "You are a senior B2B SaaS sales copywriter and fact-checker. Rewrite the draft into crisp, natural, "
+            "executive-grade B2B copy while strictly preserving the requested length and format (e.g. if the query "
+            "asks for a hook or 3 sentences, keep it to 2-3 punchy sentences; if it asks for a detailed email or feature "
+            "breakdown, keep the full structure). Replace empty buzzwords ('cutting-edge', 'revolutionize', "
+            "'unlock your potential', 'streamline your workflow') with concrete operational value (e.g. instant call "
+            "answering, faster lead follow-up, zero missed inquiries). Remove any hallucinated statistics or fake "
+            "case studies not in the query. Output only the refined text directly."
         )
         user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
     else:
