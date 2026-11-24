@@ -279,300 +279,306 @@ const ModelsOnDemand = () => {
                             <div>
                                 <div className="model-card-top">
                                     <div className="model-icon-title">
-                                        <div className="model-icon-box" style={{ color: isSalesModel ? '#f59e0b' : '#fb923c' }}>
-                                            <TrendingUpIcon />
+                                            <div className="model-icon-box" style={{ color: isSalesModel ? '#f59e0b' : '#fb923c' }}>
+                                                <TrendingUpIcon />
+                                            </div>
+                                            <div>
+                                                <h3 className="model-card-name">BizCall Sales & Pitch Agent</h3>
+                                                <span className="model-card-arch" style={{ color: '#fb923c' }}>Qwen2.5-7B LoRA • Safetensors</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="model-card-name">BizCall Sales & Pitch Agent</h3>
-                                            <span className="model-card-arch" style={{ color: '#fb923c' }}>Qwen2.5-7B LoRA • Safetensors</span>
-                                        </div>
+                                        <span className="model-status-badge">
+                                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                                            Ready to Test
+                                        </span>
                                     </div>
-                                    <span className="model-status-badge">
-                                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-                                        Ready to Test
-                                    </span>
+                                    <p className="model-card-desc">
+                                        Fine-tuned Qwen2.5-7B for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
+                                    </p>
                                 </div>
-                                <p className="model-card-desc">
-                                    Fine-tuned Qwen2.5-7B for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
-                                </p>
-                            </div>
-                            <div className="model-tags-row">
-                                <span className="model-tag">Cold Outreach</span>
-                                <span className="model-tag">Pitch Generator</span>
-                                <span className="model-tag">ZeroGPU 7B LoRA</span>
+                                <div className="model-tags-row">
+                                    <span className="model-tag">Cold Outreach</span>
+                                    <span className="model-tag">Pitch Generator</span>
+                                    <span className="model-tag">ZeroGPU 7B LoRA</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Interactive Testing Sandbox */}
-                <div className="sandbox-card">
-                    <div className="sandbox-header">
-                        <label className="sandbox-title">
-                            <ZapIcon /> Test Inference Sandbox
-                        </label>
-                        <span className="sandbox-sub">Try sample inquiries or enter custom customer text</span>
-                    </div>
+                    {/* Interactive Testing Sandbox */}
+                    <div className="sandbox-card">
+                        <div className="sandbox-header">
+                            <label className="sandbox-title">
+                                <ZapIcon /> Test Inference Sandbox
+                            </label>
+                            <span className="sandbox-sub">Try sample inquiries or enter custom customer text</span>
+                        </div>
 
-                    {/* Sample Prompt Chips */}
-                    <div className="prompt-chips-row">
-                        {activePrompts.map((p, idx) => (
-                            <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                    setQuery(p);
-                                    handleRunInference(p);
-                                }}
-                                className="prompt-chip-btn"
-                            >
-                                "{p}"
-                            </button>
-                        ))}
-                    </div>
+                        {/* Sample Prompt Chips */}
+                        <div className="prompt-chips-row">
+                            {activePrompts.map((p, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                        setQuery(p);
+                                        handleRunInference(p);
+                                    }}
+                                    className="prompt-chip-btn"
+                                >
+                                    "{p}"
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Textarea & Submit */}
-                    <div className="sandbox-input-row">
-                        <textarea
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
-                            placeholder={
+                        {/* Textarea & Submit */}
+                        <div className="sandbox-input-row">
+                            <textarea
+                                value={query}
+                                onChange={e => setQuery(e.target.value)}
+                                placeholder={
                                 isSalesModel
                                     ? "Type sales or outreach goal (e.g. Create a 3-sentence high-converting pitch for our AI voice call center BizCall AI to a dental clinic)..."
-                                    : "Type customer inquiry here (e.g. How do I open a fixed deposit account and freeze my card)..."
+                            : "Type customer inquiry here (e.g. How do I open a fixed deposit account and freeze my card)..."
                             }
                             rows={2}
                             className="sandbox-textarea"
                         />
 
-                        <button
-                            type="button"
-                            onClick={() => handleRunInference(query)}
-                            disabled={loading || !query.trim()}
-                            className="btn-run-inference"
-                            style={{
+                            <button
+                                type="button"
+                                onClick={() => handleRunInference(query)}
+                                disabled={loading || !query.trim()}
+                                className="btn-run-inference"
+                                style={{
                                 background: isSalesModel ? '#ea580c' : '#5855d6'
-                            }}
-                        >
-                            {loading ? (
-                                <>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        width: '14px',
-                                        height: '14px',
-                                        border: '2px solid rgba(255, 255, 255, 0.3)',
-                                        borderTopColor: '#fff',
-                                        borderRadius: '50%',
-                                        animation: 'spin 0.8s linear infinite'
-                                    }} />
-                                    {isSalesModel ? 'Generating on ZeroGPU...' : 'Generating on A100...'}
-                                </>
-                            ) : (
-                                <>
-                                    {isSalesModel ? <TrendingUpIcon /> : <ArrowRightIcon />}
-                                    <span>{isSalesModel ? 'Generate Sales Pitch' : 'Run Model on Demand'}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="sandbox-error-box">
-                            <AlertCircleIcon /> {error}
-                        </div>
-                    )}
-                </div>
-
-                {/* Inference Results 3-Tier Dashboard */}
-                {result && (
-                    <div className="results-card">
-                        <div className="results-header">
-                            <div className="results-title-group">
-                                <ActivityIcon />
-                                <div>
-                                    <h3 className="results-title">
-                                        Proprietary Pipeline Analysis Result
-                                    </h3>
-                                    <div className="results-meta">
-                                        Model: <strong style={{ color: '#818cf8' }}>{result.model_name}</strong> • Hardware: <strong style={{ color: '#34d399' }}>{result.hardware}</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="latency-pill">
-                                <ZapIcon /> Total Latency: {result.latency_ms}ms
-                            </div>
+                                }}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            width: '14px',
+                                            height: '14px',
+                                            border: '2px solid rgba(255, 255, 255, 0.3)',
+                                            borderTopColor: '#fff',
+                                            borderRadius: '50%',
+                                            animation: 'spin 0.8s linear infinite'
+                                        }} />
+                                        {isSalesModel ? 'Generating on ZeroGPU...' : 'Generating on A100...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {isSalesModel ? <TrendingUpIcon /> : <ArrowRightIcon />}
+                                        <span>{isSalesModel ? 'Generate Sales Pitch' : 'Run Model on Demand'}</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
 
-                        {/* Pipeline Route Indicator */}
-                        <div className={`pipeline-flow-banner ${result.pipeline_type === 'sales_marketing' ? 'sales' : (result.rag_fused ? 'rag-fused' : '')}`}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <RefreshIcon />
-                                <span style={{ color: '#85899d' }}>Pipeline Flow:</span>
-                                <strong style={{ color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : (result.rag_fused ? '#38bdf8' : (result.complexity === 'complex' ? '#fb923c' : '#34d399')) }}>
-                                    {result.pipeline_type === 'sales_marketing'
-                                        ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Qwen2.5-7B LoRA on ZeroGPU)'
-                                        : (result.rag_fused
-                                            ? 'Dual-Stream Knowledge Fusion ➔ SLM Domain Reasoning'
-                                            : (result.complexity === 'complex'
-                                                ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context'
-                                                : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match'))}
-                                </strong>
-                            </div>
-                        </div>
-
-                        {/* Diagnostic Grid: Sales vs Banking */}
-                        {result.pipeline_type === 'sales_marketing' ? (
-                            /* Sales & Pitch Diagnostic Strategy */
-                            <div className="diagnostic-grid">
-                                {/* Panel 1: Campaign Target & Scenario */}
-                                <div className="diagnostic-panel" style={{ borderLeft: '3px solid #ea580c' }}>
-                                    <div className="diagnostic-panel-title">
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fb923c' }}>
-                                            <TargetIcon /> 1. Outreach Target & Campaign Objective
-                                        </span>
-                                        <span className="pipeline-mode-badge" style={{ color: '#fb923c', borderColor: 'rgba(234, 88, 12, 0.3)' }}>
-                                            B2B OUTREACH
-                                        </span>
-                                    </div>
-                                    <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                                        <div style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                                            Target Goal & Prompt
-                                        </div>
-                                        <div style={{ fontSize: '12px', color: '#f1f5f9', fontStyle: 'italic', lineHeight: 1.45 }}>
-                                            "{result.query}"
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Cold Pitch</span>
-                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Value Proposition</span>
-                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Objection Preemption</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Panel 2: Pitch Strategy & Value Pillars */}
-                                <div className="diagnostic-panel" style={{ borderLeft: '3px solid #10b981' }}>
-                                    <div className="diagnostic-panel-title">
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
-                                            <LightbulbIcon /> 2. Pitch Strategy & Conversion Engine
-                                        </span>
-                                        <span className="pipeline-mode-badge" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-                                            HIGH CONVERSION
-                                        </span>
-                                    </div>
-                                    <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11.5px', color: '#cbd5e1' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Clear ROI Hook:</strong> Solves missed customer inquiries and eliminates hold times</span>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Frictionless CTA:</strong> Low-friction 5-minute walkthrough or free pilot invite</span>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Multi-Channel Ready:</strong> Usable in Retell Voice, Cold Email & Messenger CRM</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            /* Banking 2-Column Multi-Intent & FAISS Grid */
-                            <div className="diagnostic-grid">
-                                {/* Panel 1: Intent Decomposition */}
-                                <div className="diagnostic-panel">
-                                    <div className="diagnostic-panel-title">
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#818cf8' }}>
-                                            <TargetIcon /> 1. Multi-Intent Classifier (DistilBERT)
-                                        </span>
-                                        <span className="pipeline-mode-badge" style={{
-                                            color: result.complexity === 'complex' ? '#fb923c' : '#34d399',
-                                            borderColor: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.3)' : 'rgba(16, 185, 129, 0.3)'
-                                        }}>
-                                            {result.complexity?.toUpperCase()}
-                                        </span>
-                                    </div>
-
-                                    {result.intents && result.intents.length > 0 ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {result.intents.map((seg, sIdx) => (
-                                                <div key={sIdx} style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '6px', fontStyle: 'italic' }}>
-                                                        "{seg.segment}"
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                        {seg.intents.map((item, iIdx) => (
-                                                            <span key={iIdx} className="intent-chip">
-                                                                {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '11.5px', color: '#64748b' }}>General banking customer intent detected</div>
-                                    )}
-                                </div>
-
-                                {/* Panel 2: FAISS Vector RAG */}
-                                <div className="diagnostic-panel">
-                                    <div className="diagnostic-panel-title">
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
-                                            <DatabaseIcon /> 2. FAISS Semantic Vector RAG
-                                        </span>
-
-                                    </div>
-
-                                    {result.faq_rag ? (
-                                        <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                                <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600, fontFamily: 'DM Mono, monospace' }}>
-                                                    Policy: {result.faq_rag.intent}
-                                                </span>
-                                            </div>
-                                            <p style={{ fontSize: '12px', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
-                                                {result.faq_rag.answer}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', padding: '10px 0' }}>
-                                            No exact FAQ policy threshold triggered. Routed directly to Model Reasoning layer.
-                                        </div>
-                                    )}
-                                </div>
+                        {error && (
+                            <div className="sandbox-error-box">
+                                <AlertCircleIcon /> {error}
                             </div>
                         )}
+                    </div>
+
+                    {/* Inference Results 3-Tier Dashboard */}
+                    {result && (
+                        <div className="results-card">
+                            <div className="results-header">
+                                <div className="results-title-group">
+                                    <ActivityIcon />
+                                    <div>
+                                        <h3 className="results-title">
+                                            Proprietary Pipeline Analysis Result
+                                        </h3>
+                                        <div className="results-meta">
+                                            Model: <strong style={{ color: '#818cf8' }}>{result.model_name}</strong> • Hardware: <strong style={{ color: '#34d399' }}>{result.hardware}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="latency-pill">
+                                    <ZapIcon /> Total Latency: {result.latency_ms}ms
+                                </div>
+                            </div>
+
+                            {/* Pipeline Route Indicator */}
+                                <div className={`pipeline-flow-banner ${result.pipeline_type === 'sales_marketing' ? 'sales' : (result.rag_fused ? 'rag-fused' : '')}`}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <RefreshIcon />
+                                        <span style={{ color: '#85899d' }}>Pipeline Flow:</span>
+                                                < strong style={{ color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : (result.rag_fused ? '#38bdf8' : (result.complexity === 'complex' ? '#fb923c' : '#34d399')) }}>
+                                            {result.pipeline_type === 'sales_marketing'
+                                                ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Qwen2.5-7B LoRA on ZeroGPU)'
+                                                : (result.rag_fused
+                                                    ? 'Dual-Stream Knowledge Fusion ➔ SLM Domain Reasoning'
+                                                    : (result.complexity === 'complex'
+                                                        ? 'Complex Multi-Intent Query ➔ Routed to Fine-Tuned Gemma-2B SLM with RAG Context'
+                                                        : 'Single Direct Intent Query ➔ High-Confidence FAISS Knowledge Base RAG Match'))}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                {/* Diagnostic Grid: Sales vs Banking */}
+                                    {
+                                        result.pipeline_type === 'sales_marketing' ? (
+                                            /* Sales & Pitch Diagnostic Strategy */
+                                            <div className="diagnostic-grid">
+                                                {/* Panel 1: Campaign Target & Scenario */}
+                                                <div className="diagnostic-panel" style={{ borderLeft: '3px solid #ea580c' }}>
+                                                    <div className="diagnostic-panel-title">
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fb923c' }}>
+                                                            <TargetIcon /> 1. Outreach Target & Campaign Objective
+                                                        </span>
+                                                        <span className="pipeline-mode-badge" style={{ color: '#fb923c', borderColor: 'rgba(234, 88, 12, 0.3)' }}>
+                                                            B2B OUTREACH
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                        <div style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                                                            Target Goal & Prompt
+                                                        </div>
+                                                        <div style={{ fontSize: '12px', color: '#f1f5f9', fontStyle: 'italic', lineHeight: 1.45 }}>
+                                                            "{result.query}"
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
+                                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Cold Pitch</span>
+                                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Value Proposition</span>
+                                                            <span className="intent-chip" style={{ color: '#fed7aa', background: 'rgba(234, 88, 12, 0.12)', borderColor: 'rgba(234, 88, 12, 0.28)' }}>Objection Preemption</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Panel 2: Pitch Strategy & Value Pillars */}
+                                                <div className="diagnostic-panel" style={{ borderLeft: '3px solid #10b981' }}>
+                                                    <div className="diagnostic-panel-title">
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
+                                                            <LightbulbIcon /> 2. Pitch Strategy & Conversion Engine
+                                                        </span>
+                                                        <span className="pipeline-mode-badge" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+                                                            HIGH CONVERSION
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11.5px', color: '#cbd5e1' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Clear ROI Hook:</strong> Solves missed customer inquiries and eliminates hold times</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Frictionless CTA:</strong> Low-friction 5-minute walkthrough or free pilot invite</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <CheckCircleIcon /> <span><strong style={{ color: '#fff' }}>Multi-Channel Ready:</strong> Usable in Retell Voice, Cold Email & Messenger CRM</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Banking 2-Column Multi-Intent & FAISS Grid */
+                                            <div className="diagnostic-grid">
+                                                {/* Panel 1: Intent Decomposition */}
+                                                <div className="diagnostic-panel">
+                                                    <div className="diagnostic-panel-title">
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#818cf8' }}>
+                                                            <TargetIcon /> 1. Multi-Intent Classifier (DistilBERT)
+                                                        </span>
+                                                        <span className="pipeline-mode-badge" style={{
+                                                            color: result.complexity === 'complex' ? '#fb923c' : '#34d399',
+                                                            borderColor: result.complexity === 'complex' ? 'rgba(234, 88, 12, 0.3)' : 'rgba(16, 185, 129, 0.3)'
+                                                        }}>
+                                                            {result.complexity?.toUpperCase()}
+                                                        </span>
+                                                    </div>
+
+                                                    {result.intents && result.intents.length > 0 ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {result.intents.map((seg, sIdx) => (
+                                                                <div key={sIdx} style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '6px', fontStyle: 'italic' }}>
+                                                                        "{seg.segment}"
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                                        {seg.intents.map((item, iIdx) => (
+                                                                            <span key={iIdx} className="intent-chip">
+                                                                                {item.intent.replace(/_/g, ' ')} ({Math.round(item.confidence * 100)}%)
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ fontSize: '11.5px', color: '#64748b' }}>General banking customer intent detected</div>
+                                                    )}
+                                                </div>
+
+                                                {/* Panel 2: FAISS Vector RAG */}
+                                                <div className="diagnostic-panel">
+                                                    <div className="diagnostic-panel-title">
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6ee7b7' }}>
+                                                            <DatabaseIcon /> 2. FAISS Semantic Vector RAG
+                                                        </span>
+
+                                                    </div>
+
+                                                    {result.faq_rag ? (
+                                                        <div style={{ background: 'rgba(15, 18, 30, 0.6)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                                <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600, fontFamily: 'DM Mono, monospace' }}>
+                                                                    Policy: {result.faq_rag.intent}
+                                                                </span>
+                                                            </div>
+                                                            <p style={{ fontSize: '12px', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
+                                                                {result.faq_rag.answer}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', padding: '10px 0' }}>
+                                                            No exact FAQ policy threshold triggered. Routed directly to Model Reasoning layer.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    }
 
                         {/* Panel 3: Fine-Tuned Model Generated Output */}
-                        <div className="final-output-card" style={{
+                                <div className="final-output-card" style={{
                             borderLeftColor: result.pipeline_type === 'sales_marketing' ? '#ea580c' : '#5855d6'
-                        }}>
-                            <div className="final-output-header">
-                                <span className="final-output-title">
-                                    <TerminalIcon />
-                                    {result.pipeline_type === 'sales_marketing' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
-                                </span>
-                                <span style={{
-                                    fontSize: '10.5px',
-                                    fontFamily: 'DM Mono, monospace',
-                                    color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : '#818cf8',
-                                    background: 'rgba(15, 18, 30, 0.6)',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)'
                                 }}>
-                                    {result.pipeline_type === 'sales_marketing' ? 'Qwen2.5-7B LoRA Adapter' : 'Gemma-2B LoRA Adapter'}
-                                </span>
+                                    <div className="final-output-header">
+                                        <span className="final-output-title">
+                                            <TerminalIcon />
+                                            {result.pipeline_type === 'sales_marketing' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '10.5px',
+                                            fontFamily: 'DM Mono, monospace',
+                                            color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : '#818cf8',
+                                            background: 'rgba(15, 18, 30, 0.6)',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            border: '1px solid rgba(255, 255, 255, 0.08)'
+                                        }}>
+                                            {result.pipeline_type === 'sales_marketing'
+                                        ? (result.engine_source === 'groq_fallback'
+                                            ? 'Groq Cloud Fallback (ZeroGPU Quota)'
+                                            : 'Qwen2.5-7B LoRA Adapter')
+                                        : 'Gemma-2B LoRA Adapter'}
+                                        </span>
+                                    </div>
+                                    <div className="final-output-body">
+                                        {result.model_response}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="final-output-body">
-                                {result.model_response}
-                            </div>
-                        </div>
-                    </div>
                 )}
-            </div>
+                        </div>
         </div>
-    );
+                );
 };
 
-export default ModelsOnDemand;
+                export default ModelsOnDemand;

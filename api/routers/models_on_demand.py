@@ -51,13 +51,14 @@ def refine_with_groq_cloud(
 
     if domain_context == "sales":
         system_instruction = (
-            "You are a senior B2B SaaS sales copywriter and fact-checker. Rewrite the draft into crisp, natural, "
+            "You are a senior B2B SaaS sales copywriter and strict fact-checker. Rewrite or draft crisp, natural, "
             "executive-grade B2B copy while strictly preserving the requested length and format (e.g. if the query "
             "asks for a hook or 3 sentences, keep it to 2-3 punchy sentences; if it asks for a detailed email or feature "
             "breakdown, keep the full structure). Replace empty buzzwords ('cutting-edge', 'revolutionize', "
             "'unlock your potential', 'streamline your workflow') with concrete operational value (e.g. instant call "
-            "answering, faster lead follow-up, zero missed inquiries). Remove any hallucinated statistics or fake "
-            "case studies not in the query. Output only the refined text directly."
+            "answering, faster lead follow-up, zero missed inquiries). CRITICAL: NEVER invent any percentages, "
+            "statistics, time savings numbers, or fake case studies (e.g. '30% faster', '2x conversion') unless those "
+            "exact numbers appear in the user's Query. Output only the final text directly."
         )
         user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
     else:
@@ -393,12 +394,20 @@ def run_model_inference(req: ModelInferenceRequest):
             model_output = dynamic_fb if was_refined else _build_sales_fallback(target_brand, query)
 
         latency_ms = int((time.time() - start_time) * 1000)
+        if hf_succeeded:
+            hw_label = "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA"
+            engine_source = "qwen_zerogpu"
+        else:
+            hw_label = "Groq Cloud Fallback (ZeroGPU Quota Reached)" if was_refined else "Static Fallback"
+            engine_source = "groq_fallback" if was_refined else "static_fallback"
+
         return {
             "success": True,
             "query": query,
             "model_id": req.model_id,
-            "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)",
-            "hardware": "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA",
+            "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)" if hf_succeeded else "BizCall Outbound Sales & Pitch Agent (Groq Fallback)",
+            "hardware": hw_label,
+            "engine_source": engine_source,
             "pipeline_type": "sales_marketing",
             "cloud_layer_active": was_refined,
             "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
