@@ -120,22 +120,7 @@ const ModelsOnDemand = () => {
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
-    const bankingPrompts = [
-        "How do I open a fixed deposit account and what are the interest rates?",
-        "I lost my debit card yesterday, how do I freeze it immediately?",
-        "What are the eligibility criteria and documents required for a personal loan?",
-        "Can I dispute an unauthorized charge appearing on my monthly statement?"
-    ];
-
-    const salesPrompts = [
-        "Create a 3-sentence high-converting pitch for our AI voice call center BizCall AI to a dental clinic.",
-        "Write a detailed follow-up email for a B2B prospect who requested pricing for BizCall AI but went silent.",
-        "Write a compelling cold outreach hook offering a 14-day free pilot of BizCall AI.",
-        "Your product is too expensive compared to competitors. Write a detailed response on the product features."
-    ];
-
     const isSalesModel = selectedModel === 'sales-qwen-7b';
-    const activePrompts = isSalesModel ? salesPrompts : bankingPrompts;
 
     useEffect(() => {
         const fetchCatalog = async () => {
@@ -311,24 +296,7 @@ const ModelsOnDemand = () => {
                         <label className="sandbox-title">
                             <ZapIcon /> Test Inference Sandbox
                         </label>
-                        <span className="sandbox-sub">Try sample inquiries or enter custom customer text</span>
-                    </div>
-
-                    {/* Sample Prompt Chips */}
-                    <div className="prompt-chips-row">
-                        {activePrompts.map((p, idx) => (
-                            <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                    setQuery(p);
-                                    handleRunInference(p);
-                                }}
-                                className="prompt-chip-btn"
-                            >
-                                "{p}"
-                            </button>
-                        ))}
+                        <span className="sandbox-sub">Enter a custom prompt or inquiry to test the model</span>
                     </div>
 
                     {/* Textarea & Submit */}
