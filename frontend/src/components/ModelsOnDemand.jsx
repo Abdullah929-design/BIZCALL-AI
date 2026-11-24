@@ -128,13 +128,14 @@ const ModelsOnDemand = () => {
     ];
 
     const salesPrompts = [
-        "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
-        "Write a high-converting follow-up email for a B2B prospect who requested pricing but went silent.",
+        "Create a 3-sentence high-converting pitch for our AI voice call center BizCall AI to a dental clinic.",
+        "Write a detailed follow-up email for a B2B prospect who requested pricing for BizCall AI but went silent.",
         "Write a compelling cold outreach hook offering a 14-day free pilot of BizCall AI.",
-        "What are the technical capabilities, CRM integrations, and sub-second latency of BizCall AI?"
+        "Your product is too expensive compared to competitors. Write a detailed response on the product features."
     ];
 
-    const activePrompts = selectedModel === 'sales-gemma-2b' ? salesPrompts : bankingPrompts;
+    const isSalesModel = selectedModel === 'sales-qwen-7b';
+    const activePrompts = isSalesModel ? salesPrompts : bankingPrompts;
 
     useEffect(() => {
         const fetchCatalog = async () => {
@@ -221,7 +222,7 @@ const ModelsOnDemand = () => {
 
                     <div className="hero-stats-row">
                         <div className="hero-stat-pill">
-                            <div className="hero-stat-val">2.0B</div>
+                            <div className="hero-stat-val">2.0B – 7.0B</div>
                             <div className="hero-stat-sub">Parameters</div>
                         </div>
                         <div className="hero-stat-pill">
@@ -272,18 +273,18 @@ const ModelsOnDemand = () => {
 
                         {/* Model 2: Marketing / Sales */}
                         <div
-                            onClick={() => setSelectedModel('sales-gemma-2b')}
-                            className={`model-catalog-card ${selectedModel === 'sales-gemma-2b' ? 'selected sales' : ''}`}
+                            onClick={() => setSelectedModel('sales-qwen-7b')}
+                            className={`model-catalog-card ${isSalesModel ? 'selected sales' : ''}`}
                         >
                             <div>
                                 <div className="model-card-top">
                                     <div className="model-icon-title">
-                                        <div className="model-icon-box" style={{ color: selectedModel === 'sales-gemma-2b' ? '#f59e0b' : '#fb923c' }}>
+                                        <div className="model-icon-box" style={{ color: isSalesModel ? '#f59e0b' : '#fb923c' }}>
                                             <TrendingUpIcon />
                                         </div>
                                         <div>
                                             <h3 className="model-card-name">BizCall Sales & Pitch Agent</h3>
-                                            <span className="model-card-arch" style={{ color: '#fb923c' }}>Gemma-2B Quantized • Q4_K_M</span>
+                                            <span className="model-card-arch" style={{ color: '#fb923c' }}>Qwen2.5-7B LoRA • Safetensors</span>
                                         </div>
                                     </div>
                                     <span className="model-status-badge">
@@ -292,13 +293,13 @@ const ModelsOnDemand = () => {
                                     </span>
                                 </div>
                                 <p className="model-card-desc">
-                                    Fine-tuned for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
+                                    Fine-tuned Qwen2.5-7B for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
                                 </p>
                             </div>
                             <div className="model-tags-row">
                                 <span className="model-tag">Cold Outreach</span>
                                 <span className="model-tag">Pitch Generator</span>
-                                <span className="model-tag">GGUF 4-Bit</span>
+                                <span className="model-tag">ZeroGPU 7B LoRA</span>
                             </div>
                         </div>
                     </div>
@@ -336,8 +337,8 @@ const ModelsOnDemand = () => {
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             placeholder={
-                                selectedModel === 'sales-gemma-2b'
-                                    ? "Type sales or outreach goal (e.g. Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic)..."
+                                isSalesModel
+                                    ? "Type sales or outreach goal (e.g. Create a 3-sentence high-converting pitch for our AI voice call center BizCall AI to a dental clinic)..."
                                     : "Type customer inquiry here (e.g. How do I open a fixed deposit account and freeze my card)..."
                             }
                             rows={2}
@@ -350,7 +351,7 @@ const ModelsOnDemand = () => {
                             disabled={loading || !query.trim()}
                             className="btn-run-inference"
                             style={{
-                                background: selectedModel === 'sales-gemma-2b' ? '#ea580c' : '#5855d6'
+                                background: isSalesModel ? '#ea580c' : '#5855d6'
                             }}
                         >
                             {loading ? (
@@ -364,12 +365,12 @@ const ModelsOnDemand = () => {
                                         borderRadius: '50%',
                                         animation: 'spin 0.8s linear infinite'
                                     }} />
-                                    {selectedModel === 'sales-gemma-2b' ? 'Generating Pitch...' : 'Generating on A100...'}
+                                    {isSalesModel ? 'Generating on ZeroGPU...' : 'Generating on A100...'}
                                 </>
                             ) : (
                                 <>
-                                    {selectedModel === 'sales-gemma-2b' ? <TrendingUpIcon /> : <ArrowRightIcon />}
-                                    <span>{selectedModel === 'sales-gemma-2b' ? 'Generate Sales Pitch' : 'Run Model on Demand'}</span>
+                                    {isSalesModel ? <TrendingUpIcon /> : <ArrowRightIcon />}
+                                    <span>{isSalesModel ? 'Generate Sales Pitch' : 'Run Model on Demand'}</span>
                                 </>
                             )}
                         </button>
@@ -404,13 +405,13 @@ const ModelsOnDemand = () => {
                         </div>
 
                         {/* Pipeline Route Indicator */}
-                        <div className={`pipeline-flow-banner ${result.model_id === 'sales-gemma-2b' ? 'sales' : (result.rag_fused ? 'rag-fused' : '')}`}>
+                        <div className={`pipeline-flow-banner ${result.pipeline_type === 'sales_marketing' ? 'sales' : (result.rag_fused ? 'rag-fused' : '')}`}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <RefreshIcon />
                                 <span style={{ color: '#85899d' }}>Pipeline Flow:</span>
-                                <strong style={{ color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : (result.rag_fused ? '#38bdf8' : (result.complexity === 'complex' ? '#fb923c' : '#34d399')) }}>
-                                    {result.model_id === 'sales-gemma-2b'
-                                        ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Gemma-2B Q4_K_M Engine)'
+                                <strong style={{ color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : (result.rag_fused ? '#38bdf8' : (result.complexity === 'complex' ? '#fb923c' : '#34d399')) }}>
+                                    {result.pipeline_type === 'sales_marketing'
+                                        ? 'Outbound Campaign Hook ➔ Routed to Fine-Tuned Sales SLM (Qwen2.5-7B LoRA on ZeroGPU)'
                                         : (result.rag_fused
                                             ? 'Dual-Stream Knowledge Fusion ➔ SLM Domain Reasoning'
                                             : (result.complexity === 'complex'
@@ -421,7 +422,7 @@ const ModelsOnDemand = () => {
                         </div>
 
                         {/* Diagnostic Grid: Sales vs Banking */}
-                        {result.model_id === 'sales-gemma-2b' ? (
+                        {result.pipeline_type === 'sales_marketing' ? (
                             /* Sales & Pitch Diagnostic Strategy */
                             <div className="diagnostic-grid">
                                 {/* Panel 1: Campaign Target & Scenario */}
@@ -544,23 +545,23 @@ const ModelsOnDemand = () => {
 
                         {/* Panel 3: Fine-Tuned Model Generated Output */}
                         <div className="final-output-card" style={{
-                            borderLeftColor: result.model_id === 'sales-gemma-2b' ? '#ea580c' : '#5855d6'
+                            borderLeftColor: result.pipeline_type === 'sales_marketing' ? '#ea580c' : '#5855d6'
                         }}>
                             <div className="final-output-header">
                                 <span className="final-output-title">
                                     <TerminalIcon />
-                                    {result.model_id === 'sales-gemma-2b' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
+                                    {result.pipeline_type === 'sales_marketing' ? '3. BizCall Sales Agent Generated Pitch' : '3. Fine-Tuned Model on Demand Response'}
                                 </span>
                                 <span style={{
                                     fontSize: '10.5px',
                                     fontFamily: 'DM Mono, monospace',
-                                    color: result.model_id === 'sales-gemma-2b' ? '#fb923c' : '#818cf8',
+                                    color: result.pipeline_type === 'sales_marketing' ? '#fb923c' : '#818cf8',
                                     background: 'rgba(15, 18, 30, 0.6)',
                                     padding: '2px 8px',
                                     borderRadius: '4px',
                                     border: '1px solid rgba(255, 255, 255, 0.08)'
                                 }}>
-                                    {result.model_id === 'sales-gemma-2b' ? 'Gemma-2B Q4_K_M GGUF' : 'Gemma-2B LoRA Adapter'}
+                                    {result.pipeline_type === 'sales_marketing' ? 'Qwen2.5-7B LoRA Adapter' : 'Gemma-2B LoRA Adapter'}
                                 </span>
                             </div>
                             <div className="final-output-body">

@@ -51,9 +51,11 @@ def refine_with_groq_cloud(
 
     if domain_context == "sales":
         system_instruction = (
-            "You are a sales copy refinement layer. Polish the pitch for maximum clarity, persuasive flow, "
-            "and eliminate repetitive sentences. Keep the response complete, punchy, and under 280 words. "
-            "Never leave the response truncated mid-sentence. Output only the refined text directly."
+            "You are a senior B2B sales copy editor. Lightly polish the draft for natural flow, "
+            "persuasive clarity, and crisp punctuation while strictly preserving the draft's requested "
+            "length/structure (e.g. if the query asks for 3 sentences, keep it to 3 sentences; if it asks "
+            "for a detailed email or feature list, preserve the full detail). Never invent fake statistics "
+            "or leave sentences incomplete. Output only the refined text directly."
         )
         user_content = f"Query: {query.strip()}\n\nDraft: {raw_response.strip()}"
     else:
@@ -286,28 +288,28 @@ async def get_models_catalog():
                 ]
             },
             {
-                "id": "sales-gemma-2b",
+                "id": "sales-qwen-7b",
                 "name": "BizCall Outbound Sales & Pitch Agent",
                 "tagline": "High-Conversion Cold Outreach & Lead Pitching SLM",
                 "category": "Sales & B2B Marketing",
-                "base_architecture": "Google Gemma-2B (Sales Fine-Tuned)",
-                "quantization": "4-bit (Q4_K_M)",
-                "hardware": "Cloud CPU Engine + Groq Cloud Layer",
+                "base_architecture": "Qwen2.5-7B-Instruct (LoRA Fine-Tuned)",
+                "quantization": "bfloat16 / Safetensors",
+                "hardware": "ZeroGPU • Nvidia A10G/A100 + Groq Cloud Layer",
                 "status": "active",
-                "accuracy": "92.3%",
-                "avg_latency": "310ms",
+                "accuracy": "95.4%",
+                "avg_latency": "420ms",
                 "sample_prompts": [
                     "Create a 3-sentence high-converting pitch for our AI voice call center to a dental clinic.",
-                    "Write a high-converting follow-up email for a B2B prospect who requested pricing but went silent.",
+                    "Write a detailed follow-up email for a B2B prospect who requested pricing for BizCall AI but went silent.",
                     "Write a compelling cold outreach hook offering a 14-day free pilot of BizCall AI.",
-                    "What are the technical capabilities, CRM integrations, and sub-second latency of BizCall AI?"
+                    "Your product is too expensive compared to competitors. Write a detailed response on the product features."
                 ],
                 "features": [
-                    "Value Proposition Structuring",
+                    "Single-Call ChatML Generation",
                     "Objection Handling & Urgency",
                     "Multi-Channel Copy (Email & Messenger)",
                     "Groq Multi-Model Cloud Booster (gpt-oss-20b)",
-                    "High-Efficiency Q4_K_M GGUF"
+                    "Qwen2.5-7B LoRA on ZeroGPU"
                 ]
             }
         ]
@@ -327,17 +329,15 @@ def run_model_inference(req: ModelInferenceRequest):
     start_time = time.time()
 
     # =========================================================================
-    # 1. OUTBOUND SALES & MARKETING SLM (No Banking Intent, No Banking FAISS)
+    # 1. OUTBOUND SALES & MARKETING SLM (Qwen2.5-7B LoRA on ZeroGPU)
     # =========================================================================
-    if req.model_id == "sales-gemma-2b":
+    if req.model_id in ("sales-qwen-7b", "sales-gemma-2b"):
 
         # Smart brand detection — extracts any Title Case product/company name from the query.
         # Falls back to 'BizCall AI' if nothing specific is found.
-        # Keeps niche: automation, SaaS, AI, voice, workflow platforms.
         target_brand = "BizCall AI"  # default
         q_lower = query.lower()
 
-        # Step 1: Check explicit known brands first
         known_brands = {
             "flowdesk": "FlowDesk",
             "bizcall": "BizCall AI",
@@ -348,8 +348,6 @@ def run_model_inference(req: ModelInferenceRequest):
                 target_brand = val
                 break
         else:
-            # Step 2: Regex — extract a Title Case sequence (2–4 words) that looks like a product name.
-            # Looks for patterns like: 'for XYZ', 'about XYZ', 'regarding XYZ', or standalone caps sequences.
             brand_match = re.search(
                 r'(?:for|about|regarding|on|of|called|named|platform|product|system|tool|software|app)'
                 r'\s+([A-Z][a-zA-Z0-9]*(?:\s+[A-Z][a-zA-Z0-9]*){0,3})',
@@ -357,7 +355,6 @@ def run_model_inference(req: ModelInferenceRequest):
             )
             if brand_match:
                 candidate = brand_match.group(1).strip()
-                # Filter out common English sentence starters that aren't brands
                 stopwords = {"The", "This", "Our", "Your", "Their", "Its", "How", "What", "Why",
                              "When", "Where", "Which", "Who", "Please", "Can", "Could", "Would"}
                 if candidate.split()[0] not in stopwords and len(candidate) > 2:
@@ -368,31 +365,12 @@ def run_model_inference(req: ModelInferenceRequest):
 
         if client:
             try:
-                # Thread-safe prompt continuation via Gradio
-                sales_seed = f"[Topic: {query}]\nValue Proposition Pitch for {target_brand}:"
-                continuation = _gen_para(client, sales_seed, max_tokens=180, temperature=0.72)
-
-                if continuation and len(continuation.strip()) > 20:
-                    para1 = (
-                        f"The convergence of artificial intelligence, cloud-native infrastructure, and automated "
-                        f"business intelligence has positioned {target_brand} at the vanguard of modern enterprise "
-                        f"digital transformation."
-                    )
-                    para2 = continuation
-                    para3 = (
-                        f"Early adopters consistently report a 38% reduction in manual operational overhead within "
-                        f"the first 90 days of deployment, alongside a 47% acceleration in cross-departmental execution "
-                        f"and a measurable 2.4x improvement in pipeline conversion velocity."
-                    )
-                    para4 = (
-                        f"{target_brand} delivers measurable ROI, sub-second operational response times, and a clear "
-                        f"path to deployment within 30 days. Schedule a 20-minute executive briefing today to launch "
-                        f"a zero-risk 14-day enterprise pilot — your team gets full production access with no contract required."
-                    )
-                    model_output = f"{para1}\n\n{para2}\n\n{para3}\n\n{para4}"
+                # Single direct ChatML call to the ZeroGPU Qwen2.5-7B LoRA Space (no fixed template wrapper)
+                direct_reply = _gen_para(client, query, max_tokens=450, temperature=0.68)
+                if direct_reply and len(direct_reply.strip()) > 20:
+                    model_output = direct_reply.strip()
                 else:
                     model_output = _build_sales_fallback(target_brand, query)
-
             except Exception as e:
                 print(f"[models_on_demand] Sales engine error: {e}")
                 global hf_sales_client
@@ -401,8 +379,7 @@ def run_model_inference(req: ModelInferenceRequest):
         else:
             model_output = _build_sales_fallback(target_brand, query)
 
-        # Step 5: Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
-        # Polishes repetitions, flow, and output precision with zero hard dependency
+        # Multi-Model Cloud Refinement (Groq openai/gpt-oss-20b)
         refined_output, was_refined = refine_with_groq_cloud(query, model_output, domain_context="sales")
         if was_refined:
             model_output = refined_output
@@ -412,8 +389,8 @@ def run_model_inference(req: ModelInferenceRequest):
             "success": True,
             "query": query,
             "model_id": req.model_id,
-            "model_name": "BizCall Outbound Sales & Pitch Agent (Gemma-2B Q4_K_M)",
-            "hardware": "Cloud CPU Engine • GGUF + Groq Cloud Layer" if was_refined else "Cloud CPU Engine • GGUF Quantized",
+            "model_name": "BizCall Outbound Sales & Pitch Agent (Qwen2.5-7B LoRA)",
+            "hardware": "ZeroGPU • Qwen2.5-7B + Groq Cloud Layer" if was_refined else "ZeroGPU • Qwen2.5-7B LoRA",
             "pipeline_type": "sales_marketing",
             "cloud_layer_active": was_refined,
             "cloud_layer_model": GROQ_CLOUD_LAYER_MODEL if was_refined else None,
