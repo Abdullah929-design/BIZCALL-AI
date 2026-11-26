@@ -170,7 +170,7 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ color: '#f8fafc', fontSize: '15px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
 
-                        Launch Messenger Campaign (WF1)
+                        Launch Messenger Campaign
                     </h3>
 
                 </div>
@@ -381,7 +381,7 @@ export const MessengerCampaigns: React.FC<Props> = ({ userId, campaigns, leads =
                         />
                         <label htmlFor="enable-followup-toggle" style={{ cursor: 'pointer', flex: 1 }}>
                             <div style={{ color: '#f8fafc', fontSize: '12.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                Automated 23-Hour Window Reminder (WF3)
+                                Automated 23-Hour Window Reminder
                             </div>
                             <div style={{ color: '#85899d', fontSize: '11px', marginTop: '2px', lineHeight: 1.4 }}>
                                 If the lead has not replied, WF3 will automatically generate & send 1 gentle reminder at the 23rd hour.

@@ -11,15 +11,6 @@ interface Props {
     onPageUpdated: () => void;
 }
 
-interface MetaDiscoveredPage {
-    id: string;
-    name: string;
-    access_token: string;
-    category?: string;
-}
-
-const META_APP_ID = '1493250259277699'; // Bizcallai Meta App ID
-
 export const FacebookPageConnectModal: React.FC<Props> = ({
     isOpen,
     onClose,
@@ -27,62 +18,16 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
     connectedPage,
     onPageUpdated
 }) => {
-    const [discoveredPages, setDiscoveredPages] = useState<MetaDiscoveredPage[]>([]);
-    const [connectingSdk, setConnectingSdk] = useState(false);
-    
-    // Manual fallback state
-    const [showManualForm, setShowManualForm] = useState(false);
     const [manualPageId, setManualPageId] = useState('');
     const [manualPageName, setManualPageName] = useState('');
     const [manualPageAccessToken, setManualPageAccessToken] = useState('');
-    
+
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
     const modalRef = useRef<HTMLDivElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
-
-    useEffect(() => {
-        if (showManualForm && modalRef.current) {
-            setTimeout(() => {
-                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 60);
-        }
-    }, [showManualForm]);
-
-    // Initialize Facebook JS SDK
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-
-        // Check if FB SDK script is already injected
-        if (!(window as any).FB) {
-            const script = document.createElement('script');
-            script.id = 'facebook-jssdk';
-            script.src = 'https://connect.facebook.net/en_US/sdk.js';
-            script.async = true;
-            script.defer = true;
-            script.onload = () => {
-                (window as any).fbAsyncInit = function () {
-                    (window as any).FB.init({
-                        appId: META_APP_ID,
-                        cookie: true,
-                        xfbml: true,
-                        version: 'v19.0'
-                    });
-                };
-                if ((window as any).FB) {
-                    (window as any).FB.init({
-                        appId: META_APP_ID,
-                        cookie: true,
-                        xfbml: true,
-                        version: 'v19.0'
-                    });
-                }
-            };
-            document.body.appendChild(script);
-        }
-    }, []);
 
     useEffect(() => {
         if (connectedPage) {
@@ -94,81 +39,11 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
             setManualPageName('');
             setManualPageAccessToken('');
         }
-        setDiscoveredPages([]);
         setError(null);
         setSuccessMsg(null);
     }, [connectedPage, isOpen]);
 
     if (!isOpen) return null;
-
-    // 1-Click Facebook Login Popup Flow
-    const handleFacebookLogin = () => {
-        setError(null);
-        setSuccessMsg(null);
-
-        if (!(window as any).FB) {
-            setError('Facebook SDK is still loading. Please try again in 2 seconds.');
-            return;
-        }
-
-        setConnectingSdk(true);
-
-        (window as any).FB.login((response: any) => {
-            if (response.authResponse) {
-                // Fetch all Facebook Pages the user manages along with their Page Access Tokens!
-                (window as any).FB.api(
-                    '/me/accounts',
-                    { fields: 'id,name,access_token,category' },
-                    async (accountsResp: any) => {
-                        setConnectingSdk(false);
-                        if (accountsResp && !accountsResp.error && accountsResp.data && accountsResp.data.length > 0) {
-                            const pages: MetaDiscoveredPage[] = accountsResp.data;
-                            setDiscoveredPages(pages);
-
-                            // If user has only 1 page, connect it directly for supreme UX!
-                            if (pages.length === 1) {
-                                await selectAndConnectPage(pages[0]);
-                            }
-                        } else if (accountsResp?.error) {
-                            setError(`Facebook API Error: ${accountsResp.error.message}`);
-                        } else {
-                            setError('No Facebook Pages found under this account. Ensure you are an Admin of at least one Facebook Page.');
-                        }
-                    }
-                );
-            } else {
-                setConnectingSdk(false);
-                setError('Facebook login cancelled or permissions not granted.');
-            }
-        }, {
-            scope: 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement',
-            return_scopes: true
-        });
-    };
-
-    const selectAndConnectPage = async (page: MetaDiscoveredPage) => {
-        setSaving(true);
-        setError(null);
-        try {
-            await saveConnectedFacebookPage({
-                userId,
-                pageId: page.id,
-                pageName: page.name,
-                pageAccessToken: page.access_token
-            });
-
-            setSuccessMsg(`Successfully connected "${page.name}"! AI automations and inbound routing are now live.`);
-            setTimeout(() => {
-                onPageUpdated();
-                onClose();
-            }, 1200);
-        } catch (err: any) {
-            console.error('Error saving connected page:', err);
-            setError(err.message || 'Failed to save page connection.');
-        } finally {
-            setSaving(false);
-        }
-    };
 
     // Manual Save fallback
     const handleManualSave = async (e: React.FormEvent) => {
@@ -330,191 +205,83 @@ export const FacebookPageConnectModal: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Primary Method: 1-Click Facebook Login Button */}
-                <div style={{
-                    background: 'rgba(20, 24, 42, 0.65)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    textAlign: 'center',
-                    marginBottom: '16px',
-                    backdropFilter: 'blur(8px)'
-                }}>
-                    <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                        </svg>
+                {/* Manual Access Token Connection Form */}
+                <form
+                    ref={formRef}
+                    onSubmit={handleManualSave}
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        background: 'rgba(15, 20, 36, 0.65)',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxSizing: 'border-box'
+                    }}
+                >
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
+                            Page Name
+                        </label>
+                        <input
+                            type="text"
+                            value={manualPageName}
+                            onChange={(e) => setManualPageName(e.target.value)}
+                            placeholder="e.g. BizCall AI Page"
+                            style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                        />
                     </div>
-                    <h4 style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px' }}>
-                        1-Click Facebook Connection
-                    </h4>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 16px', lineHeight: 1.4 }}>
-                        Log in with your Facebook account to automatically discover and connect your business Page with zero manual configuration.
-                    </p>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
+                            Facebook Page ID *
+                        </label>
+                        <input
+                            type="text"
+                            value={manualPageId}
+                            onChange={(e) => setManualPageId(e.target.value)}
+                            placeholder="e.g. 61594175137308"
+                            style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
+                            Page Access Token *
+                        </label>
+                        <textarea
+                            rows={3}
+                            value={manualPageAccessToken}
+                            onChange={(e) => setManualPageAccessToken(e.target.value)}
+                            placeholder="EAAG..."
+                            style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontFamily: 'monospace', fontSize: '0.75rem', boxSizing: 'border-box', resize: 'vertical' }}
+                        />
+                    </div>
 
                     <button
-                        onClick={handleFacebookLogin}
-                        disabled={connectingSdk || saving}
+                        type="submit"
+                        disabled={saving}
                         style={{
-                            width: '100%',
-                            padding: '14px 20px',
-                            background: connectingSdk ? '#475569' : 'linear-gradient(135deg, #1877f2, #166fe5)',
+                            padding: '10px 16px',
+                            background: '#5855d6',
                             color: '#fff',
                             border: 'none',
-                            borderRadius: '10px',
+                            borderRadius: '7px',
                             fontWeight: 700,
-                            fontSize: '0.95rem',
-                            cursor: (connectingSdk || saving) ? 'not-allowed' : 'pointer',
+                            fontSize: '0.85rem',
+                            cursor: saving ? 'not-allowed' : 'pointer',
+                            marginTop: '4px',
+                            transition: 'background 0.2s',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '10px',
-                            boxShadow: '0 4px 14px 0 rgba(24, 119, 242, 0.39)'
+                            gap: '6px'
                         }}
                     >
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                        {connectingSdk ? 'Opening Facebook Login...' : (connectedPage ? 'Reconnect / Switch Page via Facebook' : 'Continue with Facebook')}
+                        {saving ? 'Saving...' : (connectedPage ? 'Update Page Credentials' : 'Connect Facebook Page')}
                     </button>
-                </div>
-
-                {/* Multiple Discovered Pages Selection List */}
-                {discoveredPages.length > 1 && (
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                        <h5 style={{ color: '#38bdf8', margin: '0 0 10px', fontSize: '0.9rem', fontWeight: 700 }}>
-                            Select the Page you want to connect to BizCall:
-                        </h5>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {discoveredPages.map(page => (
-                                <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', padding: '10px 14px', borderRadius: '8px', border: '1px solid #334155' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{page.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: {page.id} {page.category ? `• ${page.category}` : ''}</div>
-                                    </div>
-                                    <button
-                                        onClick={() => selectAndConnectPage(page)}
-                                        disabled={saving}
-                                        style={{
-                                            padding: '6px 14px',
-                                            background: '#0284c7',
-                                            color: '#fff',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            fontWeight: 700,
-                                            fontSize: '0.8rem',
-                                            cursor: saving ? 'not-allowed' : 'pointer'
-                                        }}
-                                    >
-                                        {saving ? 'Connecting...' : 'Connect'}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Advanced / Developer Manual Setup Accordion */}
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => setShowManualForm(!showManualForm)}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#94a3b8',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            margin: '0 auto',
-                            padding: '4px 8px'
-                        }}
-                    >
-                        <span>{showManualForm ? '▲ Hide Advanced Setup' : '▼ Developer / Manual Token Setup'}</span>
-                    </button>
-
-                    {showManualForm && (
-                        <form 
-                            ref={formRef}
-                            onSubmit={handleManualSave} 
-                            style={{ 
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                gap: '12px', 
-                                marginTop: '12px', 
-                                background: 'rgba(15, 20, 36, 0.65)', 
-                                padding: '16px', 
-                                borderRadius: '12px', 
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                boxSizing: 'border-box'
-                            }}
-                        >
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
-                                    Page Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={manualPageName}
-                                    onChange={(e) => setManualPageName(e.target.value)}
-                                    placeholder="e.g. BizCall AI Page"
-                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
-                                    Facebook Page ID *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={manualPageId}
-                                    onChange={(e) => setManualPageId(e.target.value)}
-                                    placeholder="e.g. 61594175137308"
-                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                />
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '4px' }}>
-                                    Page Access Token *
-                                </label>
-                                <textarea
-                                    rows={2}
-                                    value={manualPageAccessToken}
-                                    onChange={(e) => setManualPageAccessToken(e.target.value)}
-                                    placeholder="EAAG..."
-                                    style={{ width: '100%', padding: '9px 12px', background: 'rgba(25, 30, 52, 0.7)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', color: '#fff', outline: 'none', fontFamily: 'monospace', fontSize: '0.75rem', boxSizing: 'border-box', resize: 'vertical' }}
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                style={{
-                                    padding: '10px 16px',
-                                    background: '#5855d6',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '7px',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                    cursor: saving ? 'not-allowed' : 'pointer',
-                                    marginTop: '4px',
-                                    transition: 'background 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '6px'
-                                }}
-                            >
-                                {saving ? 'Saving...' : 'Save Credentials Manually'}
-                            </button>
-                        </form>
-                    )}
-                </div>
+                </form>
             </div>
         </div>
     );

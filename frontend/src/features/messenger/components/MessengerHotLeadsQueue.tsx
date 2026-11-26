@@ -150,7 +150,7 @@ export const MessengerHotLeadsQueue: React.FC<Props> = ({ drafts, userId, onRefr
                                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#85899d', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                                     AI Proposed Draft (Edit Before Approval)
                                 </label>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'DM Mono, monospace' }}>WF4_HUMAN_REPLY</span>
+
                             </div>
                             <textarea
                                 rows={3}

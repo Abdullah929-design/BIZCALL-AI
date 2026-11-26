@@ -68,7 +68,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                 padding: '24px 28px', maxWidth: 580, width: '100%', color: '#edeae2', fontFamily: "'Inter', sans-serif"
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#4ade80' }}>🔥 Reply to Hot Lead</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#4ade80' }}> Reply to Hot Lead</h3>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
                 </div>
 
@@ -104,14 +104,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                     </div>
 
                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Your Message (AI Draft prefilled — editable)</label>
-                            {lead.confidence && (
-                                <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>
-                                    Confidence: {lead.confidence}
-                                </span>
-                            )}
-                        </div>
+
                         <textarea
                             rows={6} value={message} onChange={e => setMessage(e.target.value)} required
                             placeholder="Type your reply here..."
@@ -130,7 +123,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                             type="submit" disabled={sending}
                             style={{ padding: '8px 22px', background: '#4ade80', border: 'none', color: '#09090b', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}
                         >
-                            {sending ? 'Sending...' : '🚀 Send Reply'}
+                            {sending ? 'Sending...' : ' Send Reply'}
                         </button>
                     </div>
                 </form>

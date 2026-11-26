@@ -194,26 +194,12 @@ const ModelsOnDemand = () => {
                             <h1 className="hero-title">
                                 <CpuIcon /> Models on Demand
                             </h1>
-                            <span className="hero-engine-badge">
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-                                ZeroGPU & Cloud Engine Active
-                            </span>
+
                         </div>
                         <p className="hero-desc">
                             Deploy proprietary, domain-specialized Small Language Models (SLMs) fine-tuned on enterprise vertical data.
-                            Features multi-intent segmentation, semantic FAISS vector retrieval, and on-demand cloud inference.
-                        </p>
-                    </div>
 
-                    <div className="hero-stats-row">
-                        <div className="hero-stat-pill">
-                            <div className="hero-stat-val">2.0B – 7.0B</div>
-                            <div className="hero-stat-sub">Parameters</div>
-                        </div>
-                        <div className="hero-stat-pill">
-                            <div className="hero-stat-val">2 Models</div>
-                            <div className="hero-stat-sub">Production SLMs</div>
-                        </div>
+                        </p>
                     </div>
                 </div>
 
@@ -240,10 +226,7 @@ const ModelsOnDemand = () => {
                                             <span className="model-card-arch">Gemma-2B LoRA • Safetensors</span>
                                         </div>
                                     </div>
-                                    <span className="model-status-badge">
-                                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-                                        Ready to Test
-                                    </span>
+
                                 </div>
                                 <p className="model-card-desc">
                                     Trained on verified banking datasets for account opening, card fraud freeze, loan compliance, and transactions.
@@ -252,7 +235,7 @@ const ModelsOnDemand = () => {
                             <div className="model-tags-row">
                                 <span className="model-tag">Multi-Intent (DistilBERT)</span>
                                 <span className="model-tag">FAISS RAG</span>
-                                <span className="model-tag">Nvidia A100</span>
+                                <span className="model-tag">ZeroGPU 7B LoRA </span>
                             </div>
                         </div>
 
@@ -272,10 +255,7 @@ const ModelsOnDemand = () => {
                                             <span className="model-card-arch" style={{ color: '#fb923c' }}>Qwen2.5-7B LoRA • Safetensors</span>
                                         </div>
                                     </div>
-                                    <span className="model-status-badge">
-                                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-                                        Ready to Test
-                                    </span>
+
                                 </div>
                                 <p className="model-card-desc">
                                     Fine-tuned Qwen2.5-7B for outbound B2B cold pitching, handling pricing objections, and generating high-converting campaign copy.
@@ -533,12 +513,12 @@ const ModelsOnDemand = () => {
                                 }}>
                                     {result.pipeline_type === 'sales_marketing'
                                         ? (result.engine_source === 'groq_fallback'
-                                    ? 'Groq Cloud Fallback (GPU Quota)'
-                                    : (result.engine_source === 'qwen_modal_gpu'
-                                    ? 'Modal L4 GPU • Qwen2.5-7B LoRA'
-                                    : 'Qwen2.5-7B LoRA Adapter'))
-                                    : (result.engine_source === 'gemma_modal_gpu'
-                                    ? 'Modal T4 GPU • Gemma-2B LoRA'
+                                            ? 'Groq Cloud Fallback (GPU Quota)'
+                                            : (result.engine_source === 'qwen_modal_gpu'
+                                                ? 'Modal L4 GPU • Qwen2.5-7B LoRA'
+                                                : 'Qwen2.5-7B LoRA Adapter'))
+                                        : (result.engine_source === 'gemma_modal_gpu'
+                                            ? 'Modal T4 GPU • Gemma-2B LoRA'
                                             : 'Gemma-2B LoRA Adapter')}
                                 </span>
                             </div>

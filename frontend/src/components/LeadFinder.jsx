@@ -243,8 +243,8 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
           <form onSubmit={handleSearch} className="finder-search-grid">
             <div className="finder-form-group">
               <div className="finder-label-row">
-                <label className="finder-label">BUSINESS NICHE / KEYWORD</label>
-                <span className="finder-label-tag">TARGET_INDUSTRY</span>
+                <label className="finder-label">BUSINESS TYPE</label>
+
               </div>
               <input
                 type="text"
@@ -259,7 +259,7 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
             <div className="finder-form-group">
               <div className="finder-label-row">
                 <label className="finder-label">CITY / REGION</label>
-                <span className="finder-label-tag">GEO_LOC</span>
+
               </div>
               <input
                 type="text"
@@ -274,7 +274,7 @@ export default function LeadFinder({ user, onInitiateOutboundCall }) {
             <div className="finder-form-group">
               <div className="finder-label-row">
                 <label className="finder-label">COMPANY SIZE</label>
-                <span className="finder-label-tag">HEADCOUNT</span>
+
               </div>
               <select
                 className="finder-select"
