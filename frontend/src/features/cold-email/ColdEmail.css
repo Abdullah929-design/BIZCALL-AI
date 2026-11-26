@@ -579,3 +579,26 @@
     justify-content: flex-end;
   }
 }
+
+
+.cold-email-themed-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
+}
+
+.cold-email-themed-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cold-email-themed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cold-email-themed-scroll::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+  border-radius: 999px;
+}
+
+.cold-email-themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
+}

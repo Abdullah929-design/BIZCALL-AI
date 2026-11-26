@@ -6,7 +6,18 @@ import type { ColdEmailLead, SendReplyPayload, EmailChannel, GmailConnectionStat
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-    const { data: { session } } = await supabase.auth.getSession();
+    let { data: { session } } = await supabase.auth.getSession();
+    const isExpiringSoon =
+        !session?.access_token ||
+        (typeof session.expires_at === 'number' && session.expires_at * 1000 < Date.now() + 60_000);
+
+    if (isExpiringSoon) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session) {
+            session = refreshed.session;
+        }
+    }
+
     const token = session?.access_token || '';
     return {
         'Content-Type': 'application/json',

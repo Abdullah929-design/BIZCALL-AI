@@ -117,20 +117,16 @@ export const ColdEmailDashboard: React.FC = () => {
         if (lead) {
             const targetId = lead.lead_id || String(lead._row_number);
             const targetEmail = lead.email?.toLowerCase();
-            const markReplied = (l: ColdEmailLead) => {
-                if (
-                    (targetId && (l.lead_id === targetId || String(l._row_number) === targetId)) ||
-                    (targetEmail && l.email?.toLowerCase() === targetEmail)
-                ) {
-                    return { ...l, status: 'replied', actioned_at: 'Just now' };
-                }
-                return l;
+            const isNotRepliedTarget = (l: ColdEmailLead) => {
+                const sameId = Boolean(targetId && (l.lead_id === targetId || String(l._row_number) === targetId));
+                const sameEmail = Boolean(targetEmail && l.email?.toLowerCase() === targetEmail);
+                return !(sameId || sameEmail);
             };
-            setHotLeads(prev => prev.map(markReplied));
-            setNeutralLeads(prev => prev.map(markReplied));
+            setHotLeads(prev => prev.filter(isNotRepliedTarget));
+            setNeutralLeads(prev => prev.filter(isNotRepliedTarget));
         }
-        loadAllData();
-        setTimeout(() => loadAllData(), 2500);
+        loadAllData(true);
+        setTimeout(() => loadAllData(true), 2500);
     };
 
     useEffect(() => {
@@ -195,19 +191,33 @@ export const ColdEmailDashboard: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setIsGmailModalOpen(true)}
-                            className="btn-ce-ghost"
-                            style={gmailStatus.connected ? {
-                                borderColor: 'rgba(52, 211, 153, 0.45)',
-                                color: '#6ee7b7',
-                                background: 'rgba(52, 211, 153, 0.08)',
-                            } : undefined}
+                            className="btn-ce-google"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '8px 14px',
+                                borderRadius: 8,
+                                background: '#ffffff',
+                                color: '#1f2937',
+                                border: '1px solid #dadce0',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            }}
                             title="Connect your personal Gmail account (App Password)"
                         >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                <polyline points="22,6 12,13 2,6"></polyline>
+                            <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z" />
+                                <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z" />
+                                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z" />
                             </svg>
-                            {gmailStatus.connected ? `Gmail: ${gmailStatus.gmail_address}` : 'Connect Gmail'}
+                            <span>{gmailStatus.connected ? `Gmail: ${gmailStatus.gmail_address}` : 'Connect Personal Gmail'}</span>
+                            {gmailStatus.connected && (
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                            )}
                         </button>
 
                         <button

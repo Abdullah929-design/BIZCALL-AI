@@ -105,7 +105,12 @@ def get_or_create_tenant_subdomain(user_id: str, company_name: str = "") -> Dict
     """
     registry = load_subdomains_registry()
     if user_id in registry:
-        return registry[user_id]
+        existing = registry[user_id]
+        slug_val = existing.get("subdomain_slug")
+        if slug_val and str(existing.get("inbox_email", "")).startswith("inbox@"):
+            existing["inbox_email"] = f"{slug_val}@{ROOT_DOMAIN}"
+            save_subdomains_registry(registry)
+        return existing
 
     # Generate base slug from company name
     raw_name = (company_name or "").lower().strip()
@@ -132,7 +137,7 @@ def get_or_create_tenant_subdomain(user_id: str, company_name: str = "") -> Dict
         "company_name": company_name or "My Business",
         "subdomain_slug": unique_slug,
         "subdomain": f"{unique_slug}.{ROOT_DOMAIN}",
-        "inbox_email": f"inbox@{unique_slug}.{ROOT_DOMAIN}",
+        "inbox_email": f"{unique_slug}@{ROOT_DOMAIN}",
         "root_domain": ROOT_DOMAIN,
         "assigned_at": datetime.utcnow().isoformat()
     }

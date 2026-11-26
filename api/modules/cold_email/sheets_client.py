@@ -148,6 +148,12 @@ def fetch_tab_rows(tab_name: str, user_id: str, status: Optional[str] = None) ->
     values = fetch_tab_raw_values(tab_name)
     return parse_rows_for_user(values, user_id=user_id, status=status)
 
+def _is_replied_row(row: Dict[str, Any]) -> bool:
+    status_val = (row.get("status") or "").strip().lower()
+    action_val = (row.get("human_action") or "").strip().lower()
+    return status_val == "replied" or action_val == "replied"
+
+
 def fetch_dashboard_bundle(user_id: str, force: bool = False) -> Dict[str, List[Dict[str, Any]]]:
     """
     Fetches all 4 tabs in a single batchGet request (or from cache if fresh < 5s),
@@ -188,8 +194,8 @@ def fetch_dashboard_bundle(user_id: str, force: bool = False) -> Dict[str, List[
 
     return {
         "leads": parse_rows_for_user(leads_vals, user_id=user_id),
-        "hot_leads": parse_rows_for_user(hot_vals, user_id=user_id),
-        "neutral_leads": parse_rows_for_user(neutral_vals, user_id=user_id),
+        "hot_leads": [r for r in parse_rows_for_user(hot_vals, user_id=user_id) if not _is_replied_row(r)],
+        "neutral_leads": [r for r in parse_rows_for_user(neutral_vals, user_id=user_id) if not _is_replied_row(r)],
         "failed_leads": parse_rows_for_user(failed_vals, user_id=user_id),
     }
 
@@ -399,14 +405,14 @@ def get_leads_for_user(user_id: str, status: Optional[str] = None) -> List[Dict[
 
 def get_hot_leads_for_user(user_id: str) -> List[Dict[str, Any]]:
     """
-    Fetches Hot Leads tab for user_id.
+    Fetches Hot Leads tab for user_id (unreplied only).
     Includes reply_summary, draft_reply, confidence, gmail_thread_id, human_action, actioned_at.
     """
-    return fetch_tab_rows(tab_name="Hot Leads", user_id=user_id)
+    return [r for r in fetch_tab_rows(tab_name="Hot Leads", user_id=user_id) if not _is_replied_row(r)]
 
 def get_neutral_leads_for_user(user_id: str) -> List[Dict[str, Any]]:
-    """Fetches Neutral Queue tab for user_id."""
-    return fetch_tab_rows(tab_name="Neutral Queue", user_id=user_id)
+    """Fetches Neutral Queue tab for user_id (unreplied only)."""
+    return [r for r in fetch_tab_rows(tab_name="Neutral Queue", user_id=user_id) if not _is_replied_row(r)]
 
 def get_failed_leads_for_user(user_id: str) -> List[Dict[str, Any]]:
     """Fetches Failed Leads tab for user_id (read-only)."""

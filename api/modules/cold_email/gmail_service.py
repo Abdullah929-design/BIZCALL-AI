@@ -594,6 +594,8 @@ def fetch_gmail_replies_bundle(user_id: str) -> Dict[str, List[Dict[str, Any]]]:
 
     hot, neutral, failed = [], [], []
     for idx, r in enumerate(rows):
+        if (r.get("human_action") or "").strip().lower() == "replied":
+            continue
         item = {
             "_row_number": idx + 1,
             "id": r.get("id"),

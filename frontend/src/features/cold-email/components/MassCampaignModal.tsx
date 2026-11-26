@@ -65,11 +65,12 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
     }}>
-      <div style={{
+      <div className="cold-email-themed-scroll" style={{
         background: 'rgba(12, 16, 32, 0.88)', backdropFilter: 'blur(20px) saturate(1.4)',
         border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16,
         boxShadow: '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 40px rgba(99,102,241,0.2)',
-        padding: '26px 30px', maxWidth: 640, width: '100%', color: '#edeae2', fontFamily: "'Inter', sans-serif"
+        padding: '26px 30px', maxWidth: 640, width: '100%', maxHeight: '90vh', overflowY: 'auto',
+        color: '#edeae2', fontFamily: "'Inter', sans-serif"
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -169,6 +170,7 @@ export const MassCampaignModal: React.FC<MassCampaignModalProps> = ({
                   </span>
                 </div>
                 <textarea
+                  className="cold-email-themed-scroll"
                   rows={6}
                   value={message}
                   onChange={e => setMessage(e.target.value)}
