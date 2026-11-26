@@ -14,7 +14,11 @@ load_dotenv()
 
 SPAM_PATTERNS = [
     "top 10", "top 5", "top 20", "best 10", "best 5", "list of", "directory",
-    "contacts list", "zameen.com", "olx", "facebook", "wikipedia", "youtube", "linkedin", "yellowpages"
+    "contacts list", "zameen.com", "olx", "facebook", "wikipedia", "youtube",
+    "linkedin", "yellowpages", "hamariweb", "urdupoint", "marham.pk", "oladoc",
+    "justdial", "yelp.com", "tripadvisor", "clutch.co", "goodfirms", "sortlist",
+    "techbehemoths", "pakbiz", "rozee.pk", "indeed.com", "glassdoor", "instagram.com",
+    "tiktok.com", "twitter.com", "x.com"
 ]
 
 def detect_country_code(city: str) -> str:
@@ -334,30 +338,79 @@ def normalize_keyword(keyword: str) -> str:
 
 
 def get_search_variations(keyword: str) -> List[str]:
-    """Generates relevant synonym queries to expand lead discovery to 50-100+ businesses."""
+    """Generates relevant synonym queries using word boundaries to prevent cross-niche leakage."""
     clean_k = normalize_keyword(keyword)
     k = clean_k.lower()
-    
-    if "restaurant" in k or "food" in k or "cafe" in k or "dining" in k:
+
+    if re.search(r'\b(restaurant|food|cafe|dining|bakery|catering)\b', k):
         return ["restaurant", "food", "cafe", "fast food", "dining"]
-    if "dent" in k:
+    if re.search(r'\b(dentist|dental|orthodontist)\b', k) or "dent" in k and "student" not in k and "accident" not in k:
         return ["dentist", "dental", "dental clinic", "dental care", "dental surgery"]
-    if "real estate" in k or "property" in k or "realtor" in k:
+    if re.search(r'\b(real estate|property|realtor|realtors|estate)\b', k):
         return ["real estate", "property dealer", "estate agent", "realtors"]
-    if "clinic" in k or "hospital" in k or "doctor" in k:
+    if re.search(r'\b(clinic|hospital|hospitals|doctor|medical|healthcare|pharmacy)\b', k):
         return ["hospital", "clinic", "medical center", "healthcare"]
-    if "software" in k or "tech" in k or "agency" in k or "it" in k:
+    if re.search(r'\b(clothing|apparel|fashion|boutique|garment|garments|textile|tailor)\b', k):
+        return ["clothing", "apparel", "fashion", "boutique"]
+    if re.search(r'\b(software|tech|agency|it|developer|web)\b', k):
         return ["software", "IT services", "digital agency", "web development"]
-    if "law" in k or "legal" in k or "advocate" in k:
+    if re.search(r'\b(law|legal|lawyer|attorney|advocate)\b', k):
         return ["lawyer", "attorney", "law firm", "advocate"]
-    if "gym" in k or "fitness" in k:
+    if re.search(r'\b(gym|fitness|workout)\b', k):
         return ["gym", "fitness", "fitness center", "health club"]
-    if "hotel" in k or "resort" in k:
+    if re.search(r'\b(hotel|resort|hospitality)\b', k):
         return ["hotel", "resort", "hospitality"]
-    
+
     # Generic fallback: return original and singular form
     singular = clean_k.rstrip("s") if clean_k.endswith("s") and len(clean_k) > 4 else clean_k
     return list(dict.fromkeys([clean_k, singular]))
+
+
+def _is_relevant_apollo_org(org: Dict[str, Any], query: str, variations: List[str]) -> bool:
+    """
+    Guards against Apollo returning unrelated industries (e.g. IT/banking/chemicals
+    when searching for hospitals or clothing brands).
+    """
+    org_name = (org.get("name") or "").lower()
+    org_industry = (org.get("industry") or "").lower()
+    keywords = " ".join(str(k).lower() for k in (org.get("keywords") or []))
+    q_lower = query.lower()
+
+    # Build domain-specific allowed industry keywords for common verticals
+    domain_industry_map = [
+        ({"hospital", "clinic", "medical", "healthcare", "doctor", "dentist", "dental", "pharmacy"},
+         {"hospital", "health", "medical", "clinic", "pharma", "wellness", "care", "dental", "diagnostic"}),
+        ({"clothing", "apparel", "fashion", "boutique", "garment", "textile"},
+         {"apparel", "fashion", "clothing", "textile", "retail", "garment", "luxury", "consumer goods"}),
+        ({"software", "it services", "digital agency", "web development", "tech"},
+         {"software", "information technology", "computer", "internet", "marketing", "advertising", "design", "telecommunications"}),
+        ({"real estate", "property", "realtor", "estate"},
+         {"real estate", "construction", "property", "architecture"}),
+        ({"restaurant", "food", "cafe", "dining"},
+         {"restaurant", "food", "hospitality", "beverages"}),
+        ({"lawyer", "attorney", "law firm", "advocate", "legal"},
+         {"law", "legal"}),
+        ({"hotel", "resort", "hospitality"},
+         {"hospitality", "hotel", "travel", "leisure"}),
+    ]
+
+    search_tokens = {t for v in [q_lower, *variations] for t in re.findall(r'[a-z0-9]+', v.lower()) if len(t) >= 3}
+
+    for triggers, allowed_ind in domain_industry_map:
+        if any(tr in q_lower or tr in variations for tr in triggers):
+            # If the org name itself explicitly matches a variation/trigger, allow it
+            if any(re.search(rf'\b{re.escape(tr)}\b', org_name) for tr in triggers):
+                return True
+            # Otherwise require org_industry to overlap with allowed_ind
+            if org_industry:
+                return any(ind_kw in org_industry for ind_kw in allowed_ind)
+            return any(ind_kw in keywords for ind_kw in allowed_ind)
+
+    # Generic fallback: require query tokens to match name, industry, or keywords
+    if not org_industry:
+        return True
+    combined = f"{org_name} {org_industry} {keywords}"
+    return any(tok in combined for tok in search_tokens)
 
 
 async def fetch_nominatim_leads(query: str, city: str, country_code: str, client: httpx.AsyncClient) -> List[Dict[str, Any]]:
@@ -411,17 +464,8 @@ async def fetch_ddg_leads(query: str, city: str, offset: int, country_code: str,
                     title_text = clean_title if len(clean_title) > 2 else raw_title
                     snip_text = snip_elem.get_text(strip=True) if snip_elem else ""
                     raw_href = url_elem.get('href', '').strip() if url_elem else ""
-
-                    if any(spam in title_text.lower() or spam in snip_text.lower() for spam in SPAM_PATTERNS):
-                        continue
-
-                    # Search phone in combined title and snippet
-                    combined_text = f"{title_text} {snip_text}"
-                    phone_match = re.search(r'(\+?\d[\d\s\-\(\)]{8,15}\d)', combined_text)
-                    extracted_phone = phone_match.group(0).strip() if phone_match else ""
-
-                    email_match = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', snip_text)
-                    extracted_email = email_match.group(0).strip().lower() if email_match else ""
+                    if not raw_href:
+                        raw_href = title_elem.get('href', '').strip()
 
                     website_val = ""
                     if raw_href:
@@ -431,6 +475,17 @@ async def fetch_ddg_leads(query: str, city: str, offset: int, country_code: str,
                                 website_val = urllib.parse.unquote(m.group(1))
                         else:
                             website_val = raw_href
+
+                    if any(spam in title_text.lower() or spam in snip_text.lower() or spam in website_val.lower() for spam in SPAM_PATTERNS):
+                        continue
+
+                    # Search phone in combined title and snippet
+                    combined_text = f"{title_text} {snip_text}"
+                    phone_match = re.search(r'(\+?\d[\d\s\-\(\)]{8,15}\d)', combined_text)
+                    extracted_phone = phone_match.group(0).strip() if phone_match else ""
+
+                    email_match = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', snip_text)
+                    extracted_email = email_match.group(0).strip().lower() if email_match else ""
 
                     if title_text:
                         leads.append({
@@ -511,6 +566,8 @@ async def fetch_apollo_leads(
             name = org.get("name")
             if not name:
                 continue
+            if not _is_relevant_apollo_org(org, query, tags):
+                continue
             phone = org.get("phone") or org.get("sanitized_phone") or ""
             website = org.get("website_url") or ""
             org_city = org.get("city") or city
@@ -578,20 +635,19 @@ async def scrape_leads_live(
             if isinstance(b, list):
                 all_raw.extend(b)
 
-        # Deduplicate businesses
-        seen_companies = set()
-        deduped_raw = []
+        # Transform into Canonical Leads first so generic "Contact Us" titles resolve from domain
+        # before deduplicating companies/domains
+        seen_keys = set()
+        canonical_candidates: List[CanonicalLead] = []
         for r in all_raw:
-            norm_name = r["company"].lower().strip()
-            if norm_name not in seen_companies and len(norm_name) > 3:
-                seen_companies.add(norm_name)
-                deduped_raw.append(r)
-
-        # Transform into Canonical Leads
-        canonical_candidates = [
-            CanonicalLead.from_raw(r, default_country=country_code)
-            for r in deduped_raw
-        ]
+            lead = CanonicalLead.from_raw(r, default_country=country_code)
+            norm_name = lead.company.lower().strip()
+            domain = urllib.parse.urlparse(lead.website).netloc.replace("www.", "").lower() if lead.website else ""
+            dedupe_key = domain or norm_name
+            if dedupe_key and len(norm_name) > 2 and dedupe_key not in seen_keys and norm_name not in seen_keys:
+                seen_keys.add(dedupe_key)
+                seen_keys.add(norm_name)
+                canonical_candidates.append(lead)
 
         # 3. Deep website crawl (respect crawl_emails flag, reuse client, fast-fail)
         if crawl_emails:

@@ -348,7 +348,58 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+}
+
+.stitch-agent-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.stitch-agent-search-icon {
+  position: absolute;
+  left: 11px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.stitch-agent-search-input {
+  width: 100%;
+  background: rgba(15, 18, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 30px 8px 32px;
+  font-size: 12.5px;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stitch-agent-search-input::placeholder {
+  color: #64748b;
+}
+
+.stitch-agent-search-input:focus {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+.stitch-agent-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 5px;
+}
+
+.stitch-agent-search-clear:hover {
+  color: #f8fafc;
 }
 
 .stitch-panel-title {
@@ -376,6 +427,28 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
+}
+
+.stitch-agent-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stitch-agent-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stitch-agent-list::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+  border-radius: 999px;
+}
+
+.stitch-agent-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
 }
 
 .stitch-agent-card {
@@ -674,6 +747,25 @@
   animation: stitchModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 90vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
+}
+
+.stitch-modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stitch-modal-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stitch-modal-card::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+  border-radius: 999px;
+}
+
+.stitch-modal-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
 }
 
 @keyframes stitchModalPop {
@@ -826,21 +918,39 @@
 }
 
 .stitch-modal-var-chip {
-  background: #161826;
-  border: 1px dashed #2d344d;
-  color: #94a3b8;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: 999px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+.stitch-modal-var-plus {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1;
+}
+
 .stitch-modal-var-chip:hover {
-  background: rgba(99, 102, 241, 0.18);
-  border-color: #6366f1;
-  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.24);
+  border-color: #818cf8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.stitch-modal-var-chip.copied {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(52, 211, 153, 0.5);
+  color: #6ee7b7;
 }
 
 .stitch-inbound-guide-box {
@@ -879,11 +989,33 @@
   line-height: 1.6 !important;
   color: #f1f5f9 !important;
   background: #0b0c13 !important;
-  border-color: #232738 !important;
+  border: 1px solid #232738 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
 }
 
 .stitch-modal-textarea:focus {
-  border-color: #6366f1 !important;
+  border-color: rgba(99, 102, 241, 0.65) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.14) !important;
+}
+
+.stitch-modal-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stitch-modal-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stitch-modal-textarea::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+  border-radius: 999px;
+}
+
+.stitch-modal-textarea::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
 }
 
 .stitch-modal-footer {

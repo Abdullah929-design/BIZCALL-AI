@@ -60,13 +60,34 @@ const AgentBuilder = ({ user }) => {
   const [activeCallStatus, setActiveCallStatus] = useState('');
   const retellClientRef = useRef(null);
   const bgVideoRef = useRef(null);
+  const agentListRef = useRef(null);
   const [myAgents, setMyAgents] = useState([]);
+  const [agentSearch, setAgentSearch] = useState('');
 
   useEffect(() => {
     if (bgVideoRef.current) {
       bgVideoRef.current.play().catch(() => { });
     }
   }, []);
+
+  const sortedAgents = React.useMemo(() => {
+    const q = agentSearch.trim().toLowerCase();
+    if (!q) return myAgents;
+    const score = (ag) => {
+      const name = (ag.agent_name || '').toLowerCase();
+      if (name === q) return 0;
+      if (name.startsWith(q)) return 1;
+      if (name.includes(q)) return 2;
+      return 3;
+    };
+    return [...myAgents].sort((a, b) => score(a) - score(b));
+  }, [myAgents, agentSearch]);
+
+  useEffect(() => {
+    if (agentListRef.current) {
+      agentListRef.current.scrollTop = 0;
+    }
+  }, [agentSearch]);
 
   const currentUserId = user?.id || user?.email || 'demo_user';
 
@@ -379,7 +400,6 @@ const AgentBuilder = ({ user }) => {
                 <span className="stitch-route-title">Inbound Agent</span>
                 <span className="stitch-route-desc">Support &amp; FAQ handling</span>
               </div>
-              <span className="stitch-route-tag">ROUTE_01</span>
             </div>
 
             <div
@@ -402,7 +422,6 @@ const AgentBuilder = ({ user }) => {
                 <span className="stitch-route-title">Outbound Agent</span>
                 <span className="stitch-route-desc">Sales &amp; cold outreach</span>
               </div>
-              <span className="stitch-route-tag">ROUTE_02</span>
             </div>
           </div>
 
@@ -422,8 +441,7 @@ const AgentBuilder = ({ user }) => {
 
             <div className="stitch-form-group">
               <div className="stitch-label-row">
-                <label className="stitch-label">SYSTEM PROMPT</label>
-                <span className="stitch-label-tag">SYSTEM_DIRECTIVE_V1</span>
+                <label className="stitch-label">ENTER YOUR PROMPT HERE</label>
               </div>
               <textarea
                 rows={4}
@@ -440,8 +458,7 @@ const AgentBuilder = ({ user }) => {
 
             <div className="stitch-form-group">
               <div className="stitch-label-row">
-                <label className="stitch-label">KNOWLEDGE BASE</label>
-                <span className="stitch-label-tag">RAG_CONTEXT</span>
+                <label className="stitch-label">ENTER THE KNOWLEDGE BASE HERE</label>
               </div>
               <textarea
                 rows={4}
@@ -489,14 +506,42 @@ const AgentBuilder = ({ user }) => {
             <span className="stitch-count-badge">{myAgents.length}</span>
           </div>
 
-          {/* Deployed List */}
-          <div className="stitch-agent-list">
+          {myAgents.length > 0 && (
+            <div className="stitch-agent-search-wrap">
+              <svg className="stitch-agent-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={agentSearch}
+                onChange={(e) => setAgentSearch(e.target.value)}
+                placeholder="Search agent by name..."
+                className="stitch-agent-search-input"
+                aria-label="Search deployed agents by name"
+              />
+              {agentSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAgentSearch('')}
+                  className="stitch-agent-search-clear"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Deployed List (Scrollable Window) */}
+          <div className="stitch-agent-list" ref={agentListRef}>
             {myAgents.length === 0 ? (
               <div className="stitch-empty-slot">
                 Deploy an agent to see it here
               </div>
             ) : (
-              myAgents.map((ag, idx) => (
+              sortedAgents.map((ag, idx) => (
                 <div key={ag.agent_id || idx} className={`stitch-agent-card ${ag.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
                   <div className="stitch-agent-top">
                     <div className="stitch-agent-name" title={ag.agent_name}>
@@ -611,22 +656,6 @@ const AgentBuilder = ({ user }) => {
               </div>
             )}
           </div>
-
-          {/* Telemetry / Status Metadata at bottom */}
-          <div className="stitch-telemetry-box">
-            <div className="stitch-telemetry-row">
-              <span className="stitch-telemetry-label">Runtime Cluster</span>
-              <span className="stitch-telemetry-val">us-east-1-telephony</span>
-            </div>
-            <div className="stitch-telemetry-row">
-              <span className="stitch-telemetry-label">Active Retell Session</span>
-              <span className="stitch-telemetry-val bold">STANDBY_READY</span>
-            </div>
-            <div className="stitch-telemetry-row">
-              <span className="stitch-telemetry-label">Target Pipeline Latency</span>
-              <span className="stitch-telemetry-val cyan">&lt; 380ms</span>
-            </div>
-          </div>
         </div>
 
         {/* Context-Only Edit Modal */}
@@ -635,7 +664,6 @@ const AgentBuilder = ({ user }) => {
             <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
               <div className="stitch-modal-header">
                 <div className="stitch-modal-title-box">
-                  <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
                   <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -668,21 +696,28 @@ const AgentBuilder = ({ user }) => {
                     <div className="stitch-modal-chips-row">
                       <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
                       {[
-                        'customer_name',
-                        'company_name',
-                        'city',
-                        'website',
-                        'offer_discount',
-                        'appointment_time'
-                      ].map((v) => (
+                        { key: 'customer_name', label: 'Customer Name' },
+                        { key: 'company_name', label: 'Company Name' },
+                        { key: 'city', label: 'City' },
+                        { key: 'website', label: 'Website' },
+                        { key: 'offer_discount', label: 'Offer Discount' },
+                        { key: 'appointment_time', label: 'Appointment Time' },
+                      ].map(({ key, label }) => (
                         <button
-                          key={v}
+                          key={key}
                           type="button"
-                          className="stitch-modal-var-chip"
-                          onClick={() => handleInsertTag(v)}
-                          title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
+                          className={`stitch-modal-var-chip ${editCopiedTag === key ? 'copied' : ''}`}
+                          onClick={() => handleInsertTag(key)}
+                          title={`Insert {{${key}}} into prompt`}
                         >
-                          {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
+                          {editCopiedTag === key ? (
+                            <>✓ Inserted</>
+                          ) : (
+                            <>
+                              <span className="stitch-modal-var-plus">+</span>
+                              {label}
+                            </>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -691,8 +726,7 @@ const AgentBuilder = ({ user }) => {
 
                   <div className="stitch-form-group">
                     <div className="stitch-label-row">
-                      <label className="stitch-label">SYSTEM CONTEXT / PROMPT</label>
-                      <span className="stitch-label-tag">{editPrompt.length} CHARS</span>
+                      <label className="stitch-label">Knowledge Base</label>
                     </div>
                     <textarea
                       rows={9}
@@ -706,8 +740,8 @@ const AgentBuilder = ({ user }) => {
 
                   <div className="stitch-form-group">
                     <div className="stitch-label-row">
-                      <label className="stitch-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
-                      <span className="stitch-label-tag">INITIAL_SPEECH</span>
+                      <label className="stitch-label">Initial Greeting Message (OPTIONAL)</label>
+
                     </div>
                     <input
                       type="text"

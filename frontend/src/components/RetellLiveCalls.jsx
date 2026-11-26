@@ -201,78 +201,6 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
     } catch { }
   };
 
-  // Context-Only Edit State for selected agent
-  const [editingAgent, setEditingAgent] = useState(null);
-  const [editPrompt, setEditPrompt] = useState('');
-  const [editBeginMessage, setEditBeginMessage] = useState('');
-  const [fetchingContext, setFetchingContext] = useState(false);
-  const [savingContext, setSavingContext] = useState(false);
-  const [editStatusMsg, setEditStatusMsg] = useState('');
-  const [editCopiedTag, setEditCopiedTag] = useState(null);
-
-  const handleOpenEditContext = async (agent) => {
-    setEditingAgent(agent);
-    setFetchingContext(true);
-    setEditStatusMsg('');
-    setEditPrompt('');
-    setEditBeginMessage('');
-
-    try {
-      const res = await axios.get(`${API_BASE_URL}/agent-context/${agent.agent_id}`);
-      if (res.data?.success) {
-        setEditPrompt(res.data.prompt || '');
-        setEditBeginMessage(res.data.begin_message || '');
-      } else {
-        setEditStatusMsg('⚠️ Could not fetch live prompt. You can enter a new context below.');
-      }
-    } catch (err) {
-      const msg = err.response?.data?.detail || err.message;
-      setEditStatusMsg(`⚠️ Could not retrieve live context: ${msg}`);
-    } finally {
-      setFetchingContext(false);
-    }
-  };
-
-  const handleSaveContext = async (e) => {
-    if (e) e.preventDefault();
-    if (!editingAgent) return;
-
-    setSavingContext(true);
-    setEditStatusMsg('Saving updated context to Retell AI...');
-
-    try {
-      const res = await axios.post(`${API_BASE_URL}/update-agent-context`, {
-        agent_id: editingAgent.agent_id,
-        prompt: editPrompt,
-        begin_message: editBeginMessage || undefined,
-      });
-
-      if (res.data?.success) {
-        setEditStatusMsg('✅ Context saved successfully! Voice and settings preserved.');
-        setStatusMsg(`✅ Context updated for agent "${editingAgent.agent_name}".`);
-        setTimeout(() => {
-          setEditingAgent(null);
-          setEditStatusMsg('');
-        }, 1300);
-      } else {
-        throw new Error(res.data?.detail || 'Failed to update context');
-      }
-    } catch (err) {
-      const msg = err.response?.data?.detail || err.message;
-      setEditStatusMsg(`❌ Error saving context: ${msg}`);
-    } finally {
-      setSavingContext(false);
-    }
-  };
-
-  const handleInsertEditTag = (tag) => {
-    const variableTag = `{{${tag}}}`;
-    navigator.clipboard.writeText(variableTag).catch(() => { });
-    setEditCopiedTag(tag);
-    setTimeout(() => setEditCopiedTag(null), 1800);
-    setEditPrompt((prev) => (prev ? `${prev} ${variableTag}` : variableTag));
-  };
-
   // Separate pools for outbound calling and inbound routing
   const outboundAgents = agents.filter((a) => a.call_type === 'outbound');
   const inboundAgents = agents.filter((a) => a.call_type === 'inbound');
@@ -823,21 +751,6 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
               <div className="live-form-group">
                 <div className="live-label-row">
                   <label className="live-label">OUTBOUND VOICE AGENT</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {selectedAgentId && (
-                      <button
-                        type="button"
-                        className="live-edit-agent-context-link"
-                        onClick={() => {
-                          const ag = outboundAgents.find((a) => a.agent_id === selectedAgentId) || agents.find((a) => a.agent_id === selectedAgentId);
-                          if (ag) handleOpenEditContext(ag);
-                        }}
-                        title="Edit prompt and conversational context for selected agent"
-                      >
-                        Edit Context ↗
-                      </button>
-                    )}
-                  </div>
                 </div>
                 <select
                   className="live-select"
@@ -968,13 +881,13 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
                           }
                         }}
                       >
-                        <option value="" disabled>+ Quick Add Preset...</option>
-                        <option value="customer_name">customer_name</option>
-                        <option value="company_name">company_name</option>
-                        <option value="city">city</option>
-                        <option value="website">website</option>
-                        <option value="offer_discount">offer_discount</option>
-                        <option value="appointment_time">appointment_time</option>
+                        <option value="" disabled>+ Quick Add Field...</option>
+                        <option value="customer_name">Customer Name</option>
+                        <option value="company_name">Company Name</option>
+                        <option value="city">City</option>
+                        <option value="website">Website</option>
+                        <option value="offer_discount">Offer Discount</option>
+                        <option value="appointment_time">Appointment Time</option>
                       </select>
 
                       <button
@@ -995,13 +908,22 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
                         {variableRows.length === 0 ? (
                           <div className="var-empty-box">
                             <span>No dynamic variables defined. Agent will use default context.</span>
-                            <button
-                              type="button"
-                              className="var-preset-chip"
-                              onClick={() => handleAddVariableRow('customer_name', '')}
-                            >
-                              + Add customer_name
-                            </button>
+                            <div className="var-empty-presets">
+                              {[
+                                { key: 'customer_name', label: 'Customer Name' },
+                                { key: 'company_name', label: 'Company Name' },
+                                { key: 'offer_discount', label: 'Offer Discount' },
+                              ].map(({ key, label }) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  className="var-preset-chip"
+                                  onClick={() => handleAddVariableRow(key, '')}
+                                >
+                                  <span className="var-preset-plus">+</span> {label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         ) : (
                           <div className="var-rows-list">
@@ -1014,7 +936,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
                                     <input
                                       type="text"
                                       className="live-input var-input-key"
-                                      placeholder="variable_name"
+                                      placeholder="Field key (e.g. customer_name)"
                                       value={row.key}
                                       onChange={(e) =>
                                         handleUpdateVariableRow(
@@ -1038,12 +960,12 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
                                         type="button"
                                         className={`var-copy-tag-btn ${isCopied ? 'copied' : ''}`}
                                         onClick={() => handleCopyPromptTag(cleanKey)}
-                                        title="Click to copy prompt injection tag"
+                                        title={`Copy {{${cleanKey}}} to clipboard`}
                                       >
-                                        {isCopied ? 'Copied!' : `{{${cleanKey}}}`}
+                                        {isCopied ? '✓ Copied Tag' : 'Copy Tag'}
                                       </button>
                                     ) : (
-                                      <span className="var-tag-placeholder">{"{{tag}}"}</span>
+                                      <span className="var-tag-placeholder">Enter field key</span>
                                     )}
                                     <button
                                       type="button"
@@ -1195,13 +1117,6 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
           <CrystalShard position="top-right" />
           <div className="live-card-header">
             <h3 className="live-card-title">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
               Recent Calls Log
             </h3>
 
@@ -1213,7 +1128,7 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
             <>
               <div className="calls-table-header">
                 <span>DIRECTION</span>
-                <span>NUMBER / ENDPOINT</span>
+                <span>NUMBER</span>
                 <span>AGENT</span>
                 <span>STATUS</span>
                 <span>DURATION</span>
@@ -1257,22 +1172,84 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
 
                     {expandedCallId === call.call_id && (
                       <div className="calls-row-expanded">
-                        {call.summary && (
-                          <div style={{ marginBottom: 10 }}>
-                            <strong style={{ color: '#f8fafc' }}>Call Summary:</strong>{' '}
-                            <span style={{ color: '#94a3b8' }}>{call.summary}</span>
+                        <div className="call-detail-meta-bar">
+                          <span className="call-detail-meta-chip">
+                            <span className="call-detail-meta-key">CALL ID</span>
+                            <span className="call-detail-meta-val">{call.call_id}</span>
+                          </span>
+                          <span className="call-detail-meta-chip">
+                            <span className="call-detail-meta-key">AGENT</span>
+                            <span className="call-detail-meta-val">{call.agent_name || call.agent_id || '—'}</span>
+                          </span>
+                          <span className="call-detail-meta-chip">
+                            <span className="call-detail-meta-key">DURATION</span>
+                            <span className="call-detail-meta-val">{formatDuration(call.duration)}</span>
+                          </span>
+                        </div>
+
+                        {!call.summary && !call.recording_url && !call.transcript ? (
+                          <div className="call-detail-empty">
+                            No summary, recording, or transcript recorded for this call yet.
                           </div>
-                        )}
-                        {call.recording_url && (
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ color: '#f8fafc', fontWeight: 600, marginBottom: 4 }}>Call Audio Recording:</div>
-                            <audio controls src={call.recording_url} style={{ width: '100%', height: '36px' }} />
-                          </div>
-                        )}
-                        {call.transcript && (
-                          <div>
-                            <div style={{ color: '#f8fafc', fontWeight: 600 }}>Live Transcript:</div>
-                            <pre className="transcript-block">{call.transcript}</pre>
+                        ) : (
+                          <div className="call-detail-sections">
+                            {call.summary && (
+                              <div className="call-detail-card">
+                                <div className="call-detail-card-header">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                  </svg>
+                                  <span>CALL SUMMARY</span>
+                                </div>
+                                <p className="call-detail-summary-text">{call.summary}</p>
+                              </div>
+                            )}
+
+                            {call.recording_url && (
+                              <div className="call-detail-card">
+                                <div className="call-detail-card-header">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                  </svg>
+                                  <span>AUDIO RECORDING</span>
+                                </div>
+                                <audio controls src={call.recording_url} className="call-detail-audio" />
+                              </div>
+                            )}
+
+                            {call.transcript && (
+                              <div className="call-detail-card">
+                                <div className="call-detail-card-header">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                  </svg>
+                                  <span>TRANSCRIPT</span>
+                                </div>
+                                <div className="transcript-block">
+                                  {call.transcript.split('\n').filter((l) => l.trim()).map((line, lIdx) => {
+                                    const isAgent = /^(agent|assistant|ai)\s*:/i.test(line);
+                                    const isUser = /^(user|customer|caller|human)\s*:/i.test(line);
+                                    if (isAgent || isUser) {
+                                      const colonIdx = line.indexOf(':');
+                                      const speaker = line.slice(0, colonIdx).trim();
+                                      const text = line.slice(colonIdx + 1).trim();
+                                      return (
+                                        <div key={lIdx} className={`transcript-turn ${isAgent ? 'agent' : 'user'}`}>
+                                          <span className={`transcript-speaker ${isAgent ? 'agent' : 'user'}`}>{speaker}</span>
+                                          <span className="transcript-msg">{text}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return <div key={lIdx} className="transcript-line-plain">{line}</div>;
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1309,122 +1286,6 @@ const RetellLiveCalls = ({ user, prefilledCallData, onClearPrefilledData }) => {
             </>
           )}
         </div>
-
-        {/* Context-Only Edit Modal */}
-        {editingAgent && (
-          <div className="stitch-modal-backdrop" onClick={() => !savingContext && setEditingAgent(null)}>
-            <div className="stitch-modal-card" onClick={(e) => e.stopPropagation()}>
-              <div className="stitch-modal-header">
-                <div className="stitch-modal-title-box">
-                  <div className="stitch-modal-sub">EDIT AGENT CONTEXT &amp; PROMPT</div>
-                  <h3 className="stitch-modal-title">{editingAgent.agent_name}</h3>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className={`stitch-type-badge ${editingAgent.call_type === 'outbound' ? 'outbound' : 'inbound'}`}>
-                    {(editingAgent.call_type || 'outbound').toUpperCase()}
-                  </span>
-                  <button
-                    type="button"
-                    className="stitch-modal-close-btn"
-                    onClick={() => !savingContext && setEditingAgent(null)}
-                    disabled={savingContext}
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-
-
-              {fetchingContext ? (
-                <div className="stitch-modal-loading">
-                  <div className="stitch-spinner"></div>
-                  <span>Retrieving live context from Retell AI...</span>
-                </div>
-              ) : (
-                <form onSubmit={handleSaveContext} className="stitch-modal-form">
-                  {/* Dynamic variables are only for Outbound calls */}
-                  {editingAgent.call_type === 'outbound' && (
-                    <div className="stitch-modal-chips-row">
-                      <span className="stitch-modal-chips-label">Insert Dynamic Tag:</span>
-                      {[
-                        'customer_name',
-                        'company_name',
-                        'city',
-                        'website',
-                        'offer_discount',
-                        'appointment_time'
-                      ].map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          className="stitch-modal-var-chip"
-                          onClick={() => handleInsertEditTag(v)}
-                          title={`Click to insert {{${v}}} into prompt and copy to clipboard`}
-                        >
-                          {editCopiedTag === v ? 'Copied! ✓' : `+ {{${v}}}`}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="live-form-group">
-                    <div className="live-label-row">
-                      <label className="live-label">SYSTEM CONTEXT / PROMPT</label>
-                      <span className="live-label-tag">{editPrompt.length} CHARS</span>
-                    </div>
-                    <textarea
-                      rows={9}
-                      className="live-textarea stitch-modal-textarea"
-                      placeholder="System prompt and instructions defining the agent's behavior, tone, FAQs, and knowledge..."
-                      value={editPrompt}
-                      onChange={(e) => setEditPrompt(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="live-form-group">
-                    <div className="live-label-row">
-                      <label className="live-label">BEGIN MESSAGE / GREETING (OPTIONAL)</label>
-                      <span className="live-label-tag">INITIAL_SPEECH</span>
-                    </div>
-                    <input
-                      type="text"
-                      className="live-input"
-                      placeholder="e.g. Hello, thank you for calling. How can I assist you today?"
-                      value={editBeginMessage}
-                      onChange={(e) => setEditBeginMessage(e.target.value)}
-                    />
-                  </div>
-
-                  {editStatusMsg && (
-                    <div className={`stitch-status-banner ${editStatusMsg.includes('❌') ? 'error' : editStatusMsg.includes('✅') ? 'success' : ''}`}>
-                      {editStatusMsg}
-                    </div>
-                  )}
-
-                  <div className="stitch-modal-footer">
-                    <button
-                      type="button"
-                      className="stitch-modal-cancel-btn"
-                      onClick={() => setEditingAgent(null)}
-                      disabled={savingContext}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="stitch-modal-save-btn"
-                      disabled={savingContext || !editPrompt.trim()}
-                    >
-                      {savingContext ? 'Saving to Retell AI...' : 'Save Context Only'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

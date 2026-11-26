@@ -573,121 +573,130 @@ const AnalyticsDashboard = ({ user }) => {
                 </button>
               </div>
 
-              {/* Audio Recording Player Section */}
-              <div className="audio-player-card">
-                <div className="audio-player-label">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                  </svg>
-                  Call Audio Recording Player
+              {/* Call Metadata Strip */}
+              <div className="analytics-detail-meta-bar">
+                <span className="analytics-detail-meta-chip">
+                  <span className="analytics-detail-meta-key">AGENT</span>
+                  <span className="analytics-detail-meta-val">{selectedCall.agent_name || selectedCall.agent_id || 'BIZ CALL Agent'}</span>
+                </span>
+                <span className="analytics-detail-meta-chip">
+                  <span className="analytics-detail-meta-key">FROM</span>
+                  <span className="analytics-detail-meta-val">{selectedCall.from_number || 'Web Browser'}</span>
+                </span>
+                <span className="analytics-detail-meta-chip">
+                  <span className="analytics-detail-meta-key">TO</span>
+                  <span className="analytics-detail-meta-val">{selectedCall.to_number || 'BIZ CALL System'}</span>
+                </span>
+                <span className="analytics-detail-meta-chip">
+                  <span className="analytics-detail-meta-key">DURATION</span>
+                  <span className="analytics-detail-meta-val" style={{ color: '#60a5fa' }}>{formatDuration(selectedCall.duration)}</span>
+                </span>
+                <span className="analytics-detail-meta-chip">
+                  <span className="analytics-detail-meta-key">SENTIMENT</span>
+                  <span className="analytics-detail-meta-val" style={{ color: '#34d399' }}>
+                    {selectedCall.customer_satisfaction || selectedCall.sentiment || 'Neutral'}
+                  </span>
+                </span>
+              </div>
+
+              <div className="analytics-detail-sections">
+                {/* Call Summary Card */}
+                <div className="analytics-detail-card">
+                  <div className="analytics-detail-card-header">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span>CALL SUMMARY</span>
+                  </div>
+                  <p className="analytics-detail-summary-text">
+                    {selectedCall.summary || 'AI Post-Call Analysis Summary: Call completed successfully. Customer inquiry resolved by automated AI voice agent.'}
+                  </p>
                 </div>
 
-                {selectedCall.recording_url ? (
-                  <div>
-                    <audio controls className="audio-element">
-                      <source src={selectedCall.recording_url} type="audio/mp3" />
-                      Your browser does not support the audio element.
-                    </audio>
-                    <div className="audio-download-row">
-                      <a
-                        href={selectedCall.recording_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="audio-download-link"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="7 10 12 15 17 10"></polyline>
-                          <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Download MP3 Recording
-                      </a>
+                {/* Audio Recording Card */}
+                <div className="analytics-detail-card">
+                  <div className="analytics-detail-card-header">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <span>AUDIO RECORDING</span>
+                  </div>
+                  {selectedCall.recording_url ? (
+                    <div>
+                      <audio controls className="audio-element analytics-detail-audio">
+                        <source src={selectedCall.recording_url} type="audio/mp3" />
+                        Your browser does not support the audio element.
+                      </audio>
+                      <div className="audio-download-row">
+                        <a
+                          href={selectedCall.recording_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="audio-download-link"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                          </svg>
+                          Download MP3 Recording
+                        </a>
+                      </div>
                     </div>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                      Audio recording URL is generated automatically on completed voice calls.
+                    </div>
+                  )}
+                </div>
+
+                {/* Transcript Card */}
+                <div className="analytics-detail-card">
+                  <div className="analytics-detail-card-header">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>TRANSCRIPT</span>
                   </div>
-                ) : (
-                  <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', padding: '6px 0' }}>
-                    Audio recording URL is generated automatically on completed voice calls.
-                  </div>
-                )}
-              </div>
 
-              {/* Call Overview Grid */}
-              <div className="modal-stats-grid">
-                <div className="modal-stat-box">
-                  <div className="modal-stat-label">Caller (From)</div>
-                  <div className="modal-stat-val">{selectedCall.from_number || 'Web Browser'}</div>
-                </div>
-
-                <div className="modal-stat-box">
-                  <div className="modal-stat-label">Destination (To)</div>
-                  <div className="modal-stat-val">{selectedCall.to_number || 'BIZ CALL System'}</div>
-                </div>
-
-                <div className="modal-stat-box">
-                  <div className="modal-stat-label">Duration</div>
-                  <div className="modal-stat-val" style={{ color: '#60a5fa' }}>
-                    {formatDuration(selectedCall.duration)}
-                  </div>
-                </div>
-
-                <div className="modal-stat-box">
-                  <div className="modal-stat-label">CSAT / Sentiment</div>
-                  <div className="modal-stat-val" style={{ color: '#34d399' }}>
-                    {selectedCall.customer_satisfaction || selectedCall.sentiment || 'Satisfied (4.5/5)'}
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Key Findings & Summary */}
-              <div className="modal-summary-box">
-                <div className="modal-summary-title">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                  </svg>
-                  AI Key Findings & Executive Summary
-                </div>
-                <p className="modal-summary-text">
-                  {selectedCall.summary || 'AI Post-Call Analysis Summary: Call completed successfully. Customer inquiry resolved by automated AI voice agent.'}
-                </p>
-              </div>
-
-              {/* Full Conversation Transcript */}
-              <div className="modal-transcript-box">
-                <div className="modal-transcript-title">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                  Full Conversation Transcript
-                </div>
-
-                {selectedCall.transcript ? (
-                  <div className="transcript-bubbles-list">
-                    {typeof selectedCall.transcript === 'string' ? (
-                      selectedCall.transcript.split('\n').map((line, idx) => {
-                        if (!line.trim()) return null;
-                        const isAgent = line.toLowerCase().startsWith('agent:') || line.toLowerCase().startsWith('ai:');
-                        return (
-                          <div
-                            key={idx}
-                            className={`transcript-bubble ${isAgent ? 'agent' : 'customer'}`}
-                          >
-                            {line}
-                          </div>
-                        );
-                      })
-                    ) : Array.isArray(selectedCall.transcript) ? (
-                      selectedCall.transcript.map((item, idx) => {
-                        const isAgent = (item.role || item.speaker || '').toLowerCase() === 'agent';
-                        return (
-                          <div
-                            key={idx}
-                            className={`transcript-bubble ${isAgent ? 'agent' : 'customer'}`}
-                          >
-                            <strong>{isAgent ? 'Agent' : 'Customer'}:</strong> {item.content || item.words || item.text || JSON.stringify(item)}
-                          </div>
-                        );
-                      })
+                  {selectedCall.transcript ? (
+                    <div className="transcript-bubbles-list">
+                      {typeof selectedCall.transcript === 'string' ? (
+                        selectedCall.transcript.split('\n').filter((l) => l.trim()).map((line, idx) => {
+                          const isAgent = /^(agent|assistant|ai)\s*:/i.test(line);
+                          const isUser = /^(user|customer|caller|human)\s*:/i.test(line);
+                          if (isAgent || isUser) {
+                            const colonIdx = line.indexOf(':');
+                            const speaker = line.slice(0, colonIdx).trim();
+                            const text = line.slice(colonIdx + 1).trim();
+                            return (
+                              <div key={idx} className={`analytics-transcript-turn ${isAgent ? 'agent' : 'user'}`}>
+                                <span className={`analytics-transcript-speaker ${isAgent ? 'agent' : 'user'}`}>{speaker}</span>
+                                <span className="analytics-transcript-msg">{text}</span>
+                              </div>
+                            );
+                          }
+                          return <div key={idx} className="analytics-transcript-plain">{line}</div>;
+                        })
+                      ) : Array.isArray(selectedCall.transcript) ? (
+                        selectedCall.transcript.map((item, idx) => {
+                          const isAgent = (item.role || item.speaker || '').toLowerCase() === 'agent';
+                          return (
+                            <div key={idx} className={`analytics-transcript-turn ${isAgent ? 'agent' : 'user'}`}>
+                              <span className={`analytics-transcript-speaker ${isAgent ? 'agent' : 'user'}`}>
+                                {isAgent ? 'Agent' : 'Customer'}
+                              </span>
+                              <span className="analytics-transcript-msg">
+                                {item.content || item.words || item.text || JSON.stringify(item)}
+                              </span>
+                            </div>
+                          );
+                        })
                     ) : (
                       <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                         {String(selectedCall.transcript)}
@@ -699,6 +708,7 @@ const AnalyticsDashboard = ({ user }) => {
                     Transcript details are processed automatically upon call completion. Click Refresh to check for updates.
                   </div>
                 )}
+              </div>
               </div>
 
               {/* Modal Footer */}
