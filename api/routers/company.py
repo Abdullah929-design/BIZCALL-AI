@@ -54,6 +54,25 @@ from datetime import datetime
 ROOT_DOMAIN = "bizcallai.online"
 SUBDOMAINS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "company_subdomains.json")
 
+def _build_unique_slug(company_name: str, user_id: str, existing_slugs: set) -> str:
+    raw_name = (company_name or "").lower().strip()
+    slug = re.sub(r'[^a-z0-9]', '', raw_name)
+    if not slug or len(slug) < 3 or slug == "mybusiness":
+        clean_uid = re.sub(r'[^a-z0-9]', '', user_id.lower())
+        slug = f"org{clean_uid[:6]}" if clean_uid else "client"
+
+    reserved = {"www", "api", "admin", "mail", "app", "root", "dev", "test"}
+    if slug in reserved:
+        slug = f"{slug}-org"
+
+    unique_slug = slug
+    counter = 2
+    while unique_slug in existing_slugs:
+        unique_slug = f"{slug}-{counter}"
+        counter += 1
+    return unique_slug
+
+
 def load_subdomains_registry() -> Dict[str, Any]:
     registry = {}
     if os.path.exists(SUBDOMAINS_FILE):
@@ -69,18 +88,19 @@ def load_subdomains_registry() -> Dict[str, Any]:
             url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/company_profiles?select=user_id,company_name"
             res = requests.get(url, headers=get_supabase_headers(), timeout=5)
             if res.ok:
+                existing_slugs = set()
                 for row in res.json():
                     uid = row.get("user_id")
                     cname = row.get("company_name", "")
                     if uid and uid not in registry:
-                        clean_uid = re.sub(r'[^a-z0-9]', '', uid.lower())
-                        slug = f"org{clean_uid[:6]}" if clean_uid else "client"
+                        slug = _build_unique_slug(cname, uid, existing_slugs)
+                        existing_slugs.add(slug)
                         registry[uid] = {
                             "user_id": uid,
                             "company_name": cname or "My Business",
                             "subdomain_slug": slug,
                             "subdomain": f"{slug}.{ROOT_DOMAIN}",
-                            "inbox_email": f"inbox@{slug}.{ROOT_DOMAIN}",
+                            "inbox_email": f"{slug}@{ROOT_DOMAIN}",
                             "root_domain": ROOT_DOMAIN,
                             "assigned_at": datetime.utcnow().isoformat()
                         }
@@ -100,37 +120,36 @@ def save_subdomains_registry(data: Dict[str, Any]) -> None:
 
 def get_or_create_tenant_subdomain(user_id: str, company_name: str = "") -> Dict[str, str]:
     """
-    Allocates a clean, unique free subdomain under bizcallai.online for each tenant.
-    Guarantees private inbox isolation (e.g. inbox@<slug>.bizcallai.online).
+    Allocates a clean, unique slug under bizcallai.online for each tenant.
+    Guarantees private inbox isolation (e.g. <slug>@bizcallai.online).
     """
+    if not (company_name or "").strip():
+        profile = fetch_profile_from_supabase(user_id)
+        if profile and profile.get("company_name"):
+            company_name = profile["company_name"]
+
     registry = load_subdomains_registry()
     if user_id in registry:
         existing = registry[user_id]
-        slug_val = existing.get("subdomain_slug")
+        slug_val = existing.get("subdomain_slug") or ""
+        # Upgrade fallback org<uid> slug if real company_name is now available
+        if slug_val.startswith("org") and (company_name or "").strip():
+            other_slugs = {v.get("subdomain_slug") for k, v in registry.items() if k != user_id}
+            new_slug = _build_unique_slug(company_name, user_id, other_slugs)
+            if new_slug != slug_val:
+                existing["company_name"] = company_name
+                existing["subdomain_slug"] = new_slug
+                existing["subdomain"] = f"{new_slug}.{ROOT_DOMAIN}"
+                existing["inbox_email"] = f"{new_slug}@{ROOT_DOMAIN}"
+                save_subdomains_registry(registry)
+                return existing
         if slug_val and str(existing.get("inbox_email", "")).startswith("inbox@"):
             existing["inbox_email"] = f"{slug_val}@{ROOT_DOMAIN}"
             save_subdomains_registry(registry)
         return existing
 
-    # Generate base slug from company name
-    raw_name = (company_name or "").lower().strip()
-    slug = re.sub(r'[^a-z0-9]', '', raw_name)
-    if not slug or len(slug) < 3:
-        clean_uid = re.sub(r'[^a-z0-9]', '', user_id.lower())
-        slug = f"org{clean_uid[:6]}" if clean_uid else "client"
-
-    # Avoid colliding with reserved subdomains
-    reserved = {"www", "api", "admin", "mail", "app", "root", "dev", "test"}
-    if slug in reserved:
-        slug = f"{slug}-org"
-
-    # Ensure unique slug among existing tenants
     existing_slugs = {v.get("subdomain_slug") for v in registry.values()}
-    unique_slug = slug
-    counter = 2
-    while unique_slug in existing_slugs:
-        unique_slug = f"{slug}-{counter}"
-        counter += 1
+    unique_slug = _build_unique_slug(company_name, user_id, existing_slugs)
 
     entry = {
         "user_id": user_id,
